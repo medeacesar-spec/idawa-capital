@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { inviteUser, setUserRole, deleteUser } from "@/app/(app)/utilisateurs/actions";
+import { inviteUser, setUserRole, deleteUser, resetUserPassword } from "@/app/(app)/utilisateurs/actions";
 
 type User = { id: string; name: string; email: string; roleId: string | null; roleName: string };
 type Role = { id: string; name: string };
@@ -21,6 +21,17 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", roleId: roles.find((r) => r.name === "Analyste")?.id ?? roles[0]?.id ?? "" });
   const [result, setResult] = useState<{ tempPassword?: string; error?: string } | null>(null);
+  const [reset, setReset] = useState<{ email: string; tempPassword?: string; error?: string } | null>(null);
+
+  function resetPwd(u: User) {
+    if (!confirm(`Réinitialiser le mot de passe de ${u.name || u.email} ? Un mot de passe temporaire sera généré.`)) return;
+    setReset({ email: u.email });
+    start(async () => {
+      const res = await resetUserPassword(u.id);
+      if (res.error) setReset({ email: u.email, error: res.error });
+      else setReset({ email: u.email, tempPassword: res.tempPassword });
+    });
+  }
 
   function submitInvite() {
     setResult(null);
@@ -63,6 +74,10 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
             <Select value={u.roleId ?? ""} onChange={(e) => changeRole(u.id, e.target.value)} disabled={pending} style={{ width: 210 }}>
               {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </Select>
+            <button onClick={() => resetPwd(u)} disabled={pending} aria-label="Réinitialiser le mot de passe" title="Réinitialiser le mot de passe"
+              style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 4 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="15" r="4" /><path d="M10.85 12.15 19 4M18 5l2 2M15 8l2 2" /></svg>
+            </button>
             <button onClick={() => remove(u)} disabled={u.id === currentUserId || pending} aria-label="Supprimer"
               style={{ border: "none", background: "none", cursor: u.id === currentUserId ? "not-allowed" : "pointer", color: "var(--text-3)", padding: 4, opacity: u.id === currentUserId ? 0.3 : 1 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>
@@ -94,6 +109,23 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
               </Field>
               {result?.error && <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px" }}>{result.error}</div>}
             </>
+          )}
+        </Modal>
+      )}
+
+      {reset && (
+        <Modal title="Réinitialiser le mot de passe" onClose={() => setReset(null)}
+          footer={<button className="btn btn-primary" onClick={() => setReset(null)}>Terminé</button>}>
+          {reset.error ? (
+            <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px" }}>{reset.error}</div>
+          ) : reset.tempPassword ? (
+            <div>
+              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 12 }}>✅ Nouveau mot de passe temporaire pour <b>{reset.email}</b>.</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Communiquez-le à la personne — elle pourra le changer depuis « Mon compte » :</div>
+              <div style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 600, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", textAlign: "center", letterSpacing: 1, color: "var(--espresso)" }}>{reset.tempPassword}</div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: "var(--text-3)", textAlign: "center", padding: "8px 0" }}>Génération…</div>
           )}
         </Modal>
       )}

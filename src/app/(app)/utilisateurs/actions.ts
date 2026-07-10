@@ -47,6 +47,15 @@ export async function setUserRole(userId: string, roleId: string) {
   return { ok: true };
 }
 
+export async function resetUserPassword(userId: string) {
+  if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
+  const admin = createAdminClient();
+  const tempPassword = genPassword();
+  const { error } = await admin.auth.admin.updateUserById(userId, { password: tempPassword });
+  if (error) return { error: error.message };
+  return { ok: true, tempPassword };
+}
+
 export async function deleteUser(userId: string) {
   if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
   const admin = createAdminClient();

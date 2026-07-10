@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth");
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser");
 
   // Non connecté sur une page protégée -> connexion
   if (!user && !isPublic) {

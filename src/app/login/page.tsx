@@ -66,6 +66,9 @@ export default function LoginPage() {
             {loading ? "Connexion…" : "Se connecter"}
           </button>
         </form>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <a href="/mot-de-passe-oublie" style={{ fontSize: 12.5, color: "var(--camel)", fontWeight: 600, textDecoration: "none" }}>Mot de passe oublié ?</a>
+        </div>
       </div>
     </div>
   );
