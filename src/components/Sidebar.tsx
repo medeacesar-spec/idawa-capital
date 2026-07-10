@@ -25,6 +25,7 @@ const ICONS: Record<string, React.ReactNode> = {
   utilisateurs: (<><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 9-4.2" /><circle cx="17.5" cy="16.5" r="2.5" /><path d="M17.5 12.9v1.2M17.5 18.9v1.2M20.6 16.5h-1.2M15.6 16.5h-1.2" /></>),
   kpi: (<><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" /></>),
   parametres: (<><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" /><circle cx="16" cy="6" r="2" /><circle cx="8" cy="12" r="2" /><circle cx="14" cy="18" r="2" /></>),
+  compte: (<><circle cx="12" cy="8" r="3.4" /><path d="M5 20a7 7 0 0 1 14 0" /></>),
 };
 
 const GRP = "rgba(201,168,124,.75)";

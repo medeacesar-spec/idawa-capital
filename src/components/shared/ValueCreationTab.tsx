@@ -12,7 +12,9 @@ const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "aoû
 function frDate(d: string | null) { if (!d) return null; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
 const STATUS_BADGE: Record<string, string> = { "Planifiée": "badge-neutral", "En cours": "badge-amber", "Réalisée": "badge-green", "En pause": "badge-red" };
 
-export default function ValueCreationTab({ entityType, entityId, items }: { entityType: "deal" | "company"; entityId: string; items: ValueInitiative[] }) {
+type ContactOpt = { id: string; name: string };
+
+export default function ValueCreationTab({ entityType, entityId, items, contacts }: { entityType: "deal" | "company"; entityId: string; items: ValueInitiative[]; contacts: ContactOpt[] }) {
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; item: ValueInitiative | null }>({ open: false, item: null });
   const done = items.filter((i) => i.status === "Réalisée").length;
@@ -58,11 +60,11 @@ export default function ValueCreationTab({ entityType, entityId, items }: { enti
         </div>
       )}
 
-      {modal.open && <VcModal entityType={entityType} entityId={entityId} item={modal.item} onClose={() => setModal({ open: false, item: null })} />}
+      {modal.open && <VcModal entityType={entityType} entityId={entityId} item={modal.item} contacts={contacts} onClose={() => setModal({ open: false, item: null })} />}
     </div>
   );
 
-  function VcModal({ entityType, entityId, item, onClose }: { entityType: string; entityId: string; item: ValueInitiative | null; onClose: () => void }) {
+  function VcModal({ entityType, entityId, item, contacts, onClose }: { entityType: string; entityId: string; item: ValueInitiative | null; contacts: ContactOpt[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [lever, setLever] = useState(item?.lever ?? VALUE_LEVERS[0]);
     const [initiative, setInitiative] = useState(item?.initiative ?? "");
@@ -86,7 +88,17 @@ export default function ValueCreationTab({ entityType, entityId, items }: { enti
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Levier"><Select value={lever} onChange={(e) => setLever(e.target.value)}>{VALUE_LEVERS.map((l) => <option key={l} value={l}>{l}</option>)}</Select></Field>
           <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{VALUE_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
-          <Field label="Responsable"><Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Ex : Direction générale" /></Field>
+          <Field label="Responsable">
+            {contacts.length === 0 ? (
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", padding: "8px 0" }}>Ajoutez d'abord des contacts (onglet Contacts) pour désigner un responsable.</div>
+            ) : (
+              <Select value={owner} onChange={(e) => setOwner(e.target.value)}>
+                <option value="">— Aucun —</option>
+                {contacts.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                {owner && !contacts.some((c) => c.name === owner) && <option value={owner}>{owner}</option>}
+              </Select>
+            )}
+          </Field>
           <Field label="Échéance"><Input type="date" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
         </div>
         <Field label="Impact visé"><Textarea rows={2} value={impact} onChange={(e) => setImpact(e.target.value)} placeholder="Ex : +30% de CA, création de 15 emplois…" /></Field>

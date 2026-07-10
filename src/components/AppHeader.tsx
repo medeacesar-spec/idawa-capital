@@ -4,10 +4,14 @@ import { usePathname } from "next/navigation";
 import { PAGE_META } from "@/lib/nav";
 import Search from "@/components/Search";
 
+// Pages de réglages où la recherche de sociétés/dossiers n'a pas de sens.
+const NO_SEARCH = new Set(["compte", "utilisateurs", "parametres"]);
+
 export default function AppHeader() {
   const pathname = usePathname();
   const key = pathname.split("/").filter(Boolean)[0] || "dashboard";
   const meta = PAGE_META[key] ?? { title: "Idawa Capital", sub: "" };
+  const showSearch = !NO_SEARCH.has(key);
 
   return (
     <header
@@ -30,9 +34,11 @@ export default function AppHeader() {
         <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 2 }}>{meta.sub}</div>
       </div>
 
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9 }}>
-        <Search />
-      </div>
+      {showSearch && (
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9 }}>
+          <Search />
+        </div>
+      )}
     </header>
   );
 }

@@ -88,7 +88,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
 
       {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} />}
       {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
-      {tab === "Création de valeur" && <ValueCreationTab entityType="company" entityId={company.id} items={company.valueCreation} />}
+      {tab === "Création de valeur" && <ValueCreationTab entityType="company" entityId={company.id} items={company.valueCreation} contacts={company.contacts} />}
       {tab === "Flux & Valorisation" && <FlowsTab companyId={company.id} rows={company.finance.flows} />}
       {tab === "Cap table" && <CapTableTab companyId={company.id} rows={company.finance.capTable} />}
 

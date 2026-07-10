@@ -167,7 +167,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
       {tab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} />}
       {tab === "Due diligence" && <DueDiligenceTab entityType="deal" entityId={deal.id} items={deal.dueDiligence} />}
       {tab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} library={deal.kpiLibrary} />}
-      {tab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} />}
+      {tab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} contacts={deal.contacts} />}
       {tab === "ESG" && <EsgTab entityType="deal" entityId={deal.id} data={deal.esg} />}
 
       {tab === "Documents" && <EntityDocuments entityType="deal" entityId={deal.id} entityName={deal.companyName} docs={deal.documents} />}
