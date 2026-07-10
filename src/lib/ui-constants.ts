@@ -43,6 +43,11 @@ export const ESG_CATEGORY_LABEL: Record<string, string> = { E: "Environnement", 
 export const ESG_ACTION_STATUS = ["À lancer", "En cours", "Réalisée"];
 export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "Contractants", "Environnement", "Genre"];
 
+// Données financières société
+export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net", "Trésorerie", "Dette nette", "Effectif"];
+export const FLOW_TYPES = ["Appel de fonds", "Distribution", "Valorisation"];
+export const CAP_HOLDER_TYPES = ["Fondateur", "Idawa Capital", "Co-investisseur", "ESOP / salariés", "Autre"];
+
 // Catalogue d'indicateurs d'accompagnement (chaîne de résultats), avec unité par défaut.
 export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; unit: string }[] }[] = [
   { category: "Moyens", items: [

@@ -1,0 +1,219 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import Modal from "@/components/ui/Modal";
+import { Field, Input, Select } from "@/components/ui/form";
+import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES } from "@/lib/ui-constants";
+import { fmtM } from "@/lib/format";
+import type { FinancialRow, FlowRow, CapRow } from "@/lib/data/companyFinance";
+
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
+const iconEdit = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>;
+const iconDel = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>;
+const iconAdd = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>;
+
+function useDel(table: string, label: string) {
+  const router = useRouter();
+  return async (id: string) => { if (!confirm(`Supprimer ${label} ?`)) return; await createClient().from(table).delete().eq("id", id); router.refresh(); };
+}
+
+/* ---------- Budget & BP ---------- */
+export function BudgetTab({ companyId, rows }: { companyId: string; rows: FinancialRow[] }) {
+  const [modal, setModal] = useState<{ open: boolean; row: FinancialRow | null }>({ open: false, row: null });
+  const del = useDel("company_financials", "cette ligne");
+  const periods = Array.from(new Set(rows.map((r) => r.period)));
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Budget vs réalisé <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— par période et par poste</span></div>
+        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter une ligne</button>
+      </div>
+      {rows.length === 0 ? (
+        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucune donnée budgétaire. Ajoutez chiffre d'affaires, EBITDA, résultat net…</div>
+      ) : periods.map((per) => (
+        <div key={per} style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--camel)", marginBottom: 6 }}>{per}</div>
+          <div className="card" style={{ padding: "4px 18px" }}>
+            {rows.filter((r) => r.period === per).map((r, i) => {
+              const ecart = r.budget != null && r.actual != null ? r.actual - r.budget : null;
+              return (
+                <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 110px 110px 90px auto", alignItems: "center", gap: 8, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+                  <span style={{ fontSize: 13, color: "var(--ink)" }}>{r.label}</span>
+                  <span className="tnum" style={{ fontSize: 12.5, color: "var(--text-2)", textAlign: "right" }}>{r.budget != null ? fmtM(r.budget) : "—"}</span>
+                  <span className="tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", textAlign: "right" }}>{r.actual != null ? fmtM(r.actual) : "—"}</span>
+                  <span className="tnum" style={{ fontSize: 11.5, textAlign: "right", color: ecart == null ? "var(--text-3)" : ecart >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{ecart != null ? `${ecart >= 0 ? "+" : ""}${fmtM(ecart)}` : ""}</span>
+                  <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {rows.length > 0 && <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>Colonnes : budget · réalisé · écart.</div>}
+      {modal.open && <BudgetModal companyId={companyId} row={modal.row} onClose={() => setModal({ open: false, row: null })} />}
+    </div>
+  );
+}
+
+function BudgetModal({ companyId, row, onClose }: { companyId: string; row: FinancialRow | null; onClose: () => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [period, setPeriod] = useState(row?.period ?? String(new Date().getFullYear()));
+  const [label, setLabel] = useState(row?.label ?? FINANCIAL_LABELS[0]);
+  const [budget, setBudget] = useState(row?.budget != null ? String(row.budget) : "");
+  const [actual, setActual] = useState(row?.actual != null ? String(row.actual) : "");
+  async function save() {
+    if (!period.trim() || !label.trim()) return;
+    setBusy(true);
+    const supabase = createClient();
+    const payload = { company_id: companyId, period: period.trim(), label: label.trim(), budget: budget ? Number(budget) : null, actual: actual ? Number(actual) : null };
+    if (row) await supabase.from("company_financials").update(payload).eq("id", row.id);
+    else await supabase.from("company_financials").insert(payload);
+    onClose(); router.refresh();
+  }
+  return (
+    <Modal title={row ? "Modifier la ligne" : "Ajouter une ligne budgétaire"} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Période"><Input value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="Ex : 2025 ou 2025-T1" /></Field>
+        <Field label="Poste"><Input list="fin-labels" value={label} onChange={(e) => setLabel(e.target.value)} /><datalist id="fin-labels">{FINANCIAL_LABELS.map((l) => <option key={l} value={l} />)}</datalist></Field>
+        <Field label="Budget (FCFA)"><Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} /></Field>
+        <Field label="Réalisé (FCFA)"><Input type="number" value={actual} onChange={(e) => setActual(e.target.value)} /></Field>
+      </div>
+    </Modal>
+  );
+}
+
+/* ---------- Flux & Valorisation ---------- */
+export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow[] }) {
+  const [modal, setModal] = useState<{ open: boolean; row: FlowRow | null }>({ open: false, row: null });
+  const del = useDel("company_flows", "ce flux");
+  const calls = rows.filter((r) => r.type === "Appel de fonds").reduce((s, r) => s + (r.amount ?? 0), 0);
+  const dists = rows.filter((r) => r.type === "Distribution").reduce((s, r) => s + (r.amount ?? 0), 0);
+  const lastVal = rows.filter((r) => r.type === "Valorisation").sort((a, b) => (b.flowDate ?? "").localeCompare(a.flowDate ?? ""))[0];
+  const TYPE_COLOR: Record<string, string> = { "Appel de fonds": "badge-amber", "Distribution": "badge-green", "Valorisation": "badge-neutral" };
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14 }}>
+        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Appels de fonds</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(calls)}</div></div>
+        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Distributions</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(dists)}</div></div>
+        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Dernière valorisation</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{lastVal?.amount != null ? fmtM(lastVal.amount) : "—"}</div></div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Historique des flux</div>
+        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un flux</button>
+      </div>
+      {rows.length === 0 ? (
+        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun flux. Enregistrez appels de fonds, distributions et valorisations.</div>
+      ) : (
+        <div className="card" style={{ padding: "4px 18px" }}>
+          {rows.map((r, i) => (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+              <span style={{ fontSize: 11.5, color: "var(--text-3)", minWidth: 92 }}>{frDate(r.flowDate)}</span>
+              {r.type && <span className={`badge ${TYPE_COLOR[r.type] ?? "badge-neutral"}`}>{r.type}</span>}
+              <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.note}</span>
+              <span className="tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.amount != null ? fmtM(r.amount) : "—"}</span>
+              <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal.open && <FlowModal companyId={companyId} row={modal.row} onClose={() => setModal({ open: false, row: null })} />}
+    </div>
+  );
+}
+
+function FlowModal({ companyId, row, onClose }: { companyId: string; row: FlowRow | null; onClose: () => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [type, setType] = useState(row?.type ?? FLOW_TYPES[0]);
+  const [date, setDate] = useState(row?.flowDate ?? "");
+  const [amount, setAmount] = useState(row?.amount != null ? String(row.amount) : "");
+  const [note, setNote] = useState(row?.note ?? "");
+  async function save() {
+    if (!amount) return;
+    setBusy(true);
+    const supabase = createClient();
+    const payload = { company_id: companyId, type, flow_date: date || null, amount: Number(amount), note: note.trim() || null };
+    if (row) await supabase.from("company_flows").update(payload).eq("id", row.id);
+    else await supabase.from("company_flows").insert(payload);
+    onClose(); router.refresh();
+  }
+  return (
+    <Modal title={row ? "Modifier le flux" : "Ajouter un flux"} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !amount} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Type"><Select value={type} onChange={(e) => setType(e.target.value)}>{FLOW_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</Select></Field>
+        <Field label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+      </div>
+      <Field label="Montant (FCFA)"><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+      <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex : 2e tranche, dividende…" /></Field>
+    </Modal>
+  );
+}
+
+/* ---------- Cap table ---------- */
+export function CapTableTab({ companyId, rows }: { companyId: string; rows: CapRow[] }) {
+  const [modal, setModal] = useState<{ open: boolean; row: CapRow | null }>({ open: false, row: null });
+  const del = useDel("company_captable", "cette ligne");
+  const totalPct = rows.reduce((s, r) => s + (r.pct ?? 0), 0);
+  const TYPE_COLOR: Record<string, string> = { "Fondateur": "#8A5A18", "Idawa Capital": "#4A2617", "Co-investisseur": "#185FA5", "ESOP / salariés": "#3B6D11", "Autre": "#6B5744" };
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Table de capitalisation <span style={{ fontWeight: 400, color: totalPct === 100 ? "var(--green-fg)" : "var(--text-3)" }}>— total {totalPct}%{totalPct !== 100 ? " (≠ 100)" : ""}</span></div>
+        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un actionnaire</button>
+      </div>
+      {rows.length === 0 ? (
+        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucune ligne. Renseignez fondateurs, Idawa, co-investisseurs, pool ESOP…</div>
+      ) : (
+        <div className="card" style={{ padding: "14px 18px" }}>
+          <div style={{ display: "flex", height: 12, borderRadius: 6, overflow: "hidden", marginBottom: 14 }}>
+            {rows.map((r) => <div key={r.id} title={`${r.holder} ${r.pct ?? 0}%`} style={{ width: `${r.pct ?? 0}%`, background: TYPE_COLOR[r.holderType ?? "Autre"] ?? "#6B5744" }} />)}
+          </div>
+          {rows.map((r, i) => (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: TYPE_COLOR[r.holderType ?? "Autre"] ?? "#6B5744", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.holder}</div>{r.holderType && <div style={{ fontSize: 11, color: "var(--text-3)" }}>{r.holderType}</div>}</div>
+              <span className="tnum" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{r.pct != null ? `${r.pct}%` : "—"}</span>
+              <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal.open && <CapModal companyId={companyId} row={modal.row} onClose={() => setModal({ open: false, row: null })} />}
+    </div>
+  );
+}
+
+function CapModal({ companyId, row, onClose }: { companyId: string; row: CapRow | null; onClose: () => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [holder, setHolder] = useState(row?.holder ?? "");
+  const [type, setType] = useState(row?.holderType ?? CAP_HOLDER_TYPES[0]);
+  const [pct, setPct] = useState(row?.pct != null ? String(row.pct) : "");
+  const [note, setNote] = useState(row?.note ?? "");
+  async function save() {
+    if (!holder.trim()) return;
+    setBusy(true);
+    const supabase = createClient();
+    const payload = { company_id: companyId, holder: holder.trim(), holder_type: type, pct: pct ? Number(pct) : null, note: note.trim() || null };
+    if (row) await supabase.from("company_captable").update(payload).eq("id", row.id);
+    else await supabase.from("company_captable").insert(payload);
+    onClose(); router.refresh();
+  }
+  return (
+    <Modal title={row ? "Modifier l'actionnaire" : "Ajouter un actionnaire"} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !holder.trim()} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
+      <Field label="Actionnaire"><Input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder="Ex : Fondateur, Idawa Capital…" /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Type"><Select value={type} onChange={(e) => setType(e.target.value)}>{CAP_HOLDER_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</Select></Field>
+        <Field label="Part (%)"><Input type="number" value={pct} onChange={(e) => setPct(e.target.value)} placeholder="Ex : 25" /></Field>
+      </div>
+      <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optionnel" /></Field>
+    </Modal>
+  );
+}

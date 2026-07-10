@@ -7,6 +7,7 @@ import type { CompanyDetail, KpiSeries } from "@/lib/data/companyDetail";
 import { fmtM, fmtMult, fmtPct } from "@/lib/format";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
+import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
@@ -153,10 +154,10 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
       {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} />}
 
       {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} />}
-      {tab === "Budget & BP" && <EmptyTab title="Budget & Business Plan" desc="Budget vs réalisé et suivi du business plan de la société. À renseigner via le reporting périodique." />}
+      {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
       {tab === "Création de valeur" && <EmptyTab title="Plan de création de valeur" desc="Les initiatives de création de valeur (expansion, gouvernance, recrutements clés…) avec leur avancement." />}
-      {tab === "Flux & Valorisation" && <EmptyTab title="Flux financiers & Valorisation" desc="Appels de fonds, distributions, et historique de valorisation (TVPI/DPI/TRI)." />}
-      {tab === "Cap table" && <EmptyTab title="Table de capitalisation" desc="Répartition du capital entre fondateurs, Idawa, co-investisseurs et pool ESOP." />}
+      {tab === "Flux & Valorisation" && <FlowsTab companyId={company.id} rows={company.finance.flows} />}
+      {tab === "Cap table" && <CapTableTab companyId={company.id} rows={company.finance.capTable} />}
 
       {tab === "Origine / instruction" && (
         <div style={{ display: "grid", gap: 14 }}>

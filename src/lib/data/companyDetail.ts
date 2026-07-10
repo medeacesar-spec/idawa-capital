@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
+import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
 
 export type KpiSeries = {
   id: string;
@@ -37,6 +38,7 @@ export type CompanyDetail = {
   notes: SuiviNote[];
   tasks: SuiviTask[];
   esg: EsgData;
+  finance: CompanyFinance;
   kpis: KpiSeries[];
   contacts: DetailContact[];
   documents: DetailDoc[];
@@ -76,7 +78,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     }));
   }
 
-  const [suivi, esg] = await Promise.all([getSuivi("company", id), getEsg("company", id)]);
+  const [suivi, esg, finance] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id)]);
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
@@ -90,7 +92,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
-    notes: suivi.notes, tasks: suivi.tasks, esg,
+    notes: suivi.notes, tasks: suivi.tasks, esg, finance,
     kpis, contacts: contactRes.data ?? [], documents: docRes.data ?? [],
   };
 }
