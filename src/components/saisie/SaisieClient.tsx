@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { KPI_DIMENSIONS, KPI_DIM_COLOR } from "@/lib/ui-constants";
 
 type Company = { id: string; name: string; subSectorId: string | null };
 type Kpi = { id: string; category: string; name: string; unit: string | null; target: number | null; value: string };
 
-const CATS = ["Management", "Commercial", "Production", "Support"];
-const CAT_COLOR: Record<string, string> = { Management: "#4A2617", Commercial: "#A9714B", Production: "#B07A2E", Support: "#8A5A3C" };
+const CATS = KPI_DIMENSIONS;
+const CAT_COLOR = KPI_DIM_COLOR;
 
 export default function SaisieClient({ companies }: { companies: Company[] }) {
   const supabase = createClient();

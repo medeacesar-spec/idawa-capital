@@ -2,71 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import type { CompanyDetail, KpiSeries } from "@/lib/data/companyDetail";
+import type { CompanyDetail } from "@/lib/data/companyDetail";
 import { fmtM, fmtMult, fmtPct } from "@/lib/format";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
+import KpiTab from "@/components/shared/KpiTab";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
-function shortPeriod(p: string) { const m = p.match(/(\d{4})-T(\d)/); return m ? `T${m[2]}-${m[1].slice(2)}` : p; }
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
-function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n)); }
 
-const CATS = ["Management", "Commercial", "Production", "Support"];
 const BASE_TABS = ["KPIs", "Suivi", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
-
-function Chart({ k }: { k: KpiSeries }) {
-  const w = 400, h = 110;
-  const s = k.series;
-  if (s.length < 2) return <div style={{ fontSize: 12, color: "var(--text-3)", padding: "20px 0", textAlign: "center" }}>Pas assez de données pour tracer la courbe.</div>;
-  const vals = s.map((x) => x.value);
-  const all = k.target != null ? [...vals, k.target] : vals;
-  let mn = Math.min(...all), mx = Math.max(...all);
-  const pad = (mx - mn) * 0.15 || 1; mn -= pad; mx += pad;
-  const X = (i: number) => 6 + (i * (w - 12)) / (s.length - 1);
-  const Y = (v: number) => h - 8 - ((v - mn) / (mx - mn)) * (h - 20);
-  const pts = s.map((x, i) => `${X(i).toFixed(1)},${Y(x.value).toFixed(1)}`).join(" ");
-  const last = vals[vals.length - 1];
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" style={{ display: "block" }}>
-      {k.target != null && <line x1="6" y1={Y(k.target)} x2={w - 6} y2={Y(k.target)} stroke="var(--camel)" strokeWidth="1.6" strokeDasharray="5 4" />}
-      <polyline points={pts} fill="none" stroke="var(--espresso)" strokeWidth="2.2" />
-      {s.map((x, i) => <circle key={i} cx={X(i)} cy={Y(x.value)} r={i === s.length - 1 ? 3.6 : 2.2} fill="var(--espresso)" />)}
-      <line x1="6" y1={Y(last)} x2="6" y2={Y(last)} />
-    </svg>
-  );
-}
-
-function KpiCard({ k }: { k: KpiSeries }) {
-  const s = k.series;
-  const last = s.length ? s[s.length - 1].value : 0;
-  const prev = s.length > 1 ? s[s.length - 2].value : last;
-  const chg = prev !== 0 ? ((last - prev) / Math.abs(prev)) * 100 : 0;
-  const good = k.target == null ? true : k.direction === "low" ? last <= k.target : last >= k.target;
-  const up = chg >= 0;
-  return (
-    <div className="card" style={{ padding: "14px 15px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{k.name}</span>
-        <span className={`badge ${good ? "badge-green" : "badge-amber"}`}>{good ? "Sur objectif" : "En retard"}</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-        <span className="serif tnum" style={{ fontSize: 22, fontWeight: 600, color: "var(--ink)" }}>{nf(last)}{k.unit ? ` ${k.unit}` : ""}</span>
-        {s.length > 1 && <span style={{ fontSize: 11.5, fontWeight: 600, color: up ? "var(--green-fg)" : "var(--red-fg)" }}>{up ? "▲" : "▼"} {Math.abs(chg).toFixed(1)}%</span>}
-      </div>
-      <Chart k={k} />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-3)", marginTop: 5 }}>
-        <span>{s.length ? shortPeriod(s[0].period) : ""}</span>
-        {k.target != null && <span style={{ color: "var(--camel)", fontWeight: 600 }}>— cible {nf(k.target)}{k.unit ? ` ${k.unit}` : ""}</span>}
-        <span>{s.length ? shortPeriod(s[s.length - 1].period) : ""}</span>
-      </div>
-    </div>
-  );
-}
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return (
@@ -80,15 +28,12 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 export default function CompanyDetailClient({ company }: { company: CompanyDetail }) {
   const router = useRouter();
   const [tab, setTab] = useState("KPIs");
-  const [cat, setCat] = useState("Management");
   const equity = company.trackingType === "equity";
   const TABS = company.originDealId ? [...BASE_TABS, "Origine / instruction"] : BASE_TABS;
 
   const facts: [string, string][] = equity
     ? [["Investi", fmtM(company.invested)], ["Valeur", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
     : [["Type", "Accompagnement"], ["Statut", company.status], ["Programme", company.programName ?? "—"], ["Suivie depuis", frMonth(company.investedDate)]];
-
-  const kpisInCat = company.kpis.filter((k) => k.category === cat);
 
   return (
     <div>
@@ -130,26 +75,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
         })}
       </div>
 
-      {tab === "KPIs" && (
-        equity || company.kpis.length > 0 ? (
-          <div>
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 14 }}>
-              {CATS.map((cc) => {
-                const on = cc === cat;
-                const count = company.kpis.filter((k) => k.category === cc).length;
-                return <button key={cc} onClick={() => setCat(cc)} style={{ padding: "6px 13px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--espresso)" : "var(--surface)", color: on ? "#fff" : "var(--text-2)", border: `1px solid ${on ? "var(--espresso)" : "var(--border-strong)"}` }}>{cc}{count > 0 ? ` (${count})` : ""}</button>;
-              })}
-            </div>
-            {kpisInCat.length === 0 ? (
-              <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun KPI « {cat} » suivi. <Link href="/saisie" style={{ color: "var(--camel)", fontWeight: 600 }}>Saisir un reporting</Link> pour en ajouter.</div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
-                {kpisInCat.map((k) => <KpiCard key={k.id} k={k} />)}
-              </div>
-            )}
-          </div>
-        ) : <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun KPI suivi. <Link href="/saisie" style={{ color: "var(--camel)", fontWeight: 600 }}>Saisir un reporting</Link>.</div>
-      )}
+      {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} />}
 
       {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} />}
 

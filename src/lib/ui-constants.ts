@@ -51,6 +51,27 @@ export const CAP_HOLDER_TYPES = ["Fondateur", "Idawa Capital", "Co-investisseur"
 // Reporting — collecte
 export const REPORTING_STATUS = ["À faire", "En cours", "Validé"];
 
+// Dimensions KPI (valeurs stockées inchangées pour préserver la bibliothèque de 905 KPIs ;
+// Financier et Client ajoutés). Libellés d'affichage enrichis.
+export const KPI_DIMENSIONS = ["Financier", "Commercial", "Production", "Client", "Management", "Support"];
+export const KPI_DIM_LABEL: Record<string, string> = {
+  Financier: "Financier", Commercial: "Commercial", Production: "Production / Opérations",
+  Client: "Client & Qualité", Management: "RH & Management", Support: "Support / SI",
+};
+export const KPI_DIM_COLOR: Record<string, string> = {
+  Financier: "#185FA5", Commercial: "#A9714B", Production: "#B07A2E",
+  Client: "#3B6D11", Management: "#4A2617", Support: "#8A5A3C",
+};
+export const KPI_DIRECTIONS = [{ value: "high", label: "Plus haut = mieux" }, { value: "low", label: "Plus bas = mieux" }];
+
+// Due diligence
+export const DD_DOMAINS = ["Financière", "Juridique & fiscale", "Commerciale", "Opérationnelle", "RH & social", "ESG", "Gouvernance"];
+export const DD_STATUS = ["À faire", "En cours", "Terminé", "Point d'attention"];
+
+// Création de valeur
+export const VALUE_LEVERS = ["Croissance & commercial", "Excellence opérationnelle", "Structuration financière", "Gouvernance & management", "ESG & impact", "Build-up / M&A"];
+export const VALUE_STATUS = ["Planifiée", "En cours", "Réalisée", "En pause"];
+
 // Catalogue d'indicateurs d'accompagnement (chaîne de résultats), avec unité par défaut.
 export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; unit: string }[] }[] = [
   { category: "Moyens", items: [

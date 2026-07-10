@@ -2,16 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
 import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
+import { getKpis, type KpiSeries } from "./kpis";
 
-export type KpiSeries = {
-  id: string;
-  category: string;
-  name: string;
-  unit: string | null;
-  target: number | null;
-  direction: string;
-  series: { period: string; value: number }[];
-};
+export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null };
 export type DetailDoc = { id: string; title: string; category: string | null };
 export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null };
@@ -52,11 +45,10 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     .eq("id", id).single();
   if (!c) return null;
 
-  const [progRes, subRes, dealRes, trackedRes, contactRes, docRes] = await Promise.all([
+  const [progRes, subRes, dealRes, contactRes, docRes] = await Promise.all([
     c.program_id ? supabase.from("programs").select("name, color").eq("id", c.program_id).single() : Promise.resolve({ data: null }),
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
     c.origin_deal_id ? supabase.from("deals").select("company_name").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
-    supabase.from("tracked_kpis").select("id, category, name, unit, target, direction").eq("entity_type", "company").eq("entity_id", id),
     supabase.from("contacts").select("id, name, function, email").eq("company_id", id),
     supabase.from("documents").select("id, title, category").eq("company_id", id),
   ]);
@@ -66,19 +58,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
 
-  const tracked = trackedRes.data ?? [];
-  let kpis: KpiSeries[] = [];
-  if (tracked.length) {
-    const { data: vals } = await supabase.from("kpi_values").select("tracked_kpi_id, period, value").in("tracked_kpi_id", tracked.map((t) => t.id)).order("period");
-    kpis = tracked.map((t) => ({
-      id: t.id, category: t.category, name: t.name, unit: t.unit,
-      target: t.target != null ? Number(t.target) : null,
-      direction: t.direction ?? "high",
-      series: (vals ?? []).filter((v) => v.tracked_kpi_id === t.id).map((v) => ({ period: v.period, value: Number(v.value) })),
-    }));
-  }
-
-  const [suivi, esg, finance] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id)]);
+  const [suivi, esg, finance, kpis] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id)]);
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
