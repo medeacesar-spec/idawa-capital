@@ -10,15 +10,24 @@ export type KpiLibraryData = {
   total: number;
 };
 
-export const KPI_CATEGORIES = ["Management", "Commercial", "Production", "Support"];
+export { KPI_DIMENSIONS as KPI_CATEGORIES } from "@/lib/ui-constants";
 
 export async function getKpiLibraryData(): Promise<KpiLibraryData> {
   const supabase = await createClient();
-  const [indRes, subRes, kpiRes] = await Promise.all([
+  const [indRes, subRes] = await Promise.all([
     supabase.from("industries").select("id, name, position").order("position"),
     supabase.from("sub_sectors").select("id, industry_id, name, position").order("position"),
-    supabase.from("kpi_library").select("sub_sector_id, category, name, position").order("position"),
   ]);
+
+  // Pagination : la bibliothèque dépasse la limite Supabase de 1000 lignes.
+  const kpiRows: { sub_sector_id: string; category: string; name: string }[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await supabase.from("kpi_library").select("sub_sector_id, category, name, position").order("sub_sector_id").order("position").range(from, from + PAGE - 1);
+    const rows = data ?? [];
+    kpiRows.push(...rows);
+    if (rows.length < PAGE) break;
+  }
 
   const subs = subRes.data ?? [];
   const industries: Industry[] = (indRes.data ?? []).map((ind) => ({
@@ -28,11 +37,11 @@ export async function getKpiLibraryData(): Promise<KpiLibraryData> {
   }));
 
   const baskets: KpiBasket = {};
-  for (const k of kpiRes.data ?? []) {
+  for (const k of kpiRows) {
     if (!baskets[k.sub_sector_id]) baskets[k.sub_sector_id] = {};
     if (!baskets[k.sub_sector_id][k.category]) baskets[k.sub_sector_id][k.category] = [];
     baskets[k.sub_sector_id][k.category].push(k.name);
   }
 
-  return { industries, baskets, total: (kpiRes.data ?? []).length };
+  return { industries, baskets, total: kpiRows.length };
 }

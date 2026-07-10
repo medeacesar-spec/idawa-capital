@@ -2,21 +2,11 @@
 
 import { useState } from "react";
 import type { KpiLibraryData } from "@/lib/data/kpiLibrary";
+import { KPI_DIMENSIONS, KPI_DIM_COLOR, KPI_DIM_LABEL } from "@/lib/ui-constants";
 
-const KPI_CATEGORIES = ["Management", "Commercial", "Production", "Support"];
-
-const CAT_COLOR: Record<string, string> = {
-  Management: "#4A2617",
-  Commercial: "#A9714B",
-  Production: "#B07A2E",
-  Support: "#8A5A3C",
-};
-const CAT_LABEL: Record<string, string> = {
-  Management: "Management global",
-  Commercial: "Commercial",
-  Production: "Production",
-  Support: "Support interne",
-};
+const KPI_CATEGORIES = KPI_DIMENSIONS;
+const CAT_COLOR = KPI_DIM_COLOR;
+const CAT_LABEL = KPI_DIM_LABEL;
 
 const selectStyle: React.CSSProperties = {
   width: "100%", padding: "9px 11px", border: "1px solid var(--border-strong)", borderRadius: 10,
