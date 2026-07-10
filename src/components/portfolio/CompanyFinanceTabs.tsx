@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES } from "@/lib/ui-constants";
+import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES, VALUATION_METHODS } from "@/lib/ui-constants";
 import { fmtM } from "@/lib/format";
 import type { FinancialRow, FlowRow, CapRow } from "@/lib/data/companyFinance";
 
@@ -18,6 +18,22 @@ const iconAdd = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stro
 function useDel(table: string, label: string) {
   const router = useRouter();
   return async (id: string) => { if (!confirm(`Supprimer ${label} ?`)) return; await createClient().from(table).delete().eq("id", id); router.refresh(); };
+}
+
+function ValoSpark({ valos }: { valos: FlowRow[] }) {
+  const w = 600, h = 70;
+  const vals = valos.map((v) => v.amount ?? 0);
+  let mn = Math.min(...vals), mx = Math.max(...vals);
+  const pad = (mx - mn) * 0.15 || 1; mn -= pad; mx += pad;
+  const X = (i: number) => 4 + (i * (w - 8)) / Math.max(1, valos.length - 1);
+  const Y = (v: number) => h - 6 - ((v - mn) / (mx - mn)) * (h - 12);
+  const pts = valos.map((v, i) => `${X(i).toFixed(1)},${Y(v.amount ?? 0).toFixed(1)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" style={{ display: "block" }}>
+      <polyline points={pts} fill="none" stroke="var(--espresso)" strokeWidth="2" />
+      {valos.map((v, i) => <circle key={i} cx={X(i)} cy={Y(v.amount ?? 0)} r={i === valos.length - 1 ? 3.4 : 2.2} fill="var(--espresso)" />)}
+    </svg>
+  );
 }
 
 /* ---------- Budget & BP ---------- */
@@ -93,15 +109,33 @@ export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow
   const del = useDel("company_flows", "ce flux");
   const calls = rows.filter((r) => r.type === "Appel de fonds").reduce((s, r) => s + (r.amount ?? 0), 0);
   const dists = rows.filter((r) => r.type === "Distribution").reduce((s, r) => s + (r.amount ?? 0), 0);
-  const lastVal = rows.filter((r) => r.type === "Valorisation").sort((a, b) => (b.flowDate ?? "").localeCompare(a.flowDate ?? ""))[0];
+  const valos = rows.filter((r) => r.type === "Valorisation" && r.amount != null).sort((a, b) => (a.flowDate ?? "").localeCompare(b.flowDate ?? ""));
+  const lastVal = valos[valos.length - 1];
   const TYPE_COLOR: Record<string, string> = { "Appel de fonds": "badge-amber", "Distribution": "badge-green", "Valorisation": "badge-neutral" };
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14 }}>
         <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Appels de fonds</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(calls)}</div></div>
         <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Distributions</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(dists)}</div></div>
-        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Dernière valorisation</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{lastVal?.amount != null ? fmtM(lastVal.amount) : "—"}</div></div>
+        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Dernière valorisation</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{lastVal?.amount != null ? fmtM(lastVal.amount) : "—"}</div>{lastVal?.method && <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 2 }}>{lastVal.method}</div>}</div>
       </div>
+
+      {valos.length >= 1 && (
+        <div className="card" style={{ padding: "14px 18px", marginBottom: 14 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Historique de valorisation <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— daté, avec méthode</span></div>
+          {valos.length >= 2 && <ValoSpark valos={valos} />}
+          <div style={{ display: "grid", gap: 8, marginTop: valos.length >= 2 ? 12 : 0 }}>
+            {[...valos].reverse().map((v) => (
+              <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11.5, color: "var(--text-3)", minWidth: 92 }}>{frDate(v.flowDate)}</span>
+                <span className="tnum serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", minWidth: 90 }}>{fmtM(v.amount ?? 0)}</span>
+                {v.method && <span className="badge badge-neutral">{v.method}</span>}
+                {v.note && <span style={{ fontSize: 11, color: "var(--text-3)" }}>{v.note}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Historique des flux</div>
         <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un flux</button>
@@ -114,7 +148,7 @@ export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
               <span style={{ fontSize: 11.5, color: "var(--text-3)", minWidth: 92 }}>{frDate(r.flowDate)}</span>
               {r.type && <span className={`badge ${TYPE_COLOR[r.type] ?? "badge-neutral"}`}>{r.type}</span>}
-              <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.note}</span>
+              <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.type === "Valorisation" && r.method ? r.method : r.note}</span>
               <span className="tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.amount != null ? fmtM(r.amount) : "—"}</span>
               <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
             </div>
@@ -133,11 +167,13 @@ function FlowModal({ companyId, row, onClose }: { companyId: string; row: FlowRo
   const [date, setDate] = useState(row?.flowDate ?? "");
   const [amount, setAmount] = useState(row?.amount != null ? String(row.amount) : "");
   const [note, setNote] = useState(row?.note ?? "");
+  const [method, setMethod] = useState(row?.method ?? VALUATION_METHODS[0]);
+  const isValo = type === "Valorisation";
   async function save() {
     if (!amount) return;
     setBusy(true);
     const supabase = createClient();
-    const payload = { company_id: companyId, type, flow_date: date || null, amount: Number(amount), note: note.trim() || null };
+    const payload = { company_id: companyId, type, flow_date: date || null, amount: Number(amount), note: note.trim() || null, method: isValo ? method : null };
     if (row) await supabase.from("company_flows").update(payload).eq("id", row.id);
     else await supabase.from("company_flows").insert(payload);
     onClose(); router.refresh();
@@ -149,7 +185,8 @@ function FlowModal({ companyId, row, onClose }: { companyId: string; row: FlowRo
         <Field label="Type"><Select value={type} onChange={(e) => setType(e.target.value)}>{FLOW_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</Select></Field>
         <Field label="Date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       </div>
-      <Field label="Montant (FCFA)"><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+      <Field label={isValo ? "Valorisation (FCFA)" : "Montant (FCFA)"}><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+      {isValo && <Field label="Méthode de valorisation"><Select value={method} onChange={(e) => setMethod(e.target.value)}>{VALUATION_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}</Select></Field>}
       <Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex : 2e tranche, dividende…" /></Field>
     </Modal>
   );

@@ -46,6 +46,7 @@ export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "
 // Données financières société
 export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net", "Trésorerie", "Dette nette", "Effectif"];
 export const FLOW_TYPES = ["Appel de fonds", "Distribution", "Valorisation"];
+export const VALUATION_METHODS = ["Multiple (comparables)", "DCF", "Dernier tour", "Coût / prix d'entrée", "Actif net réévalué", "Autre"];
 export const CAP_HOLDER_TYPES = ["Fondateur", "Idawa Capital", "Co-investisseur", "ESOP / salariés", "Autre"];
 
 // Reporting — collecte
