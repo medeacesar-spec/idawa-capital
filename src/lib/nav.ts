@@ -41,6 +41,36 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// Domaine de permission requis par page (les pages absentes sont toujours visibles :
+// tableau de bord, contacts, documents). min par défaut = "L" (lecture).
+export const NAV_REQ: Record<string, { domain: string; min?: string }> = {
+  pipeline: { domain: "pipeline" },
+  portefeuille: { domain: "portefeuille" },
+  performance: { domain: "consolide" },
+  esg: { domain: "consolide" },
+  reporting: { domain: "reporting" },
+  partenaires: { domain: "consolide" },
+  utilisateurs: { domain: "users" },
+  kpi: { domain: "config" },
+  parametres: { domain: "config", min: "E" },
+};
+
+const RANK: Record<string, number> = { "-": 0, "L": 1, "V": 2, "E": 3 };
+
+/** Renvoie l'ensemble des clés de navigation autorisées pour un jeu de permissions. */
+export function allowedNavKeys(perms: Record<string, string> | null | undefined): string[] {
+  const keys: string[] = [];
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      const req = NAV_REQ[item.key];
+      if (!req) { keys.push(item.key); continue; }
+      const have = RANK[perms?.[req.domain] ?? "-"] ?? 0;
+      if (have >= (RANK[req.min ?? "L"] ?? 1)) keys.push(item.key);
+    }
+  }
+  return keys;
+}
+
 // Titre + sous-titre de l'en-tête par page
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Vue d'ensemble du fonds" },

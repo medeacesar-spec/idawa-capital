@@ -32,12 +32,16 @@ const GRP = "rgba(201,168,124,.75)";
 export default function Sidebar({
   userName,
   roleName,
+  allowedKeys,
 }: {
   userName: string;
   roleName: string;
+  allowedKeys: string[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const allowed = new Set(allowedKeys);
+  const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => allowed.has(i.key)) })).filter((g) => g.items.length > 0);
 
   async function signOut() {
     const supabase = createClient();
@@ -62,7 +66,7 @@ export default function Sidebar({
       </div>
 
       <nav style={{ flex: 1, overflowY: "auto", padding: "10px 10px 20px" }}>
-        {NAV_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.title}>
             <div style={{ padding: "12px 10px 5px", fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, color: GRP }}>
               {group.title}

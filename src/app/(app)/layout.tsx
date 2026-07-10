@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AppHeader";
 import { createClient } from "@/lib/supabase/server";
+import { getMyPermissions } from "@/lib/auth/permissions";
+import { allowedNavKeys } from "@/lib/nav";
 
 export default async function AppLayout({
   children,
@@ -24,9 +26,12 @@ export default async function AppLayout({
     (profile?.roles as { name?: string } | null)?.name ?? "Utilisateur";
   const displayName = profile?.full_name || profile?.email || user.email || "";
 
+  const { perms } = await getMyPermissions();
+  const allowedKeys = allowedNavKeys(perms);
+
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--ink)" }}>
-      <Sidebar userName={displayName} roleName={roleName} />
+      <Sidebar userName={displayName} roleName={roleName} allowedKeys={allowedKeys} />
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--cream)" }}>
         <AppHeader />
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 26px 60px" }}>{children}</div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getEsgOverview } from "@/lib/data/esg";
+import { requirePerm } from "@/lib/auth/permissions";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -13,6 +14,7 @@ const panel: React.CSSProperties = { background: "var(--surface)", border: "1px 
 const h3: React.CSSProperties = { fontSize: 13, fontWeight: 600, margin: "0 0 12px", color: "var(--ink)" };
 
 export default async function EsgPage() {
+  await requirePerm("consolide");
   const o = await getEsgOverview();
   const doneRate = o.actionsTotal ? Math.round((o.actionsDone / o.actionsTotal) * 100) : 0;
   const impactPct = o.impactMax ? Math.round((o.impactScore / o.impactMax) * 100) : 0;
