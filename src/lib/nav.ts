@@ -36,6 +36,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "compte", label: "Mon compte", href: "/compte" },
       { key: "utilisateurs", label: "Utilisateurs & rôles", href: "/utilisateurs", director: true },
+      { key: "journal", label: "Journal d'audit", href: "/journal", director: true },
       { key: "kpi", label: "Bibliothèque KPIs", href: "/kpi" },
       { key: "parametres", label: "Paramètres du fonds", href: "/parametres" },
     ],
@@ -52,6 +53,7 @@ export const NAV_REQ: Record<string, { domain: string; min?: string }> = {
   reporting: { domain: "reporting" },
   partenaires: { domain: "consolide" },
   utilisateurs: { domain: "users" },
+  journal: { domain: "users" },
   kpi: { domain: "config" },
   parametres: { domain: "config", min: "E" },
 };
@@ -87,5 +89,6 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   kpi: { title: "Bibliothèque KPIs", sub: "Indicateurs par industrie et sous-secteur" },
   parametres: { title: "Paramètres du fonds", sub: "Programmes, nature et configuration" },
   compte: { title: "Mon compte", sub: "Nom, e-mail et mot de passe" },
+  journal: { title: "Journal d'audit", sub: "Historique des modifications" },
   saisie: { title: "Saisir un reporting", sub: "Saisie des KPIs par société et période" },
 };
