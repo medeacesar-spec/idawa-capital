@@ -20,7 +20,15 @@ export default function PartnerFormModal({ partner, programs, onClose }: { partn
     status: partner?.status ?? "En discussion",
     committed: partner ? String(partner.committed / M) : "",
     discussion: partner ? String(partner.discussion / M) : "",
+    called: partner && partner.called ? String(partner.called / M) : "",
+    distributed: partner && partner.distributed ? String(partner.distributed / M) : "",
+    website: partner?.website ?? "",
+    linkedin: partner?.linkedin ?? "",
+    contactName: partner?.contactName ?? "",
+    contactEmail: partner?.contactEmail ?? "",
+    contactPhone: partner?.contactPhone ?? "",
   });
+  const isLP = f.relationType === "Investisseur fonds";
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
   async function submit() {
@@ -35,6 +43,10 @@ export default function PartnerFormModal({ partner, programs, onClose }: { partn
       status: f.status,
       amount_committed: (f.committed === "" ? 0 : Number(f.committed)) * M,
       amount_discussion: (f.discussion === "" ? 0 : Number(f.discussion)) * M,
+      amount_called: (f.called === "" ? 0 : Number(f.called)) * M,
+      amount_distributed: (f.distributed === "" ? 0 : Number(f.distributed)) * M,
+      website: f.website || null, linkedin: f.linkedin || null,
+      contact_name: f.contactName || null, contact_email: f.contactEmail || null, contact_phone: f.contactPhone || null,
     };
     if (partner) await supabase.from("partners").update(payload).eq("id", partner.id);
     else await supabase.from("partners").insert(payload);
@@ -71,6 +83,22 @@ export default function PartnerFormModal({ partner, programs, onClose }: { partn
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Montant engagé (M FCFA)"><Input type="number" value={f.committed} onChange={(e) => set("committed", e.target.value)} placeholder="80" /></Field>
         <Field label="En discussion (M FCFA)"><Input type="number" value={f.discussion} onChange={(e) => set("discussion", e.target.value)} placeholder="0" /></Field>
+      </div>
+
+      {isLP && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Appelé (M FCFA)" hint="Capital déjà appelé auprès du LP"><Input type="number" value={f.called} onChange={(e) => set("called", e.target.value)} placeholder="0" /></Field>
+          <Field label="Distribué (M FCFA)" hint="Distributions déjà versées au LP"><Input type="number" value={f.distributed} onChange={(e) => set("distributed", e.target.value)} placeholder="0" /></Field>
+        </div>
+      )}
+
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--camel)", margin: "6px 0 -2px" }}>Interlocuteur &amp; web</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Contact"><Input value={f.contactName} onChange={(e) => set("contactName", e.target.value)} placeholder="Ex : Jean Bio" /></Field>
+        <Field label="Email"><Input type="email" value={f.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} placeholder="contact@…" /></Field>
+        <Field label="Téléphone"><Input value={f.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} placeholder="+229 …" /></Field>
+        <Field label="Site web"><Input value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="exemple.org" /></Field>
+        <Field label="LinkedIn"><Input value={f.linkedin} onChange={(e) => set("linkedin", e.target.value)} placeholder="linkedin.com/company/…" /></Field>
       </div>
     </Modal>
   );

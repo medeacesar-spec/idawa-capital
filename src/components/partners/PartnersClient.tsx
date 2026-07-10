@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { PartnersData, Partner } from "@/lib/data/partners";
 import { fmtM } from "@/lib/format";
 import PartnerFormModal from "./PartnerFormModal";
+import ChannelIcons from "@/components/contacts/ChannelIcons";
 
 const STATUS_BADGE: Record<string, { bg: string; fg: string }> = {
   "Engagé": { bg: "var(--green-bg)", fg: "var(--green-fg)" },
@@ -83,25 +84,47 @@ export default function PartnersClient({ data }: { data: PartnersData }) {
           const badge = STATUS_BADGE[p.status ?? ""] ?? { bg: "var(--neutral-bg)", fg: "var(--neutral-fg)" };
           return (
             <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{p.name}</span>
                   {p.status && <span className="badge" style={{ background: badge.bg, color: badge.fg }}>{p.status}</span>}
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
                   {REL_ICON[p.relationType ?? ""] ?? ""} {p.relationType ?? "—"} · {p.attachment}
+                  {p.contactName && <span> · {p.contactName}</span>}
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <ChannelIcons c={{ email: p.contactEmail, phone: p.contactPhone, website: p.website, linkedin: p.linkedin }} size={24} />
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 22, textAlign: "right" }}>
-                <div>
-                  <div style={{ fontSize: 10, color: "var(--text-3)" }}>Engagé</div>
-                  <div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: p.committed > 0 ? "var(--green-fg)" : "var(--text-3)" }}>{p.committed > 0 ? fmtM(p.committed) : "—"}</div>
+              {p.relationType === "Investisseur fonds" ? (
+                <div style={{ minWidth: 210 }}>
+                  <div style={{ display: "flex", gap: 18, textAlign: "right", justifyContent: "flex-end" }}>
+                    <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Engagé</div><div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{p.committed > 0 ? fmtM(p.committed) : "—"}</div></div>
+                    <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Appelé</div><div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--amber-fg)" }}>{p.called > 0 ? fmtM(p.called) : "—"}</div></div>
+                    <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Distribué</div><div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--green-fg)" }}>{p.distributed > 0 ? fmtM(p.distributed) : "—"}</div></div>
+                  </div>
+                  {p.committed > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ height: 5, background: "var(--cream)", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(100, Math.round((p.called / p.committed) * 100))}%`, height: "100%", background: "var(--camel)" }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: "var(--text-3)", textAlign: "right", marginTop: 2 }}>{Math.min(100, Math.round((p.called / p.committed) * 100))} % appelé</div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: "var(--text-3)" }}>En discussion</div>
-                  <div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: p.discussion > 0 ? "var(--amber-fg)" : "var(--text-3)" }}>{p.discussion > 0 ? fmtM(p.discussion) : "—"}</div>
+              ) : (
+                <div style={{ display: "flex", gap: 22, textAlign: "right" }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: "var(--text-3)" }}>Engagé</div>
+                    <div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: p.committed > 0 ? "var(--green-fg)" : "var(--text-3)" }}>{p.committed > 0 ? fmtM(p.committed) : "—"}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: "var(--text-3)" }}>En discussion</div>
+                    <div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: p.discussion > 0 ? "var(--amber-fg)" : "var(--text-3)" }}>{p.discussion > 0 ? fmtM(p.discussion) : "—"}</div>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="row-actions">
                 <button onClick={() => setModal({ open: true, partner: p })} aria-label="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                 <button onClick={() => remove(p)} aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
