@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
+import type { FundUser } from "@/lib/data/users";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -15,7 +16,7 @@ const STATUS_COLOR: Record<string, string> = { "Réalisée": "badge-green", "En 
 const CAT_COLOR: Record<string, string> = { E: "#3B6D11", S: "#185FA5", G: "#8A5A18" };
 function isOverdue(a: EsgAction) { return a.status !== "Réalisée" && !!a.dateEndPlan && a.dateEndPlan < new Date().toISOString().slice(0, 10); }
 
-export default function EsgTab({ entityType, entityId, data }: { entityType: "deal" | "company"; entityId: string; data: EsgData }) {
+export default function EsgTab({ entityType, entityId, data, users }: { entityType: "deal" | "company"; entityId: string; data: EsgData; users: FundUser[] }) {
   const router = useRouter();
   const [diagOpen, setDiagOpen] = useState(false);
   const [actModal, setActModal] = useState<{ open: boolean; action: EsgAction | null }>({ open: false, action: null });
@@ -112,7 +113,7 @@ export default function EsgTab({ entityType, entityId, data }: { entityType: "de
       </section>
 
       {diagOpen && <DiagModal entityType={entityType} entityId={entityId} assessment={a} onClose={() => setDiagOpen(false)} />}
-      {actModal.open && <ActionModal entityType={entityType} entityId={entityId} action={actModal.action} onClose={() => setActModal({ open: false, action: null })} />}
+      {actModal.open && <ActionModal entityType={entityType} entityId={entityId} action={actModal.action} users={users} onClose={() => setActModal({ open: false, action: null })} />}
       {impModal.open && <ImpactModal entityType={entityType} entityId={entityId} impact={impModal.impact} onClose={() => setImpModal({ open: false, impact: null })} />}
     </div>
   );
@@ -142,18 +143,19 @@ export default function EsgTab({ entityType, entityId, data }: { entityType: "de
     );
   }
 
-  function ActionModal({ entityType, entityId, action, onClose }: { entityType: string; entityId: string; action: EsgAction | null; onClose: () => void }) {
+  function ActionModal({ entityType, entityId, action, users, onClose }: { entityType: string; entityId: string; action: EsgAction | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [cat, setCat] = useState(action?.category ?? "G");
     const [text, setText] = useState(action?.action ?? "");
     const [resp, setResp] = useState(action?.responsibleCode ?? "");
+    const [assigneeId, setAssigneeId] = useState(action?.assigneeId ?? "");
     const [due, setDue] = useState(action?.dateEndPlan ?? "");
     const [status, setStatus] = useState(action?.status ?? ESG_ACTION_STATUS[0]);
     async function save() {
       if (!text.trim()) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, category: cat, action: text.trim(), responsible_code: resp.trim() || null, date_end_plan: due || null, status };
+      const payload = { entity_type: entityType, entity_id: entityId, category: cat, action: text.trim(), responsible_code: resp.trim() || null, assignee_id: assigneeId || null, date_end_plan: due || null, status };
       if (action) await supabase.from("esg_actions").update(payload).eq("id", action.id);
       else await supabase.from("esg_actions").insert(payload);
       onClose(); router.refresh();
@@ -165,9 +167,10 @@ export default function EsgTab({ entityType, entityId, data }: { entityType: "de
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Domaine"><Select value={cat} onChange={(e) => setCat(e.target.value)}>{ESG_ACTION_CATEGORIES.map((c) => <option key={c} value={c}>{ESG_CATEGORY_LABEL[c]}</option>)}</Select></Field>
           <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{ESG_ACTION_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
-          <Field label="Responsable"><Input value={resp} onChange={(e) => setResp(e.target.value)} placeholder="Ex : Direction" /></Field>
+          <Field label="Responsable"><Input value={resp} onChange={(e) => setResp(e.target.value)} placeholder="Ex : Direction, la société…" /></Field>
           <Field label="Échéance"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
+        <Field label="Suivi par (équipe Idawa)" hint="Reçoit le rappel dans « À faire »"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
       </Modal>
     );
   }

@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { VALUE_LEVERS, VALUE_STATUS } from "@/lib/ui-constants";
 import type { ValueInitiative } from "@/lib/data/planning";
+import type { FundUser } from "@/lib/data/users";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return null; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -14,7 +15,7 @@ const STATUS_BADGE: Record<string, string> = { "Planifiée": "badge-neutral", "E
 
 type ContactOpt = { id: string; name: string };
 
-export default function ValueCreationTab({ entityType, entityId, items, contacts }: { entityType: "deal" | "company"; entityId: string; items: ValueInitiative[]; contacts: ContactOpt[] }) {
+export default function ValueCreationTab({ entityType, entityId, items, contacts, users }: { entityType: "deal" | "company"; entityId: string; items: ValueInitiative[]; contacts: ContactOpt[]; users: FundUser[] }) {
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; item: ValueInitiative | null }>({ open: false, item: null });
   const done = items.filter((i) => i.status === "Réalisée").length;
@@ -60,15 +61,16 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
         </div>
       )}
 
-      {modal.open && <VcModal entityType={entityType} entityId={entityId} item={modal.item} contacts={contacts} onClose={() => setModal({ open: false, item: null })} />}
+      {modal.open && <VcModal entityType={entityType} entityId={entityId} item={modal.item} contacts={contacts} users={users} onClose={() => setModal({ open: false, item: null })} />}
     </div>
   );
 
-  function VcModal({ entityType, entityId, item, contacts, onClose }: { entityType: string; entityId: string; item: ValueInitiative | null; contacts: ContactOpt[]; onClose: () => void }) {
+  function VcModal({ entityType, entityId, item, contacts, users, onClose }: { entityType: string; entityId: string; item: ValueInitiative | null; contacts: ContactOpt[]; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [lever, setLever] = useState(item?.lever ?? VALUE_LEVERS[0]);
     const [initiative, setInitiative] = useState(item?.initiative ?? "");
     const [owner, setOwner] = useState(item?.owner ?? "");
+    const [assigneeId, setAssigneeId] = useState(item?.assigneeId ?? "");
     const [status, setStatus] = useState(item?.status ?? VALUE_STATUS[0]);
     const [target, setTarget] = useState(item?.targetDate ?? "");
     const [impact, setImpact] = useState(item?.impact ?? "");
@@ -76,7 +78,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
       if (!initiative.trim()) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, lever, initiative: initiative.trim(), owner: owner.trim() || null, status, target_date: target || null, impact: impact.trim() || null };
+      const payload = { entity_type: entityType, entity_id: entityId, lever, initiative: initiative.trim(), owner: owner.trim() || null, assignee_id: assigneeId || null, status, target_date: target || null, impact: impact.trim() || null };
       if (item) await supabase.from("value_creation").update(payload).eq("id", item.id);
       else await supabase.from("value_creation").insert(payload);
       onClose(); router.refresh();
@@ -101,6 +103,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
           </Field>
           <Field label="Échéance"><Input type="date" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
         </div>
+        <Field label="Suivi par (équipe Idawa)" hint="Reçoit le rappel dans « À faire »"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
         <Field label="Impact visé"><Textarea rows={2} value={impact} onChange={(e) => setImpact(e.target.value)} placeholder="Ex : +30% de CA, création de 15 emplois…" /></Field>
       </Modal>
     );

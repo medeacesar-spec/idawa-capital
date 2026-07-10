@@ -7,10 +7,11 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { DD_DOMAINS, DD_STATUS } from "@/lib/ui-constants";
 import type { DdItem } from "@/lib/data/planning";
+import type { FundUser } from "@/lib/data/users";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Terminé": "badge-green", "Point d'attention": "badge-red" };
 
-export default function DueDiligenceTab({ entityType, entityId, items }: { entityType: "deal" | "company"; entityId: string; items: DdItem[] }) {
+export default function DueDiligenceTab({ entityType, entityId, items, users }: { entityType: "deal" | "company"; entityId: string; items: DdItem[]; users: FundUser[] }) {
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; item: DdItem | null; domain?: string }>({ open: false, item: null });
 
@@ -65,21 +66,22 @@ export default function DueDiligenceTab({ entityType, entityId, items }: { entit
       )}
       <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>Cliquez le statut pour le faire évoluer (À faire → En cours → Terminé → Point d'attention).</div>
 
-      {modal.open && <DdModal entityType={entityType} entityId={entityId} item={modal.item} onClose={() => setModal({ open: false, item: null })} />}
+      {modal.open && <DdModal entityType={entityType} entityId={entityId} item={modal.item} users={users} onClose={() => setModal({ open: false, item: null })} />}
     </div>
   );
 
-  function DdModal({ entityType, entityId, item, onClose }: { entityType: string; entityId: string; item: DdItem | null; onClose: () => void }) {
+  function DdModal({ entityType, entityId, item, users, onClose }: { entityType: string; entityId: string; item: DdItem | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [domain, setDomain] = useState(item?.domain ?? DD_DOMAINS[0]);
     const [text, setText] = useState(item?.item ?? "");
     const [status, setStatus] = useState(item?.status ?? DD_STATUS[0]);
     const [note, setNote] = useState(item?.note ?? "");
+    const [assigneeId, setAssigneeId] = useState(item?.assigneeId ?? "");
     async function save() {
       if (!text.trim()) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, domain, item: text.trim(), status, note: note.trim() || null };
+      const payload = { entity_type: entityType, entity_id: entityId, domain, item: text.trim(), status, note: note.trim() || null, assignee_id: assigneeId || null };
       if (item) await supabase.from("dd_items").update(payload).eq("id", item.id);
       else await supabase.from("dd_items").insert(payload);
       onClose(); router.refresh();
@@ -92,6 +94,7 @@ export default function DueDiligenceTab({ entityType, entityId, items }: { entit
           <Field label="Domaine"><Select value={domain} onChange={(e) => setDomain(e.target.value)}>{DD_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</Select></Field>
           <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{DD_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
         </div>
+        <Field label="Assigné à"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
         <Field label="Constat / note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Conclusions, réserves, documents demandés…" /></Field>
       </Modal>
     );

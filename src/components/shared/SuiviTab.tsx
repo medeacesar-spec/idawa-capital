@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { NOTE_TYPES, TASK_STATUS } from "@/lib/ui-constants";
 import type { SuiviNote, SuiviTask } from "@/lib/data/suivi";
+import type { FundUser } from "@/lib/data/users";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; const dd = d.slice(8, 10); return `${dd} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -14,7 +15,7 @@ function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Fait": "badge-green" };
 const TYPE_ICON: Record<string, string> = { Réunion: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75", Appel: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.35a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.75.34 1.54.57 2.35.7A2 2 0 0 1 22 16.92z", Email: "M4 4h16v16H4z M22 6l-10 7L2 6", Note: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" };
 
-export default function SuiviTab({ entityType, entityId, notes, tasks }: { entityType: "deal" | "company"; entityId: string; notes: SuiviNote[]; tasks: SuiviTask[] }) {
+export default function SuiviTab({ entityType, entityId, notes, tasks, users }: { entityType: "deal" | "company"; entityId: string; notes: SuiviNote[]; tasks: SuiviTask[]; users: FundUser[] }) {
   const router = useRouter();
   const [noteModal, setNoteModal] = useState<{ open: boolean; note: SuiviNote | null }>({ open: false, note: null });
   const [taskModal, setTaskModal] = useState<{ open: boolean; task: SuiviTask | null }>({ open: false, task: null });
@@ -103,7 +104,7 @@ export default function SuiviTab({ entityType, entityId, notes, tasks }: { entit
       </section>
 
       {noteModal.open && <NoteModal entityType={entityType} entityId={entityId} note={noteModal.note} onClose={() => setNoteModal({ open: false, note: null })} />}
-      {taskModal.open && <TaskModal entityType={entityType} entityId={entityId} task={taskModal.task} onClose={() => setTaskModal({ open: false, task: null })} />}
+      {taskModal.open && <TaskModal entityType={entityType} entityId={entityId} task={taskModal.task} users={users} onClose={() => setTaskModal({ open: false, task: null })} />}
     </div>
   );
 
@@ -135,17 +136,18 @@ export default function SuiviTab({ entityType, entityId, notes, tasks }: { entit
     );
   }
 
-  function TaskModal({ entityType, entityId, task, onClose }: { entityType: string; entityId: string; task: SuiviTask | null; onClose: () => void }) {
+  function TaskModal({ entityType, entityId, task, users, onClose }: { entityType: string; entityId: string; task: SuiviTask | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [title, setTitle] = useState(task?.title ?? "");
-    const [assignee, setAssignee] = useState(task?.assigneeLabel ?? "");
+    const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
     const [due, setDue] = useState(task?.dueDate ?? "");
     const [status, setStatus] = useState(task?.status ?? TASK_STATUS[0]);
     async function save() {
       if (!title.trim()) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, title: title.trim(), assignee_label: assignee.trim() || null, due_date: due || null, status, source: "manuel" };
+      const label = users.find((u) => u.id === assigneeId)?.name ?? null;
+      const payload = { entity_type: entityType, entity_id: entityId, title: title.trim(), assignee_id: assigneeId || null, assignee_label: label, due_date: due || null, status, source: "manuel" };
       if (task) await supabase.from("tasks").update(payload).eq("id", task.id);
       else await supabase.from("tasks").insert(payload);
       onClose(); router.refresh();
@@ -155,7 +157,7 @@ export default function SuiviTab({ entityType, entityId, notes, tasks }: { entit
         footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !title.trim()} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
         <Field label="Action"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex : Finaliser l'audit KYC" /></Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Responsable"><Input value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="Ex : Médéa" /></Field>
+          <Field label="Assigné à"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
           <Field label="Échéance"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
         <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{TASK_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>

@@ -4,6 +4,7 @@ import { getEsg, type EsgData } from "./esg";
 import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
 import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
 import { getValueCreation, type ValueInitiative } from "./planning";
+import { getFundUsers, type FundUser } from "./users";
 
 export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
@@ -36,6 +37,7 @@ export type CompanyDetail = {
   valueCreation: ValueInitiative[];
   kpis: KpiSeries[];
   kpiLibrary: LibraryKpi[];
+  users: FundUser[];
   contacts: DetailContact[];
   documents: DetailDoc[];
 };
@@ -61,7 +63,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
 
-  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id)]);
+  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, users] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getFundUsers()]);
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
@@ -76,7 +78,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
     notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation,
-    kpis, kpiLibrary, contacts: contactRes.data ?? [],
+    kpis, kpiLibrary, users, contacts: contactRes.data ?? [],
     documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path })),
   };
 }
