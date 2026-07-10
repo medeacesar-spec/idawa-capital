@@ -8,7 +8,7 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { CONTACT_FUNCTIONS, CONTACT_ORG_TYPES } from "@/lib/ui-constants";
 import type { Contact } from "@/lib/data/contacts";
 
-export default function ContactFormModal({ contact, onClose }: { contact: Contact | null; onClose: () => void }) {
+export default function ContactFormModal({ contact, link, onClose }: { contact: Contact | null; link?: { dealId?: string; companyId?: string }; onClose: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
@@ -27,7 +27,7 @@ export default function ContactFormModal({ contact, onClose }: { contact: Contac
     const supabase = createClient();
     const payload = { name: f.name.trim(), function: f.function || null, organization: f.organization || null, org_type: f.orgType || null, email: f.email || null, phone: f.phone || null };
     if (contact) await supabase.from("contacts").update(payload).eq("id", contact.id);
-    else await supabase.from("contacts").insert(payload);
+    else await supabase.from("contacts").insert({ ...payload, deal_id: link?.dealId ?? null, company_id: link?.companyId ?? null });
     setBusy(false);
     onClose();
     router.refresh();

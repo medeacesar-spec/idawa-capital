@@ -141,10 +141,16 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
           {closed.length > 0 && <span style={{ width: 1, height: 20, background: "var(--border)" }} />}
           {closed.map((p) => <Pill key={p.id} id={p.id} name={p.name} color={p.color} isClosed />)}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, company: null })}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Nouvelle entreprise
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=portefeuille")}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Saisir un reporting
+          </button>
+          <button className="btn btn-primary" onClick={() => setModal({ open: true, company: null })}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nouvelle entreprise
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 18, marginBottom: 14, fontSize: 12.5, color: "var(--text-2)", flexWrap: "wrap" }}>

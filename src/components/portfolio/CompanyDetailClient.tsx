@@ -9,6 +9,7 @@ import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
 import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
+import EntityContacts from "@/components/shared/EntityContacts";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -44,13 +45,17 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
         <div style={{ width: 44, height: 44, borderRadius: 11, background: "var(--brown)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>{initials(company.name)}</div>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="serif" style={{ fontSize: 21, fontWeight: 600, color: "var(--ink)" }}>{company.name}</div>
           <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>
             {equity ? "Participation" : "Accompagnement"} {company.status === "Actif" ? "active" : `· ${company.status}`}
             {company.originDealName && ` · issue du deal ${company.originDealName}`}
           </div>
         </div>
+        <button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=portefeuille&entity=${company.id}`)} style={{ flexShrink: 0 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Saisir un reporting
+        </button>
       </div>
 
       {/* Tags */}
@@ -77,7 +82,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
         })}
       </div>
 
-      {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} />}
+      {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} />}
 
       {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} />}
 
@@ -135,19 +140,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
 
       {tab === "Documents" && <EntityDocuments entityType="company" entityId={company.id} entityName={company.name} docs={company.documents} />}
 
-      {tab === "Contacts" && (
-        company.contacts.length === 0 ? <EmptyTab title="Contacts" desc="Aucun contact rattaché à cette société." /> : (
-          <div className="card" style={{ padding: "4px 18px" }}>
-            {company.contacts.map((ct, i) => (
-              <div key={ct.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{initials(ct.name)}</div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{ct.name}</div><div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{ct.function ?? "—"}</div></div>
-                {ct.email && <a href={`mailto:${ct.email}`} style={{ fontSize: 11.5, color: "var(--camel)" }}>{ct.email}</a>}
-              </div>
-            ))}
-          </div>
-        )
-      )}
+      {tab === "Contacts" && <EntityContacts entityType="company" entityId={company.id} contacts={company.contacts} />}
     </div>
   );
 }

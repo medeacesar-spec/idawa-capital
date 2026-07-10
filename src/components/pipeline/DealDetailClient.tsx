@@ -7,12 +7,14 @@ import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
+import CommitteeDocs from "./CommitteeDocs";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
 import DueDiligenceTab from "@/components/shared/DueDiligenceTab";
 import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
+import EntityContacts from "@/components/shared/EntityContacts";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -83,10 +85,16 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
             <span className="badge badge-green" style={{ flexShrink: 0 }}>Investi</span>
           )
         ) : (
-          <button className="btn btn-primary" onClick={() => setConvertOpen(true)} style={{ flexShrink: 0 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-            Convertir en participation
-          </button>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=pipeline&entity=${deal.id}`)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              Saisir un reporting
+            </button>
+            <button className="btn btn-primary" onClick={() => setConvertOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              Convertir en participation
+            </button>
+          </div>
         )}
       </div>
 
@@ -146,6 +154,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
                       </div>
                       <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}</div>
                       {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
+                      <CommitteeDocs dealId={deal.id} committeeId={c.id} docs={c.docs} />
                     </div>
                   </div>
                 );
@@ -157,25 +166,13 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
 
       {tab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} />}
       {tab === "Due diligence" && <DueDiligenceTab entityType="deal" entityId={deal.id} items={deal.dueDiligence} />}
-      {tab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} />}
+      {tab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} library={deal.kpiLibrary} />}
       {tab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} />}
       {tab === "ESG" && <EsgTab entityType="deal" entityId={deal.id} data={deal.esg} />}
 
       {tab === "Documents" && <EntityDocuments entityType="deal" entityId={deal.id} entityName={deal.companyName} docs={deal.documents} />}
 
-      {tab === "Contacts" && (
-        deal.contacts.length === 0 ? <EmptyTab title="Contacts" desc="Aucun contact rattaché à ce dossier." /> : (
-          <div className="card" style={{ padding: "4px 18px" }}>
-            {deal.contacts.map((ct, i) => (
-              <div key={ct.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{initials(ct.name)}</div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{ct.name}</div><div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{ct.function ?? "—"}</div></div>
-                {ct.email && <a href={`mailto:${ct.email}`} style={{ fontSize: 11.5, color: "var(--camel)" }}>{ct.email}</a>}
-              </div>
-            ))}
-          </div>
-        )
-      )}
+      {tab === "Contacts" && <EntityContacts entityType="deal" entityId={deal.id} contacts={deal.contacts} />}
 
       {comModal.open && <CommitteeFormModal dealId={deal.id} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { KPI_DIMENSIONS, KPI_DIM_LABEL, KPI_DIM_COLOR, KPI_DIRECTIONS } from "@/lib/ui-constants";
-import type { KpiSeries } from "@/lib/data/kpis";
+import type { KpiSeries, LibraryKpi } from "@/lib/data/kpis";
 
 function shortPeriod(p: string) { const m = p.match(/(\d{4})-?T?(\d)?/); return m && m[2] ? `T${m[2]}-${m[1].slice(2)}` : p; }
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n * 100) / 100); }
@@ -30,7 +30,7 @@ function Chart({ k }: { k: KpiSeries }) {
   );
 }
 
-export default function KpiTab({ entityType, entityId, kpis }: { entityType: "deal" | "company"; entityId: string; kpis: KpiSeries[] }) {
+export default function KpiTab({ entityType, entityId, kpis, library }: { entityType: "deal" | "company"; entityId: string; kpis: KpiSeries[]; library: LibraryKpi[] }) {
   const router = useRouter();
   const present = Array.from(new Set(kpis.map((k) => k.category)));
   const dims = [...KPI_DIMENSIONS, ...present.filter((p) => !KPI_DIMENSIONS.includes(p))];
@@ -101,18 +101,28 @@ export default function KpiTab({ entityType, entityId, kpis }: { entityType: "de
         </div>
       )}
 
-      {kpiModal.open && <KpiModal entityType={entityType} entityId={entityId} defaultCat={cat} kpi={kpiModal.kpi} onClose={() => setKpiModal({ open: false, kpi: null })} />}
+      {kpiModal.open && <KpiModal entityType={entityType} entityId={entityId} defaultCat={cat} kpi={kpiModal.kpi} library={library} trackedNames={new Set(kpis.map((k) => k.name))} onClose={() => setKpiModal({ open: false, kpi: null })} />}
       {valModal?.open && <ValueModal kpi={valModal.kpi} onClose={() => setValModal(null)} />}
     </div>
   );
 
-  function KpiModal({ entityType, entityId, defaultCat, kpi, onClose }: { entityType: string; entityId: string; defaultCat: string; kpi: KpiSeries | null; onClose: () => void }) {
+  function KpiModal({ entityType, entityId, defaultCat, kpi, library, trackedNames, onClose }: { entityType: string; entityId: string; defaultCat: string; kpi: KpiSeries | null; library: LibraryKpi[]; trackedNames: Set<string>; onClose: () => void }) {
+    const available = library.filter((l) => !trackedNames.has(l.name));
+    const [added, setAdded] = useState<Set<string>>(new Set());
+    const [mode, setMode] = useState<"library" | "custom">(!kpi && available.length > 0 ? "library" : "custom");
     const [busy, setBusy] = useState(false);
     const [name, setName] = useState(kpi?.name ?? "");
     const [category, setCategory] = useState(kpi?.category ?? defaultCat);
     const [unit, setUnit] = useState(kpi?.unit ?? "");
     const [target, setTarget] = useState(kpi?.target != null ? String(kpi.target) : "");
     const [direction, setDirection] = useState(kpi?.direction ?? "high");
+
+    async function addFromLibrary(l: LibraryKpi) {
+      await createClient().from("tracked_kpis").insert({ entity_type: entityType, entity_id: entityId, kind: "business", category: l.category, name: l.name });
+      setAdded((s) => new Set(s).add(l.name));
+    }
+    function closeAndRefresh() { onClose(); router.refresh(); }
+
     async function save() {
       if (!name.trim()) return;
       setBusy(true);
@@ -120,18 +130,54 @@ export default function KpiTab({ entityType, entityId, kpis }: { entityType: "de
       const payload = { entity_type: entityType, entity_id: entityId, kind: "business", category, name: name.trim(), unit: unit.trim() || null, target: target ? Number(target) : null, direction };
       if (kpi) await supabase.from("tracked_kpis").update(payload).eq("id", kpi.id);
       else await supabase.from("tracked_kpis").insert(payload);
-      onClose(); router.refresh();
+      closeAndRefresh();
     }
+
+    const libByCat = KPI_DIMENSIONS.map((d) => ({ dim: d, items: available.filter((l) => l.category === d && !added.has(l.name)) })).filter((g) => g.items.length > 0);
+
     return (
-      <Modal title={kpi ? "Modifier le KPI" : "Ajouter un KPI"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !name.trim()} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
-        <Field label="Nom de l'indicateur"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Chiffre d'affaires mensuel" /></Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Dimension"><Select value={category} onChange={(e) => setCategory(e.target.value)}>{KPI_DIMENSIONS.map((d) => <option key={d} value={d}>{KPI_DIM_LABEL[d]}</option>)}</Select></Field>
-          <Field label="Unité"><Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Ex : FCFA, %, clients" /></Field>
-          <Field label="Cible"><Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Optionnel" /></Field>
-          <Field label="Sens"><Select value={direction} onChange={(e) => setDirection(e.target.value)}>{KPI_DIRECTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}</Select></Field>
-        </div>
+      <Modal title={kpi ? "Modifier le KPI" : "Ajouter un KPI"} onClose={closeAndRefresh}
+        footer={mode === "custom"
+          ? <><button className="btn btn-ghost" onClick={closeAndRefresh}>Annuler</button><button className="btn btn-primary" disabled={busy || !name.trim()} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>
+          : <button className="btn btn-primary" onClick={closeAndRefresh}>Terminé{added.size > 0 ? ` (${added.size} ajouté${added.size > 1 ? "s" : ""})` : ""}</button>}>
+        {!kpi && (
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            {(["library", "custom"] as const).map((m) => (
+              <button key={m} onClick={() => setMode(m)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === m ? "var(--espresso)" : "var(--surface)", color: mode === m ? "#fff" : "var(--text-2)", border: `1px solid ${mode === m ? "var(--espresso)" : "var(--border-strong)"}` }}>{m === "library" ? "Depuis la bibliothèque" : "Personnalisé"}</button>
+            ))}
+          </div>
+        )}
+
+        {mode === "library" && !kpi ? (
+          available.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "var(--text-3)", padding: "8px 0" }}>Aucun indicateur de bibliothèque disponible pour ce secteur (sous-secteur non défini, ou tous déjà suivis). Utilisez « Personnalisé ».</div>
+          ) : (
+            <div style={{ display: "grid", gap: 12, maxHeight: 340, overflowY: "auto" }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>Panier du secteur — cliquez pour ajouter au suivi.</div>
+              {libByCat.map((g) => (
+                <div key={g.dim}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--camel)", marginBottom: 6 }}>{KPI_DIM_LABEL[g.dim] ?? g.dim}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {g.items.map((l) => (
+                      <button key={l.id} onClick={() => addFromLibrary(l)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", background: "var(--surface)", color: "var(--text-2)", border: "1px dashed var(--border-strong)" }}>+ {l.name}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {added.size > 0 && <div style={{ fontSize: 11.5, color: "var(--green-fg)" }}>✅ {added.size} indicateur{added.size > 1 ? "s" : ""} ajouté{added.size > 1 ? "s" : ""}. Saisissez leurs valeurs via « Saisir une valeur ».</div>}
+            </div>
+          )
+        ) : (
+          <>
+            <Field label="Nom de l'indicateur"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Chiffre d'affaires mensuel" /></Field>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Dimension"><Select value={category} onChange={(e) => setCategory(e.target.value)}>{KPI_DIMENSIONS.map((d) => <option key={d} value={d}>{KPI_DIM_LABEL[d]}</option>)}</Select></Field>
+              <Field label="Unité"><Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Ex : FCFA, %, clients" /></Field>
+              <Field label="Cible"><Input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Optionnel" /></Field>
+              <Field label="Sens"><Select value={direction} onChange={(e) => setDirection(e.target.value)}>{KPI_DIRECTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}</Select></Field>
+            </div>
+          </>
+        )}
       </Modal>
     );
   }

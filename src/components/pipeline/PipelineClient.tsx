@@ -67,10 +67,16 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
       <div style={{ display: "flex", gap: 18, marginBottom: 10, fontSize: 12.5, color: "var(--text-2)", alignItems: "center", flexWrap: "wrap" }}>
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> dossier{list.length > 1 ? "s" : ""}</span>
         <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA en jeu</span>
-        <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={() => setModal({ open: true, deal: null })}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Nouveau dossier
-        </button>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=pipeline")}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Saisir un reporting
+          </button>
+          <button className="btn btn-primary" onClick={() => setModal({ open: true, deal: null })}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nouveau dossier
+          </button>
+        </div>
       </div>
 
       {/* Liste */}

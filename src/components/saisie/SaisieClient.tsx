@@ -10,9 +10,9 @@ type Kpi = { id: string; category: string; name: string; unit: string | null; ta
 const CATS = KPI_DIMENSIONS;
 const CAT_COLOR = KPI_DIM_COLOR;
 
-export default function SaisieClient({ companies }: { companies: Company[] }) {
+export default function SaisieClient({ companies, entityType = "company", scopeLabel = "Portefeuille · participation", preselect = null }: { companies: Company[]; entityType?: "deal" | "company"; scopeLabel?: string; preselect?: string | null }) {
   const supabase = createClient();
-  const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
+  const [companyId, setCompanyId] = useState((preselect && companies.some((c) => c.id === preselect) ? preselect : companies[0]?.id) ?? "");
   const [period, setPeriod] = useState("2026-T2");
   const [kpis, setKpis] = useState<Kpi[]>([]);
   const [basket, setBasket] = useState<{ category: string; name: string }[]>([]);
@@ -25,7 +25,7 @@ export default function SaisieClient({ companies }: { companies: Company[] }) {
   async function load() {
     if (!companyId) return;
     setLoading(true);
-    const { data: tracked } = await supabase.from("tracked_kpis").select("id, category, name, unit, target").eq("entity_type", "company").eq("entity_id", companyId);
+    const { data: tracked } = await supabase.from("tracked_kpis").select("id, category, name, unit, target").eq("entity_type", entityType).eq("entity_id", companyId);
     const ids = (tracked ?? []).map((t) => t.id);
     const valMap = new Map<string, number>();
     if (ids.length) {
@@ -46,7 +46,7 @@ export default function SaisieClient({ companies }: { companies: Company[] }) {
   }
 
   async function addKpi(category: string, name: string) {
-    const { data } = await supabase.from("tracked_kpis").insert({ entity_type: "company", entity_id: companyId, kind: "business", category, name }).select("id, category, name, unit, target").single();
+    const { data } = await supabase.from("tracked_kpis").insert({ entity_type: entityType, entity_id: companyId, kind: "business", category, name }).select("id, category, name, unit, target").single();
     if (data) { setKpis((k) => [...k, { id: data.id, category: data.category, name: data.name, unit: data.unit, target: data.target, value: "" }]); setBasket((b) => b.filter((x) => x.name !== name)); }
   }
   async function removeKpi(id: string) {
@@ -68,7 +68,7 @@ export default function SaisieClient({ companies }: { companies: Company[] }) {
     <div>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 16, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 5 }}>Société</div>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 5 }}>{entityType === "deal" ? "Dossier" : "Société"} <span style={{ fontWeight: 400, color: "var(--text-3)" }}>· {scopeLabel}</span></div>
           <select style={{ ...sel, minWidth: 200 }} value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
             {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>

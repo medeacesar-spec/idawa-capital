@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
-import { getKpis, type KpiSeries } from "./kpis";
+import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
 import { getDdItems, getValueCreation, type DdItem, type ValueInitiative } from "./planning";
 
-export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null };
+export type CommitteeDoc = { id: string; title: string; storagePath: string | null };
+export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; docs: CommitteeDoc[] };
 export type DealContact = { id: string; name: string; function: string | null; email: string | null };
 export type DealDoc = { id: string; title: string; category: string | null; storagePath: string | null };
 
@@ -32,6 +33,7 @@ export type DealDetail = {
   tasks: SuiviTask[];
   esg: EsgData;
   kpis: KpiSeries[];
+  kpiLibrary: LibraryKpi[];
   dueDiligence: DdItem[];
   valueCreation: ValueInitiative[];
 };
@@ -57,7 +59,10 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     supabase.from("portfolio_companies").select("id").eq("origin_deal_id", id).maybeSingle(),
   ]);
 
-  const [suivi, esg, kpis, dueDiligence, valueCreation] = await Promise.all([getSuivi("deal", id), getEsg("deal", id), getKpis("deal", id), getDdItems("deal", id), getValueCreation("deal", id)]);
+  const [suivi, esg, kpis, kpiLibrary, dueDiligence, valueCreation] = await Promise.all([getSuivi("deal", id), getEsg("deal", id), getKpis("deal", id), getKpiLibraryForEntity("deal", id), getDdItems("deal", id), getValueCreation("deal", id)]);
+
+  const comIds = (comRes.data ?? []).map((c) => c.id);
+  const { data: comDocs } = comIds.length ? await supabase.from("documents").select("id, title, storage_path, committee_id").in("committee_id", comIds) : { data: [] as { id: string; title: string; storage_path: string | null; committee_id: string }[] };
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
@@ -71,9 +76,9 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     officer: dn(offRes.data as { full_name?: string; email?: string } | null),
     analyst: dn(anaRes.data as { full_name?: string; email?: string } | null),
     expectedClose: d.expected_close,
-    committees: (comRes.data ?? []).map((c) => ({ id: c.id, committeeType: c.committee_type, sessionDate: c.session_date, decision: c.decision, conditions: c.conditions, participants: c.participants })),
+    committees: (comRes.data ?? []).map((c) => ({ id: c.id, committeeType: c.committee_type, sessionDate: c.session_date, decision: c.decision, conditions: c.conditions, participants: c.participants, docs: (comDocs ?? []).filter((doc) => doc.committee_id === c.id).map((doc) => ({ id: doc.id, title: doc.title, storagePath: doc.storage_path })) })),
     contacts: contactRes.data ?? [],
     documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path })),
-    notes: suivi.notes, tasks: suivi.tasks, esg, kpis, dueDiligence, valueCreation,
+    notes: suivi.notes, tasks: suivi.tasks, esg, kpis, kpiLibrary, dueDiligence, valueCreation,
   };
 }

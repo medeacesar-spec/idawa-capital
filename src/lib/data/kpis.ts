@@ -10,6 +10,29 @@ export type KpiSeries = {
   series: { period: string; value: number }[];
 };
 
+export type LibraryKpi = { id: string; category: string; name: string };
+
+/** KPIs de la bibliothèque correspondant au(x) sous-secteur(s) de l'entité. */
+export async function getKpiLibraryForEntity(entityType: "deal" | "company", entityId: string): Promise<LibraryKpi[]> {
+  const supabase = await createClient();
+  const table = entityType === "deal" ? "deals" : "portfolio_companies";
+  const linkTable = entityType === "deal" ? "deal_sub_sectors" : "company_sub_sectors";
+  const linkCol = entityType === "deal" ? "deal_id" : "company_id";
+
+  const [entRes, linkRes] = await Promise.all([
+    supabase.from(table).select("primary_sub_sector_id").eq("id", entityId).single(),
+    supabase.from(linkTable).select("sub_sector_id").eq(linkCol, entityId),
+  ]);
+  const ids = new Set<string>();
+  const primary = (entRes.data as { primary_sub_sector_id?: string } | null)?.primary_sub_sector_id;
+  if (primary) ids.add(primary);
+  (linkRes.data ?? []).forEach((r) => r.sub_sector_id && ids.add(r.sub_sector_id));
+  if (ids.size === 0) return [];
+
+  const { data } = await supabase.from("kpi_library").select("id, category, name").in("sub_sector_id", Array.from(ids)).order("position");
+  return (data ?? []).map((x) => ({ id: x.id, category: x.category, name: x.name }));
+}
+
 export async function getKpis(entityType: "deal" | "company", entityId: string): Promise<KpiSeries[]> {
   const supabase = await createClient();
   const { data: tracked } = await supabase
