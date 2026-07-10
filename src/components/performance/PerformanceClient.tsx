@@ -1,77 +1,98 @@
 "use client";
 
 import type { PerformanceData } from "@/lib/data/performance";
-import { fmtM, fmtMult, fmtPct } from "@/lib/format";
+import { fmtM, fmtMult } from "@/lib/format";
+
+function pct(f: number | null) { return f == null ? "—" : `${(f * 100).toFixed(1)} %`; }
+function multColor(m: number | null) { return m == null ? "var(--text-3)" : m >= 1 ? "var(--green-fg)" : "var(--red-fg)"; }
 
 function Tile({ k, v, sub, color }: { k: string; v: string; sub?: string; color?: string }) {
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "15px 16px" }}>
+    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
       <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{k}</div>
-      <div className="serif tnum" style={{ fontSize: 25, fontWeight: 600, color: color ?? "var(--ink)", lineHeight: 1, marginTop: 7 }}>{v}</div>
-      {sub && <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 6 }}>{sub}</div>}
+      <div className="serif tnum" style={{ fontSize: 23, fontWeight: 600, color: color ?? "var(--ink)", lineHeight: 1, marginTop: 7 }}>{v}</div>
+      {sub && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 5 }}>{sub}</div>}
     </div>
   );
 }
 
-const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px" };
+const th: React.CSSProperties = { textAlign: "right", padding: "9px 12px", fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--text-3)", fontWeight: 700, whiteSpace: "nowrap", borderBottom: "1px solid var(--border)" };
+const td: React.CSSProperties = { textAlign: "right", padding: "9px 12px", fontSize: 12.5, color: "var(--ink)", whiteSpace: "nowrap", borderTop: "1px solid var(--sep)" };
 
 export default function PerformanceClient({ data }: { data: PerformanceData }) {
-  const maxMult = Math.max(1.2, ...data.companies.map((c) => c.tvpi ?? 0));
-
-  // Pont de création de valeur : coût investi -> plus-value -> valeur actuelle
-  const H = 170;
-  const base = 30;
-  const maxVal = Math.max(data.valuation, data.invested) || 1;
-  const scale = (H - base) / maxVal;
-  const investedH = data.invested * scale;
-  const gainH = Math.abs(data.gain) * scale;
+  function exportPdf() { window.print(); }
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 13, marginBottom: 16 }}>
-        <Tile k="Multiple (TVPI)" v={fmtMult(data.tvpi)} sub="Valeur / capital investi" color="var(--green-fg)" />
-        <Tile k="DPI (distribué)" v={fmtMult(data.dpi)} sub="Aucune sortie à ce jour" />
-        <Tile k="TRI moyen" v={fmtPct(data.tri)} sub="Rendement annualisé" color={(data.tri ?? 0) >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
-        <Tile k="Création de valeur" v={fmtM(data.gain)} sub={`${fmtM(data.invested)} investis`} color={data.gain >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>
+          {data.flowBased ? "TRI calculé sur les flux datés (appels, distributions, valorisation)." : "TRI estimé à partir de la date et du montant d'entrée, faute de flux détaillés saisis."}
+        </div>
+        <button className="btn btn-ghost no-print" onClick={exportPdf}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" /></svg>
+          Exporter en PDF
+        </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 13 }}>
-        {/* Multiple par participation */}
-        <div style={panel}>
-          <h3 style={{ fontSize: 13.5, fontWeight: 600, margin: "0 0 14px", color: "var(--ink)" }}>Multiple par participation</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-            {data.companies.map((c) => {
-              const good = (c.tvpi ?? 0) >= 1;
-              return (
-                <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 90, fontSize: 12, color: "var(--text-2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
-                  <div style={{ flex: 1, background: "var(--sep)", borderRadius: 6, height: 20, position: "relative" }}>
-                    <div style={{ width: `${((c.tvpi ?? 0) / maxMult) * 100}%`, height: "100%", background: good ? "var(--camel)" : "var(--red-fg)", borderRadius: 6 }} />
-                  </div>
-                  <div className="serif tnum" style={{ width: 44, textAlign: "right", fontSize: 12.5, fontWeight: 600, color: good ? "var(--green-fg)" : "var(--red-fg)" }}>{fmtMult(c.tvpi)}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 18 }}>
+        <Tile k="Multiple (TVPI)" v={fmtMult(data.tvpi)} sub="(distribué + valeur) / appelé" color={multColor(data.tvpi)} />
+        <Tile k="TRI (net des flux)" v={pct(data.irr)} sub="Rendement annualisé" color={data.irr != null && data.irr >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
+        <Tile k="DPI (distribué)" v={fmtMult(data.dpi)} sub="Distribué / appelé" />
+        <Tile k="RVPI (résiduel)" v={fmtMult(data.rvpi)} sub="Valeur résiduelle / appelé" />
+        <Tile k="Capital appelé" v={fmtM(data.paidIn)} sub="Investi à ce jour" />
+        <Tile k="Distribué" v={fmtM(data.distributed)} sub="Sorties / dividendes" />
+        <Tile k="Valeur (NAV)" v={fmtM(data.nav)} sub="Valorisation actuelle" color="var(--green-fg)" />
+        <Tile k="Plus-value" v={fmtM(data.distributed + data.nav - data.paidIn)} sub="Gain total" color={data.distributed + data.nav - data.paidIn >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
+      </div>
 
-        {/* Pont de création de valeur */}
-        <div style={panel}>
-          <h3 style={{ fontSize: 13.5, fontWeight: 600, margin: "0 0 6px", color: "var(--ink)" }}>Pont de création de valeur</h3>
-          <svg viewBox="0 0 300 200" width="100%" height="190" preserveAspectRatio="xMidYMid meet">
-            {/* Capital investi */}
-            <rect x="30" y={H - investedH} width="60" height={investedH} rx="4" fill="#8A7256" />
-            <text x="60" y={H - investedH - 8} textAnchor="middle" className="serif" style={{ fontSize: 13, fontWeight: 600, fill: "var(--ink)" }}>{fmtM(data.invested)}</text>
-            <text x="60" y="192" textAnchor="middle" style={{ fontSize: 10.5, fill: "var(--text-2)" }}>Investi</text>
-            {/* Plus-value */}
-            <rect x="120" y={H - investedH - gainH} width="60" height={gainH} rx="4" fill={data.gain >= 0 ? "#3B6D11" : "#A6412E"} />
-            <text x="150" y={H - investedH - gainH - 8} textAnchor="middle" className="serif" style={{ fontSize: 13, fontWeight: 600, fill: data.gain >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{data.gain >= 0 ? "+" : ""}{fmtM(data.gain)}</text>
-            <text x="150" y="192" textAnchor="middle" style={{ fontSize: 10.5, fill: "var(--text-2)" }}>Plus-value</text>
-            {/* Valeur actuelle */}
-            <rect x="210" y={H - data.valuation * scale} width="60" height={data.valuation * scale} rx="4" fill="var(--espresso)" />
-            <text x="240" y={H - data.valuation * scale - 8} textAnchor="middle" className="serif" style={{ fontSize: 13, fontWeight: 600, fill: "var(--ink)" }}>{fmtM(data.valuation)}</text>
-            <text x="240" y="192" textAnchor="middle" style={{ fontSize: 10.5, fill: "var(--text-2)" }}>Valeur</text>
-          </svg>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: "0 0 8px" }}>Par participation</div>
+      <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={{ ...th, textAlign: "left" }}>Société</th><th style={th}>Millésime</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valeur</th><th style={th}>TVPI</th><th style={th}>DPI</th><th style={th}>TRI</th>
+            </tr></thead>
+            <tbody>
+              {data.companies.map((c) => (
+                <tr key={c.name}>
+                  <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{c.name}</td>
+                  <td style={{ ...td, color: "var(--text-3)" }}>{c.vintage ?? "—"}</td>
+                  <td style={td}>{fmtM(c.paidIn)}</td>
+                  <td style={td}>{c.distributed > 0 ? fmtM(c.distributed) : "—"}</td>
+                  <td style={td}>{fmtM(c.value)}</td>
+                  <td style={{ ...td, fontWeight: 600, color: multColor(c.tvpi) }}>{fmtMult(c.tvpi)}</td>
+                  <td style={{ ...td, color: "var(--text-2)" }}>{c.dpi != null && c.dpi > 0 ? fmtMult(c.dpi) : "—"}</td>
+                  <td style={{ ...td, fontWeight: 600, color: c.irr != null && c.irr >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{pct(c.irr)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: "0 0 8px" }}>Par millésime <span style={{ fontWeight: 400, color: "var(--text-3)" }}>(vintage)</span></div>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>
+              <th style={{ ...th, textAlign: "left" }}>Année</th><th style={th}>Lignes</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valeur</th><th style={th}>TVPI</th><th style={th}>TRI</th>
+            </tr></thead>
+            <tbody>
+              {data.vintages.length === 0 ? (
+                <tr><td colSpan={7} style={{ ...td, textAlign: "center", color: "var(--text-3)" }}>Aucune date d'entrée renseignée.</td></tr>
+              ) : data.vintages.map((v) => (
+                <tr key={v.year}>
+                  <td style={{ ...td, textAlign: "left", fontWeight: 600 }}>{v.year}</td>
+                  <td style={{ ...td, color: "var(--text-3)" }}>{v.count}</td>
+                  <td style={td}>{fmtM(v.paidIn)}</td>
+                  <td style={td}>{v.distributed > 0 ? fmtM(v.distributed) : "—"}</td>
+                  <td style={td}>{fmtM(v.value)}</td>
+                  <td style={{ ...td, fontWeight: 600, color: multColor(v.tvpi) }}>{fmtMult(v.tvpi)}</td>
+                  <td style={{ ...td, fontWeight: 600, color: v.irr != null && v.irr >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{pct(v.irr)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
