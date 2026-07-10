@@ -7,6 +7,8 @@ import { fmtM, fmtMult, fmtPct } from "@/lib/format";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
+import ValueCreationTab from "@/components/shared/ValueCreationTab";
+import EntityDocuments from "@/components/shared/EntityDocuments";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -81,7 +83,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
 
       {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} />}
       {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
-      {tab === "Création de valeur" && <EmptyTab title="Plan de création de valeur" desc="Les initiatives de création de valeur (expansion, gouvernance, recrutements clés…) avec leur avancement." />}
+      {tab === "Création de valeur" && <ValueCreationTab entityType="company" entityId={company.id} items={company.valueCreation} />}
       {tab === "Flux & Valorisation" && <FlowsTab companyId={company.id} rows={company.finance.flows} />}
       {tab === "Cap table" && <CapTableTab companyId={company.id} rows={company.finance.capTable} />}
 
@@ -131,19 +133,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
         </div>
       )}
 
-      {tab === "Documents" && (
-        company.documents.length === 0 ? <EmptyTab title="Documents" desc="Aucun document pour cette société. Ajoutez-en depuis l'onglet Documents." /> : (
-          <div className="card" style={{ padding: "4px 18px" }}>
-            {company.documents.map((d, i) => (
-              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--camel)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h9l5 5v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /></svg>
-                <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{d.title}</span>
-                {d.category && <span className="badge badge-neutral">{d.category}</span>}
-              </div>
-            ))}
-          </div>
-        )
-      )}
+      {tab === "Documents" && <EntityDocuments entityType="company" entityId={company.id} entityName={company.name} docs={company.documents} />}
 
       {tab === "Contacts" && (
         company.contacts.length === 0 ? <EmptyTab title="Contacts" desc="Aucun contact rattaché à cette société." /> : (
