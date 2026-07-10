@@ -20,16 +20,16 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
   const [pending, start] = useTransition();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", roleId: roles.find((r) => r.name === "Analyste")?.id ?? roles[0]?.id ?? "" });
-  const [result, setResult] = useState<{ tempPassword?: string; error?: string } | null>(null);
-  const [reset, setReset] = useState<{ email: string; tempPassword?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ inviteLink?: string; error?: string } | null>(null);
+  const [reset, setReset] = useState<{ email: string; resetLink?: string; error?: string } | null>(null);
 
   function resetPwd(u: User) {
-    if (!confirm(`Réinitialiser le mot de passe de ${u.name || u.email} ? Un mot de passe temporaire sera généré.`)) return;
+    if (!confirm(`Générer un lien de réinitialisation pour ${u.name || u.email} ?`)) return;
     setReset({ email: u.email });
     start(async () => {
       const res = await resetUserPassword(u.id);
       if (res.error) setReset({ email: u.email, error: res.error });
-      else setReset({ email: u.email, tempPassword: res.tempPassword });
+      else setReset({ email: u.email, resetLink: res.resetLink });
     });
   }
 
@@ -38,9 +38,11 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
     start(async () => {
       const res = await inviteUser(form.email, form.roleId, form.name);
       if (res.error) setResult({ error: res.error });
-      else { setResult({ tempPassword: res.tempPassword }); router.refresh(); }
+      else { setResult({ inviteLink: res.inviteLink }); router.refresh(); }
     });
   }
+
+  function copy(text: string) { navigator.clipboard?.writeText(text); }
 
   function changeRole(userId: string, roleId: string) {
     start(async () => { await setUserRole(userId, roleId); router.refresh(); });
@@ -88,15 +90,19 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
 
       {modal && (
         <Modal title="Inviter un utilisateur" onClose={() => setModal(false)}
-          footer={result?.tempPassword ? <button className="btn btn-primary" onClick={() => setModal(false)}>Terminé</button> : <>
+          footer={result?.inviteLink ? <button className="btn btn-primary" onClick={() => setModal(false)}>Terminé</button> : <>
             <button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button>
-            <button className="btn btn-primary" disabled={pending || !form.email.trim()} onClick={submitInvite}>{pending ? "Création…" : "Créer le compte"}</button>
+            <button className="btn btn-primary" disabled={pending || !form.email.trim()} onClick={submitInvite}>{pending ? "Création…" : "Créer et générer le lien"}</button>
           </>}>
-          {result?.tempPassword ? (
+          {result?.inviteLink ? (
             <div>
-              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 12 }}>✅ Compte créé pour <b>{form.email}</b>.</div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Communiquez-lui ce mot de passe temporaire (il pourra le changer) :</div>
-              <div style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 600, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", textAlign: "center", letterSpacing: 1, color: "var(--espresso)" }}>{result.tempPassword}</div>
+              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Invitation créée pour <b>{form.email}</b>.</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Transmettez-lui ce lien (email, WhatsApp…). Il choisira lui-même son mot de passe :</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <div style={{ flex: 1, fontFamily: "monospace", fontSize: 11.5, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", wordBreak: "break-all", color: "var(--espresso)" }}>{result.inviteLink}</div>
+                <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => copy(result.inviteLink!)}>Copier</button>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 8 }}>Le lien est valable un temps limité ; s'il expire, réinitialisez le mot de passe pour en générer un nouveau.</div>
             </div>
           ) : (
             <>
@@ -114,15 +120,18 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
       )}
 
       {reset && (
-        <Modal title="Réinitialiser le mot de passe" onClose={() => setReset(null)}
+        <Modal title="Lien de réinitialisation" onClose={() => setReset(null)}
           footer={<button className="btn btn-primary" onClick={() => setReset(null)}>Terminé</button>}>
           {reset.error ? (
             <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px" }}>{reset.error}</div>
-          ) : reset.tempPassword ? (
+          ) : reset.resetLink ? (
             <div>
-              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 12 }}>✅ Nouveau mot de passe temporaire pour <b>{reset.email}</b>.</div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Communiquez-le à la personne — elle pourra le changer depuis « Mon compte » :</div>
-              <div style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 600, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px", textAlign: "center", letterSpacing: 1, color: "var(--espresso)" }}>{reset.tempPassword}</div>
+              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Lien généré pour <b>{reset.email}</b>.</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Transmettez-le à la personne — elle choisira un nouveau mot de passe :</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <div style={{ flex: 1, fontFamily: "monospace", fontSize: 11.5, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", wordBreak: "break-all", color: "var(--espresso)" }}>{reset.resetLink}</div>
+                <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => copy(reset.resetLink!)}>Copier</button>
+              </div>
             </div>
           ) : (
             <div style={{ fontSize: 13, color: "var(--text-3)", textAlign: "center", padding: "8px 0" }}>Génération…</div>

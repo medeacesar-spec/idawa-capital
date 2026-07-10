@@ -3,6 +3,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+
+async function siteOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get("host") ?? "";
+  const proto = host.includes("localhost") || host.startsWith("127.") ? "http" : "https";
+  return `${proto}://${host}`;
+}
 
 // Seuls l'Administrateur et la Direction peuvent gérer les utilisateurs.
 async function assertAdmin(): Promise<boolean> {
@@ -14,29 +22,24 @@ async function assertAdmin(): Promise<boolean> {
   return role === "Administrateur" || role === "Associé / Direction";
 }
 
-function genPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  let s = "";
-  for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s + "#7";
-}
-
 export async function inviteUser(email: string, roleId: string, fullName: string) {
   if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
   const admin = createAdminClient();
-  const tempPassword = genPassword();
-  const { data, error } = await admin.auth.admin.createUser({
+  const origin = await siteOrigin();
+  // Crée le compte (sans mot de passe utilisable) ET génère un lien d'invitation.
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "invite",
     email: email.trim(),
-    password: tempPassword,
-    email_confirm: true,
-    user_metadata: { full_name: fullName },
+    options: { data: { full_name: fullName }, redirectTo: `${origin}/reinitialiser` },
   });
   if (error) return { error: error.message };
-  if (data.user && roleId) {
-    await admin.from("profiles").update({ role_id: roleId, full_name: fullName, email: email.trim() }).eq("id", data.user.id);
+  const userId = data.user?.id;
+  if (userId && roleId) {
+    await admin.from("profiles").update({ role_id: roleId, full_name: fullName, email: email.trim() }).eq("id", userId);
   }
+  const inviteLink = `${origin}/auth/confirm?token_hash=${data.properties?.hashed_token}&type=invite&next=/reinitialiser`;
   revalidatePath("/utilisateurs");
-  return { ok: true, tempPassword };
+  return { ok: true, inviteLink };
 }
 
 export async function setUserRole(userId: string, roleId: string) {
@@ -50,10 +53,18 @@ export async function setUserRole(userId: string, roleId: string) {
 export async function resetUserPassword(userId: string) {
   if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
   const admin = createAdminClient();
-  const tempPassword = genPassword();
-  const { error } = await admin.auth.admin.updateUserById(userId, { password: tempPassword });
+  const { data: got } = await admin.auth.admin.getUserById(userId);
+  const email = got?.user?.email;
+  if (!email) return { error: "Utilisateur introuvable." };
+  const origin = await siteOrigin();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${origin}/reinitialiser` },
+  });
   if (error) return { error: error.message };
-  return { ok: true, tempPassword };
+  const resetLink = `${origin}/auth/confirm?token_hash=${data.properties?.hashed_token}&type=recovery&next=/reinitialiser`;
+  return { ok: true, resetLink };
 }
 
 export async function deleteUser(userId: string) {
