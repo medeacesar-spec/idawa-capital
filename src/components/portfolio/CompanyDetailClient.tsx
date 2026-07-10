@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CompanyDetail, KpiSeries } from "@/lib/data/companyDetail";
 import { fmtM, fmtMult, fmtPct } from "@/lib/format";
+import SuiviTab from "@/components/shared/SuiviTab";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
@@ -13,7 +14,7 @@ function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); retu
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n)); }
 
 const CATS = ["Management", "Commercial", "Production", "Support"];
-const BASE_TABS = ["KPIs", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const BASE_TABS = ["KPIs", "Suivi", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 
 function Chart({ k }: { k: KpiSeries }) {
@@ -147,6 +148,8 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
           </div>
         ) : <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun KPI suivi. <Link href="/saisie" style={{ color: "var(--camel)", fontWeight: 600 }}>Saisir un reporting</Link>.</div>
       )}
+
+      {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} />}
 
       {tab === "ESG" && <EmptyTab title="ESG & Impact" desc="Le screening E&S, le rating d'impact (IPDEV 2) et le plan d'actions de cette société. Renseignés lors de l'instruction et suivis en revue semestrielle. (Section détaillée à venir par société.)" />}
       {tab === "Budget & BP" && <EmptyTab title="Budget & Business Plan" desc="Budget vs réalisé et suivi du business plan de la société. À renseigner via le reporting périodique." />}

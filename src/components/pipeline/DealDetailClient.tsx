@@ -7,6 +7,7 @@ import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
+import SuiviTab from "@/components/shared/SuiviTab";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -149,7 +150,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
         </div>
       )}
 
-      {tab === "Suivi" && <EmptyTab title="Suivi (notes & actions)" desc="Journal des réunions, appels, et actions de suivi (avec responsable et échéance). À alimenter au fil de la relation." />}
+      {tab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} />}
       {tab === "Due diligence" && <EmptyTab title="Due diligence" desc="Avancement de la due diligence par domaine (financière, juridique, commerciale, opérationnelle, ESG)." />}
       {tab === "KPIs" && <EmptyTab title="KPIs (suivi)" desc="Indicateurs clés suivis dès la phase de due diligence. Activez le suivi et saisissez les valeurs via « Saisir un reporting »." />}
       {tab === "Création de valeur" && <EmptyTab title="Plan de création de valeur" desc="Plan préliminaire préparé pendant l'instruction, repris par la société à la conversion." />}

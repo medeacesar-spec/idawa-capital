@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 
 export type KpiSeries = {
   id: string;
@@ -32,6 +33,8 @@ export type CompanyDetail = {
   originDealName: string | null;
   originCommittees: OriginCommittee[];
   originNotes: OriginNote[];
+  notes: SuiviNote[];
+  tasks: SuiviTask[];
   kpis: KpiSeries[];
   contacts: DetailContact[];
   documents: DetailDoc[];
@@ -71,6 +74,8 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     }));
   }
 
+  const suivi = await getSuivi("company", id);
+
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
@@ -83,6 +88,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
+    notes: suivi.notes, tasks: suivi.tasks,
     kpis, contacts: contactRes.data ?? [], documents: docRes.data ?? [],
   };
 }

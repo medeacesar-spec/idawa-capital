@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 
 export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null };
 export type DealContact = { id: string; name: string; function: string | null; email: string | null };
@@ -24,6 +25,8 @@ export type DealDetail = {
   committees: CommitteePassage[];
   contacts: DealContact[];
   documents: DealDoc[];
+  notes: SuiviNote[];
+  tasks: SuiviTask[];
 };
 
 const dn = (p?: { full_name?: string | null; email?: string | null } | null) => (p ? p.full_name || p.email || null : null);
@@ -47,6 +50,8 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     supabase.from("portfolio_companies").select("id").eq("origin_deal_id", id).maybeSingle(),
   ]);
 
+  const suivi = await getSuivi("deal", id);
+
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
     id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null, amount: Number(d.amount ?? 0),
@@ -61,5 +66,6 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     expectedClose: d.expected_close,
     committees: (comRes.data ?? []).map((c) => ({ id: c.id, committeeType: c.committee_type, sessionDate: c.session_date, decision: c.decision, conditions: c.conditions, participants: c.participants })),
     contacts: contactRes.data ?? [], documents: docRes.data ?? [],
+    notes: suivi.notes, tasks: suivi.tasks,
   };
 }
