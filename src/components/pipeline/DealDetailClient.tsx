@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
+import ConvertDealModal from "./ConvertDealModal";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -29,7 +30,9 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
   const [comModal, setComModal] = useState<{ open: boolean; passage: CommitteePassage | null }>({ open: false, passage: null });
+  const [convertOpen, setConvertOpen] = useState(false);
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
+  const converted = !!deal.convertedCompanyId || deal.status === "investi";
 
   async function removeCommittee(id: string) {
     if (!confirm("Supprimer ce passage en comité ?")) return;
@@ -64,6 +67,21 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
             {deal.programName && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--text-3)" }}>· <span style={{ width: 7, height: 7, borderRadius: "50%", background: deal.programColor ?? "var(--text-3)" }} />{deal.programName}</span>}
           </div>
         </div>
+        {converted ? (
+          deal.convertedCompanyId ? (
+            <button className="btn btn-ghost" onClick={() => router.push(`/portefeuille/${deal.convertedCompanyId}`)} style={{ flexShrink: 0 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              Voir la participation
+            </button>
+          ) : (
+            <span className="badge badge-green" style={{ flexShrink: 0 }}>Investi</span>
+          )
+        ) : (
+          <button className="btn btn-primary" onClick={() => setConvertOpen(true)} style={{ flexShrink: 0 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            Convertir en participation
+          </button>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 18 }}>
@@ -166,6 +184,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
       )}
 
       {comModal.open && <CommitteeFormModal dealId={deal.id} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
+      {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
     </div>
   );
 }

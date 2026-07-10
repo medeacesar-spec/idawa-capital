@@ -13,7 +13,8 @@ function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); retu
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n)); }
 
 const CATS = ["Management", "Commercial", "Production", "Support"];
-const TABS = ["KPIs", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const BASE_TABS = ["KPIs", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 
 function Chart({ k }: { k: KpiSeries }) {
   const w = 400, h = 110;
@@ -78,6 +79,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
   const [tab, setTab] = useState("KPIs");
   const [cat, setCat] = useState("Management");
   const equity = company.trackingType === "equity";
+  const TABS = company.originDealId ? [...BASE_TABS, "Origine / instruction"] : BASE_TABS;
 
   const facts: [string, string][] = equity
     ? [["Investi", fmtM(company.invested)], ["Valeur", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
@@ -151,6 +153,52 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
       {tab === "Création de valeur" && <EmptyTab title="Plan de création de valeur" desc="Les initiatives de création de valeur (expansion, gouvernance, recrutements clés…) avec leur avancement." />}
       {tab === "Flux & Valorisation" && <EmptyTab title="Flux financiers & Valorisation" desc="Appels de fonds, distributions, et historique de valorisation (TVPI/DPI/TRI)." />}
       {tab === "Cap table" && <EmptyTab title="Table de capitalisation" desc="Répartition du capital entre fondateurs, Idawa, co-investisseurs et pool ESOP." />}
+
+      {tab === "Origine / instruction" && (
+        <div style={{ display: "grid", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Historique d'instruction repris du dossier <b style={{ color: "var(--ink)" }}>{company.originDealName ?? "d'origine"}</b>.</div>
+            {company.originDealId && <button className="btn btn-ghost" onClick={() => router.push(`/pipeline/${company.originDealId}`)}>Ouvrir le dossier d'origine</button>}
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Passages en comité</div>
+            {company.originCommittees.length === 0 ? (
+              <div className="card" style={{ padding: "20px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun passage en comité enregistré pendant l'instruction.</div>
+            ) : (
+              <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 12 }}>
+                {company.originCommittees.map((c) => (
+                  <div key={c.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--camel)", marginTop: 5, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
+                        {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
+                        <span style={{ fontSize: 11, color: "var(--text-3)" }}>{frMonth(c.sessionDate)}</span>
+                      </div>
+                      {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 2 }}>{c.conditions}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {company.originNotes.length > 0 && (
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Notes d'instruction</div>
+              <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 10 }}>
+                {company.originNotes.map((n) => (
+                  <div key={n.id} style={{ borderTop: "1px solid var(--sep)", paddingTop: 10 }}>
+                    <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 2 }}>{n.type ?? "Note"} · {frMonth(n.noteDate)}</div>
+                    <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55 }}>{n.summary}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === "Documents" && (
         company.documents.length === 0 ? <EmptyTab title="Documents" desc="Aucun document pour cette société. Ajoutez-en depuis l'onglet Documents." /> : (

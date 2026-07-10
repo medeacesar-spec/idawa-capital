@@ -11,6 +11,8 @@ export type KpiSeries = {
 };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null };
 export type DetailDoc = { id: string; title: string; category: string | null };
+export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null };
+export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
 
 export type CompanyDetail = {
   id: string;
@@ -26,7 +28,10 @@ export type CompanyDetail = {
   investedDate: string | null;
   programName: string | null;
   programColor: string | null;
+  originDealId: string | null;
   originDealName: string | null;
+  originCommittees: OriginCommittee[];
+  originNotes: OriginNote[];
   kpis: KpiSeries[];
   contacts: DetailContact[];
   documents: DetailDoc[];
@@ -49,6 +54,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     supabase.from("documents").select("id, title, category").eq("company_id", id),
   ]);
 
+  const [ocRes, onRes] = await Promise.all([
+    c.origin_deal_id ? supabase.from("committee_passages").select("id, committee_type, session_date, decision, conditions").eq("deal_id", c.origin_deal_id).order("session_date") : Promise.resolve({ data: [] }),
+    c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
+  ]);
+
   const tracked = trackedRes.data ?? [];
   let kpis: KpiSeries[] = [];
   if (tracked.length) {
@@ -69,7 +79,10 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     tvpi: c.tvpi != null ? Number(c.tvpi) : null, tri: c.tri != null ? Number(c.tri) : null,
     ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
     investedDate: c.invested_date, programName: prog?.name ?? null, programColor: prog?.color ?? null,
+    originDealId: c.origin_deal_id ?? null,
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
+    originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
+    originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
     kpis, contacts: contactRes.data ?? [], documents: docRes.data ?? [],
   };
 }
