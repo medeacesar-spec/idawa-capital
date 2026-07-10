@@ -1,124 +1,91 @@
-const LV: Record<string, [string, string]> = {
-  "Élevé": ["var(--red-bg)", "var(--red-fg)"],
-  "Moyen": ["var(--amber-bg)", "var(--amber-fg)"],
-  "Faible": ["var(--green-bg)", "var(--green-fg)"],
-};
+import Link from "next/link";
+import { getEsgOverview } from "@/lib/data/esg";
 
-const STEPS = [
-  ["1", "Ouverture", "COD"],
-  ["2", "Rating d'impact", "Avant invest."],
-  ["3", "Due Diligence", "Instruction"],
-  ["4", "Bilan DD", "Comité invest."],
-  ["5", "Plan d'actions", "Suivi semestriel"],
-];
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
+const RISK_COLOR: Record<string, [string, string]> = { "C": ["var(--green-bg)", "var(--green-fg)"], "B": ["var(--amber-bg)", "var(--amber-fg)"], "A": ["var(--red-bg)", "var(--red-fg)"] };
+const RISK_LABEL: Record<string, string> = { A: "A · élevé", B: "B · modéré", C: "C · faible" };
+const CAT_COLOR: Record<string, string> = { E: "#3B6D11", S: "#185FA5", G: "#8A5A18" };
 
-const PS = [
-  ["PS1", "Gestion des risques E&S", "Élevé"],
-  ["PS2", "Main d'œuvre & conditions de travail", "Moyen"],
-  ["PS3", "Ressources & pollution", "Moyen"],
-  ["PS4", "Santé-sécurité communautés", "Moyen"],
-  ["PS5", "Terres & réinstallation", "Faible"],
-  ["PS6", "Biodiversité", "Faible"],
-  ["PS7", "Peuples autochtones", "Faible"],
-  ["PS8", "Patrimoine culturel", "Faible"],
-  ["G", "Gouvernance", "Élevé"],
-];
+const STEPS = [["1", "Ouverture", "COD"], ["2", "Rating d'impact", "Avant invest."], ["3", "Due Diligence", "Instruction"], ["4", "Bilan DD", "Comité invest."], ["5", "Plan d'actions", "Suivi semestriel"]];
 
-const IMPACT: [string, number, number][] = [
-  ["Entrepreneurs", 8, 12],
-  ["Clients", 3, 4],
-  ["Employés", 9, 12],
-  ["Contractants", 2, 4],
-];
+const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "16px 18px" };
+const h3: React.CSSProperties = { fontSize: 13, fontWeight: 600, margin: "0 0 12px", color: "var(--ink)" };
 
-const ACTIONS: [string, string, string][] = [
-  ["Formaliser la politique E&S", "G", "Réalisée"],
-  ["Mécanisme de plaintes salariés", "S", "En cours"],
-  ["Plan de gestion des déchets", "E", "À lancer"],
-  ["Renforcer la parité au comité", "G", "En cours"],
-];
-const ACT_STATUS: Record<string, string> = { "Réalisée": "badge-green", "En cours": "badge-amber", "À lancer": "badge-red" };
-
-const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "15px 16px" };
-const h3: React.CSSProperties = { fontSize: 13, fontWeight: 600, margin: "0 0 11px", color: "var(--ink)" };
-
-export default function EsgPage() {
-  const impactTotal = IMPACT.reduce((a, x) => a + x[1], 0);
-  const impactMax = IMPACT.reduce((a, x) => a + x[2], 0);
+export default async function EsgPage() {
+  const o = await getEsgOverview();
+  const doneRate = o.actionsTotal ? Math.round((o.actionsDone / o.actionsTotal) * 100) : 0;
+  const impactPct = o.impactMax ? Math.round((o.impactScore / o.impactMax) * 100) : 0;
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <span className="badge" style={{ background: "var(--surface-cream)", color: "var(--espresso)" }}>Méthodologie I&P / IPDEV 2 · Normes IFC (PS1–PS8)</span>
-        <span style={{ fontSize: 12, color: "var(--text-2)" }}>Exemple : Le Christal · Secteur EHS Volailles · Risque brut Moyen</span>
+        <span style={{ fontSize: 12, color: "var(--text-2)" }}>Consolidation du portefeuille — l'ESG se saisit dans chaque fiche société (onglet ESG).</span>
       </div>
 
-      {/* Processus 5 étapes */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        {STEPS.map((s) => (
-          <div key={s[0]} style={{ flex: "1 1 130px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 11, padding: "9px 11px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--espresso)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s[0]}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{s[1]}</span>
-            </div>
-            <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 3, paddingLeft: 25 }}>{s[2]}</div>
-          </div>
-        ))}
+      {/* Chiffres-clés */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 14 }}>
+        <div style={panel}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Sociétés évaluées</div><div className="serif tnum" style={{ fontSize: 22, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>{o.companiesRated}<span style={{ fontSize: 13, color: "var(--text-3)" }}> / {o.companiesTotal}</span></div></div>
+        <div style={panel}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Avancement des plans d'action</div><div className="serif tnum" style={{ fontSize: 22, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>{doneRate}%</div><div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{o.actionsDone} / {o.actionsTotal} réalisées</div></div>
+        <div style={panel}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Actions en retard</div><div className="serif tnum" style={{ fontSize: 22, fontWeight: 600, color: o.overdue.length ? "var(--red-fg)" : "var(--green-fg)", marginTop: 4 }}>{o.overdue.length}</div></div>
+        <div style={panel}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Score d'impact cumulé</div><div className="serif tnum" style={{ fontSize: 22, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>{o.impactScore}<span style={{ fontSize: 13, color: "var(--text-3)" }}> / {o.impactMax}</span></div><div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{impactPct}%</div></div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 13 }}>
-        {/* Notation risques IFC */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 13, marginBottom: 14 }}>
+        {/* Répartition des risques */}
         <div style={panel}>
-          <h3 style={h3}>Notation des risques E&S bruts — normes IFC</h3>
-          {PS.map((p, i) => {
-            const c = LV[p[2]];
+          <h3 style={h3}>Répartition par catégorie de risque E&S</h3>
+          {o.byRisk.map((r) => {
+            const c = RISK_COLOR[r.level] ?? ["var(--neutral-bg)", "var(--neutral-fg)"];
+            const max = Math.max(1, ...o.byRisk.map((x) => x.count));
             return (
-              <div key={p[0]} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep-2)" }}>
-                <span style={{ width: 26, fontSize: 10.5, fontWeight: 700, color: "var(--espresso)" }}>{p[0]}</span>
-                <span style={{ flex: 1, fontSize: 11, color: "var(--ink)" }}>{p[1]}</span>
-                <span className="badge" style={{ background: c[0], color: c[1] }}>{p[2]}</span>
+              <div key={r.level} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 9 }}>
+                <span className="badge" style={{ background: c[0], color: c[1], minWidth: 74, textAlign: "center" }}>{RISK_LABEL[r.level] ?? r.level}</span>
+                <div style={{ flex: 1, height: 8, background: "var(--cream)", borderRadius: 4 }}><div style={{ width: `${(r.count / max) * 100}%`, height: "100%", background: c[1], borderRadius: 4 }} /></div>
+                <span className="tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", minWidth: 18, textAlign: "right" }}>{r.count}</span>
               </div>
             );
           })}
+          {o.companiesRated === 0 && <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6 }}>Aucune société encore évaluée. Renseignez le diagnostic E&S dans les fiches société.</div>}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-          {/* Rating d'impact */}
-          <div style={panel}>
-            <h3 style={h3}>Rating d'impact <span style={{ fontWeight: 400, color: "var(--text-3)" }}>(IPDEV 2)</span></h3>
-            {IMPACT.map((x) => (
-              <div key={x[0]} style={{ marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
-                  <span style={{ color: "var(--text-2)" }}>{x[0]}</span>
-                  <span className="tnum" style={{ fontWeight: 600, color: "var(--ink)" }}>{x[1]}/{x[2]}</span>
-                </div>
-                <div style={{ height: 5, background: "var(--cream)", borderRadius: 3 }}>
-                  <div style={{ width: `${(x[1] / x[2]) * 100}%`, height: "100%", background: "#3B6D11", borderRadius: 3 }} />
-                </div>
-              </div>
-            ))}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--sep-2)" }}>
-              <span style={{ fontSize: 11, color: "var(--text-2)" }}>Score total</span>
-              <span className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>{impactTotal} / {impactMax}</span>
+        {/* Actions en retard */}
+        <div style={panel}>
+          <h3 style={h3}>Actions E&S en retard <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— à traiter en priorité</span></h3>
+          {o.overdue.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--text-3)", padding: "10px 0" }}>Aucune action en retard. 👍</div>
+          ) : (
+            <div>
+              {o.overdue.map((a, i) => (
+                <Link key={i} href={`/portefeuille/${a.companyId}`} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep-2)", textDecoration: "none" }}>
+                  <span style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, background: `${CAT_COLOR[a.category ?? ""] ?? "#6B5744"}1a`, color: CAT_COLOR[a.category ?? ""] ?? "#6B5744", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{a.category ?? "?"}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.action}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>{a.companyName} · échéance {frDate(a.dateEndPlan)}</div>
+                  </div>
+                  <span className="badge badge-red">En retard</span>
+                </Link>
+              ))}
             </div>
-          </div>
-
-          {/* Plan d'actions */}
-          <div style={panel}>
-            <h3 style={h3}>Plan d'actions & monitoring</h3>
-            {ACTIONS.map((a, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep-2)" }}>
-                <span style={{ width: 15, fontSize: 10, fontWeight: 700, color: "var(--text-3)" }}>{a[1]}</span>
-                <span style={{ flex: 1, fontSize: 11, color: "var(--ink)" }}>{a[0]}</span>
-                <span className={`badge ${ACT_STATUS[a[2]]}`}>{a[2]}</span>
-              </div>
-            ))}
-            <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 8 }}>Revue semestrielle validée par le Conseil d'administration.</div>
-          </div>
+          )}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 12 }}>
-        L'ESG est renseigné par entreprise (screening, due diligence, plan d'actions) dans la fiche de chaque société et de chaque deal.
+
+      {/* Processus (référence) */}
+      <div style={panel}>
+        <h3 style={h3}>Processus ESG — 5 étapes</h3>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {STEPS.map((s) => (
+            <div key={s[0]} style={{ flex: "1 1 130px", background: "var(--surface-cream)", borderRadius: 10, padding: "9px 11px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--espresso)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s[0]}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{s[1]}</span>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 3, paddingLeft: 25 }}>{s[2]}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

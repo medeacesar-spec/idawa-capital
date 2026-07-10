@@ -34,6 +34,15 @@ export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "A
 export const NOTE_TYPES = ["Réunion", "Appel", "Email", "Note"];
 export const TASK_STATUS = ["À faire", "En cours", "Fait"];
 
+// ESG — méthodologie I&P / IPDEV 2 + normes IFC (PS1–8)
+// Catégorisation IFC : A (risque élevé), B (modéré), C (faible)
+export const ESG_RISK_LEVELS = ["A", "B", "C"];
+export const ESG_RISK_LABEL: Record<string, string> = { A: "A — Risque élevé", B: "B — Risque modéré", C: "C — Risque faible" };
+export const ESG_ACTION_CATEGORIES = ["E", "S", "G"];
+export const ESG_CATEGORY_LABEL: Record<string, string> = { E: "Environnement", S: "Social", G: "Gouvernance" };
+export const ESG_ACTION_STATUS = ["À lancer", "En cours", "Réalisée"];
+export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "Contractants", "Environnement", "Genre"];
+
 // Catalogue d'indicateurs d'accompagnement (chaîne de résultats), avec unité par défaut.
 export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; unit: string }[] }[] = [
   { category: "Moyens", items: [
