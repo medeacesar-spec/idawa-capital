@@ -79,7 +79,7 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
           <div style={{ padding: "28px 0", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun deal pour ce périmètre.</div>
         )}
         {list.map((d) => (
-          <div key={d.id} className="deal-row">
+          <div key={d.id} className="deal-row deal-row-click" onClick={() => router.push(`/pipeline/${d.id}`)} style={{ cursor: "pointer" }}>
             <div style={{ width: 34, height: 34, borderRadius: 9, background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
               {initials(d.companyName)}
             </div>
@@ -111,8 +111,8 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
             </div>
             <div className="serif tnum" style={{ textAlign: "right", fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{fmtM(d.amount)}</div>
             <div className="row-actions">
-              <button onClick={() => setModal({ open: true, deal: d })} aria-label="Modifier" title="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-              <button onClick={() => remove(d)} aria-label="Supprimer" title="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+              <button onClick={(e) => { e.stopPropagation(); setModal({ open: true, deal: d }); }} aria-label="Modifier" title="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+              <button onClick={(e) => { e.stopPropagation(); remove(d); }} aria-label="Supprimer" title="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
             </div>
           </div>
         ))}

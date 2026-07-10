@@ -136,3 +136,8 @@ h1, h2, h3, h4 {
 .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
 .row-actions button { border: none; background: none; cursor: pointer; color: var(--text-3); padding: 4px; display: flex; }
 .row-actions button:hover { color: var(--espresso); }
+
+.card-clickable { transition: border-color .15s, box-shadow .15s; }
+.card-clickable:hover { border-color: var(--camel); box-shadow: 0 2px 6px rgba(74,38,23,.08), 0 16px 40px -22px rgba(74,38,23,.28); }
+.deal-row-click { transition: background .12s; }
+.deal-row-click:hover { background: var(--surface-cream); }

@@ -24,12 +24,13 @@ function initials(name: string): string {
 }
 
 function Actions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
   return (
     <div style={{ display: "flex", gap: 2 }}>
-      <button onClick={onEdit} aria-label="Modifier" title="Modifier" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, display: "flex" }}>
+      <button onClick={stop(onEdit)} aria-label="Modifier" title="Modifier" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, display: "flex" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
       </button>
-      <button onClick={onDelete} aria-label="Supprimer" title="Supprimer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, display: "flex" }}>
+      <button onClick={stop(onDelete)} aria-label="Supprimer" title="Supprimer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, display: "flex" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>
       </button>
     </div>
@@ -47,11 +48,11 @@ function ProgramTag({ c }: { c: PortfolioCompany }) {
   );
 }
 
-function EquityCard({ c, onEdit, onDelete }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void }) {
+function EquityCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void }) {
   const badge = STATUS_BADGE[c.status] ?? STATUS_BADGE["Actif"];
   const multColor = (c.tvpi ?? 0) >= 1 ? "var(--green-fg)" : "var(--red-fg)";
   return (
-    <div className="card" style={{ padding: 14 }}>
+    <div className="card card-clickable" onClick={onOpen} style={{ padding: 14, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11 }}>
         <div style={{ width: 35, height: 35, borderRadius: 9, background: "var(--brown)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{initials(c.name)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -75,10 +76,10 @@ function EquityCard({ c, onEdit, onDelete }: { c: PortfolioCompany; onEdit: () =
   );
 }
 
-function AccompCard({ c, onEdit, onDelete }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void }) {
+function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void }) {
   const badge = STATUS_BADGE[c.status] ?? STATUS_BADGE["Actif"];
   return (
-    <div className="card" style={{ padding: 14 }}>
+    <div className="card card-clickable" onClick={onOpen} style={{ padding: 14, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 11 }}>
         <div style={{ width: 35, height: 35, borderRadius: 9, background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{initials(c.name)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -160,8 +161,8 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
           {list.map((c) =>
             c.trackingType === "equity"
-              ? <EquityCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} />
-              : <AccompCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} />
+              ? <EquityCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} />
+              : <AccompCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} />
           )}
         </div>
       )}
