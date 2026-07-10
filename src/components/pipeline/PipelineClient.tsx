@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { PipelineData } from "@/lib/data/pipeline";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { PipelineData, PipelineDeal } from "@/lib/data/pipeline";
 import { fmtM, fmtInt } from "@/lib/format";
+import DealFormModal from "./DealFormModal";
 
 const STAGE_COLOR: Record<string, string> = {
   Sourcing: "#8A7256",
@@ -30,9 +33,18 @@ function Avatar({ label, bg, color }: { label: string; bg: string; color: string
 }
 
 export default function PipelineClient({ data }: { data: PipelineData }) {
+  const router = useRouter();
   const [scope, setScope] = useState<string>("all");
+  const [modal, setModal] = useState<{ open: boolean; deal: PipelineDeal | null }>({ open: false, deal: null });
   const list = scope === "all" ? data.deals : data.deals.filter((d) => d.programId === scope);
   const total = list.reduce((a, d) => a + d.amount, 0);
+
+  async function remove(d: PipelineDeal) {
+    if (!confirm(`Supprimer le deal « ${d.companyName} » ?`)) return;
+    const supabase = createClient();
+    await supabase.from("deals").delete().eq("id", d.id);
+    router.refresh();
+  }
 
   return (
     <div>
@@ -51,10 +63,14 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
         })}
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "flex", gap: 18, marginBottom: 8, fontSize: 12.5, color: "var(--text-2)" }}>
+      {/* Stats + action */}
+      <div style={{ display: "flex", gap: 18, marginBottom: 10, fontSize: 12.5, color: "var(--text-2)", alignItems: "center", flexWrap: "wrap" }}>
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> deal{list.length > 1 ? "s" : ""}</span>
         <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA en jeu</span>
+        <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={() => setModal({ open: true, deal: null })}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Nouveau deal
+        </button>
       </div>
 
       {/* Liste */}
@@ -93,10 +109,17 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
                 <span style={{ fontSize: 10.5, color: "var(--text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ color: "var(--text-3)" }}>Analyste </span>{d.analyst ?? "Non assigné"}</span>
               </div>
             </div>
-            <div className="serif tnum" style={{ width: 74, textAlign: "right", fontSize: 13, fontWeight: 600, color: "var(--ink)", flexShrink: 0 }}>{fmtM(d.amount)}</div>
+            <div className="serif tnum" style={{ textAlign: "right", fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{fmtM(d.amount)}</div>
+            <div className="row-actions">
+              <button onClick={() => setModal({ open: true, deal: d })} aria-label="Modifier" title="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+              <button onClick={() => remove(d)} aria-label="Supprimer" title="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+            </div>
           </div>
         ))}
       </div>
+      {modal.open && (
+        <DealFormModal deal={modal.deal} programs={data.programs} subSectors={data.subSectors} members={data.members} onClose={() => setModal({ open: false, deal: null })} />
+      )}
     </div>
   );
 }

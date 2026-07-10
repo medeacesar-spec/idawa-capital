@@ -12,6 +12,7 @@ export type PortfolioCompany = {
   tri: number | null;
   ownership: number | null;
   investedDate: string | null;
+  subSectorId: string | null;
   programId: string | null;
   programName: string | null;
   programColor: string | null;
@@ -19,27 +20,32 @@ export type PortfolioCompany = {
 };
 
 export type PortfolioProgram = { id: string; name: string; color: string; status: string };
+export type SubSectorOption = { id: string; name: string; industry: string };
 
 export type PortfolioData = {
   companies: PortfolioCompany[];
   programs: PortfolioProgram[];
+  subSectors: SubSectorOption[];
 };
 
 export async function getPortfolioData(): Promise<PortfolioData> {
   const supabase = await createClient();
 
-  const [compRes, progRes, subRes] = await Promise.all([
+  const [compRes, progRes, subRes, indRes] = await Promise.all([
     supabase
       .from("portfolio_companies")
       .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, program_id, primary_sub_sector_id, invested_date")
       .order("invested_date", { ascending: true }),
     supabase.from("programs").select("id, name, color, status, position").order("position"),
-    supabase.from("sub_sectors").select("id, name"),
+    supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
+    supabase.from("industries").select("id, name"),
   ]);
 
   const programs = progRes.data ?? [];
   const progMap = new Map(programs.map((p) => [p.id, p]));
   const subMap = new Map((subRes.data ?? []).map((s) => [s.id, s.name]));
+  const indMap = new Map((indRes.data ?? []).map((i) => [i.id, i.name]));
+  const subSectors = (subRes.data ?? []).map((s) => ({ id: s.id, name: s.name, industry: indMap.get(s.industry_id) ?? "" }));
 
   const companies: PortfolioCompany[] = (compRes.data ?? []).map((c) => {
     const prog = c.program_id ? progMap.get(c.program_id) : null;
@@ -55,6 +61,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
       tri: c.tri != null ? Number(c.tri) : null,
       ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
       investedDate: c.invested_date,
+      subSectorId: c.primary_sub_sector_id,
       programId: c.program_id,
       programName: prog?.name ?? null,
       programColor: prog?.color ?? null,
@@ -65,5 +72,6 @@ export async function getPortfolioData(): Promise<PortfolioData> {
   return {
     companies,
     programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color, status: p.status })),
+    subSectors,
   };
 }

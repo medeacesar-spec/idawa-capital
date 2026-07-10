@@ -1,39 +1,69 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ProgramRow } from "@/lib/data/params";
+import Modal from "@/components/ui/Modal";
+import { Field, Input, Select } from "@/components/ui/form";
+import { PROGRAM_NATURES, PROGRAM_STATUS, PROGRAM_COLORS } from "@/lib/ui-constants";
 
-const NATURES: { key: ProgramRow["nature"]; label: string }[] = [
-  { key: "invest", label: "Investissement" },
-  { key: "mixte", label: "Mixte" },
-  { key: "accompagnement", label: "Accompagnement" },
-];
-
-const NATURE_NOTE: Record<ProgramRow["nature"], string> = {
+const NATURE_NOTE: Record<string, string> = {
   invest: "Métriques financières : investi, valeur, TVPI, TRI, cap table.",
   accompagnement: "Activité & impact : budget, bénéficiaires, jours d'AT, emplois.",
   mixte: "Les deux grilles : financière et activité/impact.",
 };
 
-export default function ParametresClient({ programs }: { programs: ProgramRow[] }) {
-  const [rows, setRows] = useState(programs);
-  const [saving, setSaving] = useState<string | null>(null);
+type Draft = { id?: string; name: string; color: string; nature: string; status: string };
+const EMPTY: Draft = { name: "", color: PROGRAM_COLORS[0], nature: "invest", status: "Actif" };
 
-  async function setNature(id: string, nature: ProgramRow["nature"]) {
-    const prev = rows;
-    setRows((r) => r.map((p) => (p.id === id ? { ...p, nature } : p)));
-    setSaving(id);
+export default function ParametresClient({ programs }: { programs: ProgramRow[] }) {
+  const router = useRouter();
+  const [rows, setRows] = useState(programs);
+  const [modal, setModal] = useState<Draft | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function saveNature(id: string, nature: string) {
+    setRows((r) => r.map((p) => (p.id === id ? { ...p, nature: nature as ProgramRow["nature"] } : p)));
     const supabase = createClient();
-    const { error } = await supabase.from("programs").update({ nature }).eq("id", id);
-    setSaving(null);
-    if (error) setRows(prev); // rollback si échec
+    await supabase.from("programs").update({ nature }).eq("id", id);
+    router.refresh();
+  }
+
+  async function submit() {
+    if (!modal || !modal.name.trim()) return;
+    setBusy(true);
+    const supabase = createClient();
+    if (modal.id) {
+      await supabase.from("programs").update({ name: modal.name, color: modal.color, nature: modal.nature, status: modal.status }).eq("id", modal.id);
+    } else {
+      const { data: fund } = await supabase.from("funds").select("id").limit(1).single();
+      await supabase.from("programs").insert({ name: modal.name, color: modal.color, nature: modal.nature, status: modal.status, fund_id: fund?.id, position: rows.length });
+    }
+    setBusy(false);
+    setModal(null);
+    router.refresh();
+  }
+
+  async function remove(id: string, name: string) {
+    if (!confirm(`Supprimer le programme « ${name} » ? Les entreprises et deals rattachés ne seront pas supprimés mais perdront ce rattachement.`)) return;
+    const supabase = createClient();
+    await supabase.from("programs").delete().eq("id", id);
+    setRows((r) => r.filter((p) => p.id !== id));
+    router.refresh();
   }
 
   return (
     <div>
-      <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 16 }}>
-        Définissez la <b>nature</b> de chaque programme. Elle détermine les métriques suivies et l'affichage sur le tableau de bord, la performance et le reporting.
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 12.5, color: "var(--text-2)", maxWidth: 560 }}>
+          Créez et configurez vos <b>programmes</b>. La <b>nature</b> détermine les métriques suivies et l'affichage sur le tableau de bord, la performance et le reporting.
+        </div>
+        <button className="btn btn-primary" onClick={() => setModal({ ...EMPTY })}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Nouveau programme
+        </button>
       </div>
 
       <div className="card" style={{ padding: "4px 18px" }}>
@@ -43,13 +73,19 @@ export default function ParametresClient({ programs }: { programs: ProgramRow[] 
               <span style={{ width: 11, height: 11, borderRadius: 3, background: p.color, flexShrink: 0 }} />
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{p.name}</span>
               {p.status === "Clos" && <span className="badge badge-neutral">Clos</span>}
-              {saving === p.id && <span style={{ fontSize: 11, color: "var(--text-3)" }}>enregistrement…</span>}
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                <Link href={`/parametres/${p.id}`} className="btn btn-ghost" style={{ padding: "5px 10px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" /><circle cx="16" cy="6" r="2" /><circle cx="8" cy="12" r="2" /><circle cx="14" cy="18" r="2" /></svg>
+                  Configurer
+                </Link>
+                <button className="btn btn-ghost" style={{ padding: "5px 10px", color: "var(--red-fg)" }} onClick={() => remove(p.id, p.name)}>Supprimer</button>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 0, border: "1px solid var(--border-strong)", borderRadius: 10, overflow: "hidden", width: "fit-content", maxWidth: "100%", flexWrap: "wrap" }}>
-              {NATURES.map((n) => {
+            <div style={{ display: "flex", border: "1px solid var(--border-strong)", borderRadius: 10, overflow: "hidden", width: "fit-content", maxWidth: "100%", flexWrap: "wrap" }}>
+              {PROGRAM_NATURES.map((n) => {
                 const on = p.nature === n.key;
                 return (
-                  <button key={n.key} onClick={() => setNature(p.id, n.key)}
+                  <button key={n.key} onClick={() => saveNature(p.id, n.key)}
                     style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: "none",
                       background: on ? "var(--espresso)" : "var(--surface)", color: on ? "#fff" : "var(--text-2)" }}>
                     {n.label}
@@ -61,6 +97,37 @@ export default function ParametresClient({ programs }: { programs: ProgramRow[] 
           </div>
         ))}
       </div>
+
+      {modal && (
+        <Modal
+          title={modal.id ? "Modifier le programme" : "Nouveau programme"}
+          onClose={() => setModal(null)}
+          footer={<>
+            <button className="btn btn-ghost" onClick={() => setModal(null)}>Annuler</button>
+            <button className="btn btn-primary" disabled={busy || !modal.name.trim()} onClick={submit}>{busy ? "Enregistrement…" : "Enregistrer"}</button>
+          </>}
+        >
+          <Field label="Nom du programme"><Input value={modal.name} autoFocus onChange={(e) => setModal({ ...modal, name: e.target.value })} placeholder="Ex : Programme Agri-PME" /></Field>
+          <Field label="Nature">
+            <Select value={modal.nature} onChange={(e) => setModal({ ...modal, nature: e.target.value })}>
+              {PROGRAM_NATURES.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
+            </Select>
+          </Field>
+          <Field label="Statut">
+            <Select value={modal.status} onChange={(e) => setModal({ ...modal, status: e.target.value })}>
+              {PROGRAM_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </Select>
+          </Field>
+          <Field label="Couleur">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {PROGRAM_COLORS.map((col) => (
+                <button key={col} onClick={() => setModal({ ...modal, color: col })} aria-label={col}
+                  style={{ width: 28, height: 28, borderRadius: 8, background: col, border: modal.color === col ? "2px solid var(--ink)" : "2px solid transparent", cursor: "pointer" }} />
+              ))}
+            </div>
+          </Field>
+        </Modal>
+      )}
     </div>
   );
 }

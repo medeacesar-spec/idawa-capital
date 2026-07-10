@@ -122,14 +122,17 @@ h1, h2, h3, h4 {
 /* Ligne de deal (Pipeline) — grille robuste + responsive */
 .deal-row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 188px 84px;
-  gap: 14px;
+  grid-template-columns: 34px minmax(0, 1fr) 178px 78px 52px;
+  gap: 13px;
   align-items: center;
   padding: 12px 0;
   border-top: 1px solid var(--sep);
 }
 .deal-row:first-child { border-top: none; }
 @media (max-width: 920px) {
-  .deal-row { grid-template-columns: 34px minmax(0, 1fr) 84px; }
+  .deal-row { grid-template-columns: 34px minmax(0, 1fr) 78px 52px; }
   .deal-team { display: none !important; }
 }
+.row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+.row-actions button { border: none; background: none; cursor: pointer; color: var(--text-3); padding: 4px; display: flex; }
+.row-actions button:hover { color: var(--espresso); }

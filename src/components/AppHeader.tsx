@@ -1,10 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { PAGE_META } from "@/lib/nav";
+import Search from "@/components/Search";
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const key = pathname.split("/").filter(Boolean)[0] || "dashboard";
   const meta = PAGE_META[key] ?? { title: "Idawa Capital", sub: "" };
 
@@ -30,11 +32,8 @@ export default function AppHeader() {
       </div>
 
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 9 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface)", border: "1px solid var(--border-strong)", borderRadius: 9, padding: "7px 11px", color: "var(--text-3)", fontSize: 12 }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>
-          <span>Rechercher</span>
-        </div>
-        <button className="btn btn-primary">
+        <Search />
+        <button className="btn btn-primary" onClick={() => router.push("/saisie")}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
           Saisir un reporting
         </button>

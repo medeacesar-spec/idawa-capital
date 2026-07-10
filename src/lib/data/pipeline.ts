@@ -12,13 +12,21 @@ export type PipelineDeal = {
   sector: string | null;
   officer: string | null;
   analyst: string | null;
+  subSectorId: string | null;
+  officerId: string | null;
+  analystId: string | null;
+  expectedClose: string | null;
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
+export type PipelineSubSector = { id: string; name: string; industry: string };
+export type PipelineMember = { id: string; name: string };
 
 export type PipelineData = {
   deals: PipelineDeal[];
   programs: PipelineProgram[];
+  subSectors: PipelineSubSector[];
+  members: PipelineMember[];
 };
 
 const displayName = (p?: { full_name?: string | null; email?: string | null } | null) =>
@@ -27,13 +35,14 @@ const displayName = (p?: { full_name?: string | null; email?: string | null } | 
 export async function getPipelineData(): Promise<PipelineData> {
   const supabase = await createClient();
 
-  const [dealRes, progRes, subRes, profRes] = await Promise.all([
+  const [dealRes, progRes, subRes, indRes, profRes] = await Promise.all([
     supabase
       .from("deals")
-      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, created_at")
+      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at")
       .order("created_at", { ascending: false }),
     supabase.from("programs").select("id, name, color, position, status").order("position"),
-    supabase.from("sub_sectors").select("id, name"),
+    supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
+    supabase.from("industries").select("id, name"),
     supabase.from("profiles").select("id, full_name, email"),
   ]);
 
@@ -41,6 +50,7 @@ export async function getPipelineData(): Promise<PipelineData> {
   const programs = allPrograms.filter((p) => p.status !== "Clos");
   const progMap = new Map(allPrograms.map((p) => [p.id, p]));
   const subMap = new Map((subRes.data ?? []).map((s) => [s.id, s.name]));
+  const indMap = new Map((indRes.data ?? []).map((i) => [i.id, i.name]));
   const profMap = new Map((profRes.data ?? []).map((p) => [p.id, p]));
 
   const deals: PipelineDeal[] = (dealRes.data ?? []).map((d) => {
@@ -57,11 +67,17 @@ export async function getPipelineData(): Promise<PipelineData> {
       sector: d.primary_sub_sector_id ? subMap.get(d.primary_sub_sector_id) ?? null : null,
       officer: displayName(d.investment_officer_id ? profMap.get(d.investment_officer_id) : null),
       analyst: displayName(d.analyst_id ? profMap.get(d.analyst_id) : null),
+      subSectorId: d.primary_sub_sector_id,
+      officerId: d.investment_officer_id,
+      analystId: d.analyst_id,
+      expectedClose: d.expected_close,
     };
   });
 
   return {
     deals,
     programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color })),
+    subSectors: (subRes.data ?? []).map((s) => ({ id: s.id, name: s.name, industry: indMap.get(s.industry_id) ?? "" })),
+    members: (profRes.data ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email || "" })),
   };
 }
