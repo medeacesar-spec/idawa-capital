@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ContactsData, Contact } from "@/lib/data/contacts";
 import ContactFormModal from "./ContactFormModal";
@@ -30,9 +30,22 @@ function ContactRow({ c, onEdit, onDelete }: { c: Contact; onEdit: () => void; o
 
 export default function ContactsClient({ data }: { data: ContactsData }) {
   const router = useRouter();
+  const params = useSearchParams();
   const [filter, setFilter] = useState<string>("all");
   const [modal, setModal] = useState<{ open: boolean; contact: Contact | null }>({ open: false, contact: null });
   const groups = filter === "all" ? data.groups : data.groups.filter((g) => g.orgType === filter);
+
+  // Recherche : ouvrir directement le contact ciblé (?focus=id)
+  useEffect(() => {
+    const focus = params.get("focus");
+    if (!focus) return;
+    const c = data.groups.flatMap((g) => g.contacts).find((x) => x.id === focus);
+    if (c) {
+      setModal({ open: true, contact: c });
+      window.history.replaceState(null, "", "/contacts");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function remove(c: Contact) {
     if (!confirm(`Supprimer le contact « ${c.name} » ?`)) return;

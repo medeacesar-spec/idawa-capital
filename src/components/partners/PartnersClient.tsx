@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { PartnersData, Partner } from "@/lib/data/partners";
 import { fmtM } from "@/lib/format";
@@ -21,10 +21,23 @@ const REL_ICON: Record<string, string> = {
 
 export default function PartnersClient({ data }: { data: PartnersData }) {
   const router = useRouter();
+  const params = useSearchParams();
   const [filter, setFilter] = useState<string>("all");
   const [modal, setModal] = useState<{ open: boolean; partner: Partner | null }>({ open: false, partner: null });
   const relTypes = Array.from(new Set(data.partners.map((p) => p.relationType).filter(Boolean))) as string[];
   const list = filter === "all" ? data.partners : data.partners.filter((p) => p.relationType === filter);
+
+  // Recherche : ouvrir directement le partenaire ciblé (?focus=id)
+  useEffect(() => {
+    const focus = params.get("focus");
+    if (!focus) return;
+    const p = data.partners.find((x) => x.id === focus);
+    if (p) {
+      setModal({ open: true, partner: p });
+      window.history.replaceState(null, "", "/partenaires");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function remove(p: Partner) {
     if (!confirm(`Supprimer le partenaire « ${p.name} » ?`)) return;

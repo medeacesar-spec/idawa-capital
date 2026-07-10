@@ -18,15 +18,17 @@ export default function Search() {
     const t = setTimeout(async () => {
       const supabase = createClient();
       const like = `%${q.trim()}%`;
-      const [deals, cos, contacts] = await Promise.all([
+      const [deals, cos, contacts, partners] = await Promise.all([
         supabase.from("deals").select("id, company_name, stage").ilike("company_name", like).limit(5),
         supabase.from("portfolio_companies").select("id, name").ilike("name", like).limit(5),
         supabase.from("contacts").select("id, name, organization").ilike("name", like).limit(5),
+        supabase.from("partners").select("id, name, relation_type").ilike("name", like).limit(5),
       ]);
       const r: Result[] = [];
-      (deals.data ?? []).forEach((d) => r.push({ label: d.company_name, sub: `Dossier · ${d.stage}`, href: "/pipeline" }));
-      (cos.data ?? []).forEach((c) => r.push({ label: c.name, sub: "Portefeuille", href: "/portefeuille" }));
-      (contacts.data ?? []).forEach((c) => r.push({ label: c.name, sub: `Contact · ${c.organization ?? ""}`, href: "/contacts" }));
+      (deals.data ?? []).forEach((d) => r.push({ label: d.company_name, sub: `Dossier · ${d.stage}`, href: `/pipeline/${d.id}` }));
+      (cos.data ?? []).forEach((c) => r.push({ label: c.name, sub: "Portefeuille", href: `/portefeuille/${c.id}` }));
+      (contacts.data ?? []).forEach((c) => r.push({ label: c.name, sub: `Contact${c.organization ? ` · ${c.organization}` : ""}`, href: `/contacts?focus=${c.id}` }));
+      (partners.data ?? []).forEach((p) => r.push({ label: p.name, sub: `Partenaire${p.relation_type ? ` · ${p.relation_type}` : ""}`, href: `/partenaires?focus=${p.id}` }));
       setResults(r);
       setOpen(true);
     }, 250);
