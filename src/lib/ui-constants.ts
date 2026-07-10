@@ -48,6 +48,9 @@ export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net"
 export const FLOW_TYPES = ["Appel de fonds", "Distribution", "Valorisation"];
 export const CAP_HOLDER_TYPES = ["Fondateur", "Idawa Capital", "Co-investisseur", "ESOP / salariés", "Autre"];
 
+// Reporting — collecte
+export const REPORTING_STATUS = ["À faire", "En cours", "Validé"];
+
 // Catalogue d'indicateurs d'accompagnement (chaîne de résultats), avec unité par défaut.
 export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; unit: string }[] }[] = [
   { category: "Moyens", items: [
