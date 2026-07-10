@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { ContactsData, Contact } from "@/lib/data/contacts";
 import ContactFormModal from "./ContactFormModal";
+import ChannelIcons from "./ChannelIcons";
 
 function initials(name: string): string {
   const parts = name.split(/\s+/).filter(Boolean);
@@ -17,9 +18,9 @@ function ContactRow({ c, onEdit, onDelete }: { c: Contact; onEdit: () => void; o
       <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(c.name)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.name}</div>
-        <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{c.function ?? "—"}</div>
+        <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{c.function ?? "—"}{c.email ? ` · ${c.email}` : ""}</div>
       </div>
-      {c.email && <a href={`mailto:${c.email}`} style={{ fontSize: 11.5, color: "var(--camel)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 170 }}>{c.email}</a>}
+      <ChannelIcons c={c} />
       <div className="row-actions">
         <button onClick={onEdit} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
         <button onClick={onDelete} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>

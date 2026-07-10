@@ -6,7 +6,7 @@ import { getDdItems, getValueCreation, type DdItem, type ValueInitiative } from 
 
 export type CommitteeDoc = { id: string; title: string; storagePath: string | null };
 export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; docs: CommitteeDoc[] };
-export type DealContact = { id: string; name: string; function: string | null; email: string | null };
+export type DealContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
 export type DealDoc = { id: string; title: string; category: string | null; storagePath: string | null };
 
 export type DealDetail = {
@@ -54,7 +54,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     d.investment_officer_id ? supabase.from("profiles").select("full_name, email").eq("id", d.investment_officer_id).single() : Promise.resolve({ data: null }),
     d.analyst_id ? supabase.from("profiles").select("full_name, email").eq("id", d.analyst_id).single() : Promise.resolve({ data: null }),
     supabase.from("committee_passages").select("id, committee_type, session_date, decision, conditions, participants").eq("deal_id", id).order("session_date"),
-    supabase.from("contacts").select("id, name, function, email").eq("deal_id", id),
+    supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("deal_id", id),
     supabase.from("documents").select("id, title, category, storage_path").eq("deal_id", id),
     supabase.from("portfolio_companies").select("id").eq("origin_deal_id", id).maybeSingle(),
   ]);

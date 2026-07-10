@@ -8,6 +8,11 @@ export type Contact = {
   orgType: string | null;
   email: string | null;
   phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  linkedin: string | null;
+  twitter: string | null;
+  instagram: string | null;
 };
 
 export type ContactGroup = { organization: string; orgType: string | null; contacts: Contact[] };
@@ -22,7 +27,7 @@ export async function getContactsData(): Promise<ContactsData> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("contacts")
-    .select("id, name, function, organization, org_type, email, phone")
+    .select("id, name, function, organization, org_type, email, phone, whatsapp, website, linkedin, twitter, instagram")
     .order("organization");
 
   const contacts: Contact[] = (data ?? []).map((c) => ({
@@ -33,6 +38,11 @@ export async function getContactsData(): Promise<ContactsData> {
     orgType: c.org_type,
     email: c.email,
     phone: c.phone,
+    whatsapp: c.whatsapp,
+    website: c.website,
+    linkedin: c.linkedin,
+    twitter: c.twitter,
+    instagram: c.instagram,
   }));
 
   const map = new Map<string, ContactGroup>();

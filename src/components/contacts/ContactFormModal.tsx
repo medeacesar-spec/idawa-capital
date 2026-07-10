@@ -18,6 +18,11 @@ export default function ContactFormModal({ contact, link, onClose }: { contact: 
     orgType: contact?.orgType ?? "",
     email: contact?.email ?? "",
     phone: contact?.phone ?? "",
+    whatsapp: contact?.whatsapp ?? "",
+    website: contact?.website ?? "",
+    linkedin: contact?.linkedin ?? "",
+    twitter: contact?.twitter ?? "",
+    instagram: contact?.instagram ?? "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
 
@@ -25,7 +30,11 @@ export default function ContactFormModal({ contact, link, onClose }: { contact: 
     if (!f.name.trim()) return;
     setBusy(true);
     const supabase = createClient();
-    const payload = { name: f.name.trim(), function: f.function || null, organization: f.organization || null, org_type: f.orgType || null, email: f.email || null, phone: f.phone || null };
+    const payload = {
+      name: f.name.trim(), function: f.function || null, organization: f.organization || null, org_type: f.orgType || null,
+      email: f.email || null, phone: f.phone || null, whatsapp: f.whatsapp || null, website: f.website || null,
+      linkedin: f.linkedin || null, twitter: f.twitter || null, instagram: f.instagram || null,
+    };
     if (contact) await supabase.from("contacts").update(payload).eq("id", contact.id);
     else await supabase.from("contacts").insert({ ...payload, deal_id: link?.dealId ?? null, company_id: link?.companyId ?? null });
     setBusy(false);
@@ -58,6 +67,15 @@ export default function ContactFormModal({ contact, link, onClose }: { contact: 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Email"><Input type="email" value={f.email} onChange={(e) => set("email", e.target.value)} placeholder="nom@exemple.com" /></Field>
         <Field label="Téléphone"><Input value={f.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+229 …" /></Field>
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--camel)", margin: "6px 0 -2px" }}>Réseaux &amp; web</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="WhatsApp"><Input value={f.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} placeholder="+229 …" /></Field>
+        <Field label="Site web"><Input value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="exemple.com" /></Field>
+        <Field label="LinkedIn"><Input value={f.linkedin} onChange={(e) => set("linkedin", e.target.value)} placeholder="linkedin.com/in/…" /></Field>
+        <Field label="X (Twitter)"><Input value={f.twitter} onChange={(e) => set("twitter", e.target.value)} placeholder="@compte ou lien" /></Field>
+        <Field label="Instagram"><Input value={f.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder="@compte ou lien" /></Field>
       </div>
     </Modal>
   );

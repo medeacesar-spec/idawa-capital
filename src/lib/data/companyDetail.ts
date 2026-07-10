@@ -6,7 +6,7 @@ import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from
 import { getValueCreation, type ValueInitiative } from "./planning";
 
 export type { KpiSeries };
-export type DetailContact = { id: string; name: string; function: string | null; email: string | null };
+export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
 export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null };
 export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null };
 export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
@@ -52,7 +52,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.program_id ? supabase.from("programs").select("name, color").eq("id", c.program_id).single() : Promise.resolve({ data: null }),
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
     c.origin_deal_id ? supabase.from("deals").select("company_name").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
-    supabase.from("contacts").select("id, name, function, email").eq("company_id", id),
+    supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("company_id", id),
     supabase.from("documents").select("id, title, category, storage_path").eq("company_id", id),
   ]);
 

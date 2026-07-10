@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ContactFormModal from "@/components/contacts/ContactFormModal";
+import ChannelIcons from "@/components/contacts/ChannelIcons";
 
-type C = { id: string; name: string; function: string | null; email: string | null };
+type C = { id: string; name: string; function: string | null; email: string | null; phone?: string | null; whatsapp?: string | null; website?: string | null; linkedin?: string | null; twitter?: string | null; instagram?: string | null };
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
 
 export default function EntityContacts({ entityType, entityId, contacts }: { entityType: "deal" | "company"; entityId: string; contacts: C[] }) {
@@ -36,7 +37,7 @@ export default function EntityContacts({ entityType, entityId, contacts }: { ent
             <div key={ct.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{initials(ct.name)}</div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{ct.name}</div><div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{ct.function ?? "—"}</div></div>
-              {ct.email && <a href={`mailto:${ct.email}`} style={{ fontSize: 11.5, color: "var(--camel)" }}>{ct.email}</a>}
+              <ChannelIcons c={ct} size={26} />
               <div className="row-actions">
                 <button onClick={() => remove(ct)} aria-label="Retirer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
               </div>
