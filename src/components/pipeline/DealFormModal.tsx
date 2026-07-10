@@ -58,7 +58,7 @@ export default function DealFormModal({
 
   return (
     <Modal
-      title={deal ? "Modifier le deal" : "Nouveau deal"}
+      title={deal ? "Modifier le dossier" : "Nouveau dossier"}
       onClose={onClose}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Annuler</button>

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DealDetail } from "@/lib/data/dealDetail";
+import { createClient } from "@/lib/supabase/client";
+import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
+import CommitteeFormModal from "./CommitteeFormModal";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -26,7 +28,15 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 export default function DealDetailClient({ deal }: { deal: DealDetail }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
+  const [comModal, setComModal] = useState<{ open: boolean; passage: CommitteePassage | null }>({ open: false, passage: null });
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
+
+  async function removeCommittee(id: string) {
+    if (!confirm("Supprimer ce passage en comité ?")) return;
+    const supabase = createClient();
+    await supabase.from("committee_passages").delete().eq("id", id);
+    router.refresh();
+  }
 
   const facts: [string, string][] = [
     ["Montant", fmtM(deal.amount)],
@@ -80,31 +90,45 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
       )}
 
       {tab === "Comités" && (
-        deal.committees.length === 0 ? <EmptyTab title="Historique des comités" desc="Aucun passage en comité enregistré. Un dossier peut passer plusieurs fois (ex. Comité d'ouverture, puis Comité d'investissement) — chaque passage sera historisé ici." /> : (
-          <div className="card" style={{ padding: "18px 20px" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 14 }}>Historique des passages en comité <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— un dossier peut repasser plusieurs fois</span></div>
-            {deal.committees.map((c, i) => {
-              const last = i === deal.committees.length - 1;
-              const col = DECISION_COLOR[c.decision ?? ""] ?? "var(--text-3)";
-              return (
-                <div key={c.id} style={{ display: "flex", gap: 12 }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div style={{ width: 13, height: 13, borderRadius: "50%", background: last ? col : "var(--surface)", border: `2px solid ${col}`, flexShrink: 0 }} />
-                    {!last && <div style={{ flex: 1, width: 2, background: "var(--border)", margin: "2px 0" }} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
-                      {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}</div>
-                    {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
-                  </div>
-                </div>
-              );
-            })}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Passages en comité <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— un dossier peut repasser plusieurs fois</span></div>
+            <button className="btn btn-primary" onClick={() => setComModal({ open: true, passage: null })}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              Enregistrer un passage
+            </button>
           </div>
-        )
+          {deal.committees.length === 0 ? (
+            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun passage en comité. Cliquez « Enregistrer un passage » pour ajouter un comité et son compte-rendu.</div>
+          ) : (
+            <div className="card" style={{ padding: "18px 20px" }}>
+              {deal.committees.map((c, i) => {
+                const last = i === deal.committees.length - 1;
+                const col = DECISION_COLOR[c.decision ?? ""] ?? "var(--text-3)";
+                return (
+                  <div key={c.id} style={{ display: "flex", gap: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ width: 13, height: 13, borderRadius: "50%", background: last ? col : "var(--surface)", border: `2px solid ${col}`, flexShrink: 0 }} />
+                      {!last && <div style={{ flex: 1, width: 2, background: "var(--border)", margin: "2px 0" }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
+                        {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
+                        <span className="row-actions" style={{ marginLeft: "auto" }}>
+                          <button onClick={() => setComModal({ open: true, passage: c })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+                          <button onClick={() => removeCommittee(c.id)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}</div>
+                      {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {tab === "Suivi" && <EmptyTab title="Suivi (notes & actions)" desc="Journal des réunions, appels, et actions de suivi (avec responsable et échéance). À alimenter au fil de la relation." />}
@@ -114,7 +138,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
       {tab === "ESG" && <EmptyTab title="ESG & Impact" desc="Screening E&S (catégorie de risque, liste d'exclusion, risques PS1-8) et rating d'impact IPDEV 2." />}
 
       {tab === "Documents" && (
-        deal.documents.length === 0 ? <EmptyTab title="Documents" desc="Aucun document rattaché à ce deal." /> : (
+        deal.documents.length === 0 ? <EmptyTab title="Documents" desc="Aucun document rattaché à ce dossier." /> : (
           <div className="card" style={{ padding: "4px 18px" }}>
             {deal.documents.map((d, i) => (
               <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
@@ -128,7 +152,7 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
       )}
 
       {tab === "Contacts" && (
-        deal.contacts.length === 0 ? <EmptyTab title="Contacts" desc="Aucun contact rattaché à ce deal." /> : (
+        deal.contacts.length === 0 ? <EmptyTab title="Contacts" desc="Aucun contact rattaché à ce dossier." /> : (
           <div className="card" style={{ padding: "4px 18px" }}>
             {deal.contacts.map((ct, i) => (
               <div key={ct.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
@@ -140,6 +164,8 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
           </div>
         )
       )}
+
+      {comModal.open && <CommitteeFormModal dealId={deal.id} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
     </div>
   );
 }

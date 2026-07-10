@@ -28,6 +28,12 @@ export const CONTACT_FUNCTIONS = [
 
 export const DOC_CATEGORIES = ["Juridique", "Reporting", "Financier", "Comité", "ESG", "Autre"];
 
+export const COMMITTEE_TYPES = ["Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi", "Comité de sortie"];
+export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "Ajourné", "Défavorable"];
+
+export const NOTE_TYPES = ["Réunion", "Appel", "Email", "Note"];
+export const TASK_STATUS = ["À faire", "En cours", "Fait"];
+
 // Catalogue d'indicateurs d'accompagnement (chaîne de résultats), avec unité par défaut.
 export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; unit: string }[] }[] = [
   { category: "Moyens", items: [

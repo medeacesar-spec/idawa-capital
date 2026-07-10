@@ -44,7 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
 // Titre + sous-titre de l'en-tête par page
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Vue d'ensemble du fonds" },
-  pipeline: { title: "Pipeline", sub: "Opportunités d'investissement par étape" },
+  pipeline: { title: "Pipeline", sub: "Dossiers d'investissement par étape" },
   portefeuille: { title: "Portefeuille", sub: "Participations actives" },
   performance: { title: "Performance", sub: "Multiples, TRI et création de valeur" },
   esg: { title: "ESG & Impact", sub: "Méthodologie I&P / IFC" },

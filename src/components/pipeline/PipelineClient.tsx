@@ -40,7 +40,7 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
   const total = list.reduce((a, d) => a + d.amount, 0);
 
   async function remove(d: PipelineDeal) {
-    if (!confirm(`Supprimer le deal « ${d.companyName} » ?`)) return;
+    if (!confirm(`Supprimer le dossier « ${d.companyName} » ?`)) return;
     const supabase = createClient();
     await supabase.from("deals").delete().eq("id", d.id);
     router.refresh();
@@ -65,18 +65,18 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
 
       {/* Stats + action */}
       <div style={{ display: "flex", gap: 18, marginBottom: 10, fontSize: 12.5, color: "var(--text-2)", alignItems: "center", flexWrap: "wrap" }}>
-        <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> deal{list.length > 1 ? "s" : ""}</span>
+        <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> dossier{list.length > 1 ? "s" : ""}</span>
         <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA en jeu</span>
         <button className="btn btn-primary" style={{ marginLeft: "auto" }} onClick={() => setModal({ open: true, deal: null })}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Nouveau deal
+          Nouveau dossier
         </button>
       </div>
 
       {/* Liste */}
       <div className="card" style={{ padding: "4px 18px" }}>
         {list.length === 0 && (
-          <div style={{ padding: "28px 0", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun deal pour ce périmètre.</div>
+          <div style={{ padding: "28px 0", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun dossier pour ce périmètre.</div>
         )}
         {list.map((d) => (
           <div key={d.id} className="deal-row deal-row-click" onClick={() => router.push(`/pipeline/${d.id}`)} style={{ cursor: "pointer" }}>

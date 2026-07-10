@@ -24,7 +24,7 @@ export default function Search() {
         supabase.from("contacts").select("id, name, organization").ilike("name", like).limit(5),
       ]);
       const r: Result[] = [];
-      (deals.data ?? []).forEach((d) => r.push({ label: d.company_name, sub: `Deal · ${d.stage}`, href: "/pipeline" }));
+      (deals.data ?? []).forEach((d) => r.push({ label: d.company_name, sub: `Dossier · ${d.stage}`, href: "/pipeline" }));
       (cos.data ?? []).forEach((c) => r.push({ label: c.name, sub: "Portefeuille", href: "/portefeuille" }));
       (contacts.data ?? []).forEach((c) => r.push({ label: c.name, sub: `Contact · ${c.organization ?? ""}`, href: "/contacts" }));
       setResults(r);

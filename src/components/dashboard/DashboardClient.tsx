@@ -86,14 +86,14 @@ function GlobalView({ data }: { data: DashboardData }) {
         <Tile k="Capital investi" v={fmtM(g.invested)} sub={`FCFA · ${data.programs.reduce((a, p) => a + p.companies, 0)} participations`} />
         <Tile k="Valeur du portefeuille" v={fmtM(g.valuation)} d={`${delta >= 0 ? "+" : ""}${delta}%`} dc={delta >= 0 ? "var(--green-fg)" : "var(--red-fg)"} sub="vs capital investi" />
         <Tile k="Multiple (TVPI)" v={fmtMult(g.tvpi)} dc="var(--green-fg)" sub="Performance globale" />
-        <Tile k="Deals actifs" v={fmtInt(g.activeDealsCount)} sub={`${fmtM(g.pipelineAmount)} en pipeline`} />
+        <Tile k="Dossiers actifs" v={fmtInt(g.activeDealsCount)} sub={`${fmtM(g.pipelineAmount)} en pipeline`} />
       </div>
 
       {/* Tableau comparatif des programmes */}
       <div style={{ ...panel, marginBottom: 13 }}>
         <h3 style={{ ...h3, marginBottom: 12 }}>Performance par programme <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— chaque programme suit sa propre dynamique</span></h3>
         <div style={{ display: "grid", gridTemplateColumns: "1.5fr .95fr .9fr .9fr .78fr .95fr .55fr", gap: 10, paddingBottom: 8, fontSize: 10, letterSpacing: ".5px", textTransform: "uppercase", color: "var(--text-3)", fontWeight: 600 }}>
-          <div>Programme</div><div>Type</div><div style={{ textAlign: "right" }}>Engagé</div><div style={{ textAlign: "right" }}>Réalisé</div><div style={{ textAlign: "right" }}>Perf.</div><div style={{ textAlign: "right" }}>Suivi</div><div style={{ textAlign: "center" }}>Deals</div>
+          <div>Programme</div><div>Type</div><div style={{ textAlign: "right" }}>Engagé</div><div style={{ textAlign: "right" }}>Réalisé</div><div style={{ textAlign: "right" }}>Perf.</div><div style={{ textAlign: "right" }}>Suivi</div><div style={{ textAlign: "center" }}>Dossiers</div>
         </div>
         {data.programs.map((p) => {
           const fin = p.nature !== "accompagnement";
