@@ -1,0 +1,36 @@
+import { redirect } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AppHeader";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function AppLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  // Profil + rôle de l'utilisateur connecté
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email, roles(name)")
+    .eq("id", user.id)
+    .single();
+
+  const roleName =
+    (profile?.roles as { name?: string } | null)?.name ?? "Utilisateur";
+  const displayName = profile?.full_name || profile?.email || user.email || "";
+
+  return (
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--ink)" }}>
+      <Sidebar userName={displayName} roleName={roleName} />
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--cream)" }}>
+        <AppHeader />
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 26px 60px" }}>{children}</div>
+      </main>
+    </div>
+  );
+}

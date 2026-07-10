@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "description": "Cadre ESG & Impact d'Idawa Capital, extrait de l'outil 'LE CHRISTAL_ESG & Impact'. Méthodologie I&P / IPDEV 2 alignée sur les Normes de performance de l'IFC (SFI). 4 étapes : Ouverture → Rating d'impact → Due Diligence → Bilan → Plan d'actions & monitoring.",
+    "referentiel": "I&P IPDEV 2 + IFC Performance Standards",
+    "source": "LE CHRISTAL_ESG & Impact_Outil d'analyse ESG.xlsx",
+    "version": 1
+  },
+  "echelles": {
+    "niveau_risque": [
+      {"label": "Élevé", "score": 2.5},
+      {"label": "Moyen-Élevé", "score": 2},
+      {"label": "Moyen", "score": 1.5},
+      {"label": "Faible-Moyen", "score": 1},
+      {"label": "Faible", "score": 0.5}
+    ],
+    "niveau_opportunites": ["Élevé", "Moyen", "Faible"],
+    "statut_action": ["Réalisée", "En cours", "À lancer", "Objectif à plus d'un an", "Abandonnée", "Action en continu"],
+    "priorite_action": ["Très haute", "Haute", "Moyenne", "Basse"],
+    "responsable_codes": {
+      "RI": "Responsable Investissement",
+      "PR": "Promoteur/trice",
+      "RM": "Responsable/Manager d'une fonction",
+      "AT": "Assistance technique"
+    },
+    "categories": ["E", "S", "G"]
+  },
+  "etapes": [
+    {
+      "id": "1.1",
+      "nom": "Ouverture du dossier",
+      "moment": "Comité d'ouverture de dossier (COD)",
+      "objet": "Déterminer les risques ESG bruts, analyse préliminaire risques/opportunités, décider si des due diligences ESG spécifiques sont nécessaires.",
+      "controles": [
+        "Vérifier que l'activité ne figure pas dans la liste d'exclusion d'I&P / IPDEV 2",
+        "Déterminer le secteur EHS de l'IFC (référentiel IFC EHS)",
+        "Noter le niveau de risque E&S brut par norme (PS1-8 + Gouvernance)",
+        "Déterminer le niveau d'opportunités environnementales et sociales"
+      ]
+    },
+    {
+      "id": "1.2",
+      "nom": "Rating d'impact",
+      "moment": "Ouverture (avant investissement), révisable ensuite",
+      "objet": "Évaluer l'adéquation du projet avec les objectifs d'impact (thèse IPDEV 2). Note sur 3 à insérer dans l'analyse Risque/Impact/Rentabilité.",
+      "dimensions": [
+        {"nom": "ENTREPRENEURS", "objectif": "Faire émerger un entrepreneuriat durable", "max": 12},
+        {"nom": "CLIENTS", "objectif": "Répondre à la demande en biens et services essentiels", "max": 4},
+        {"nom": "EMPLOYÉS", "objectif": "Créer des emplois décents et favoriser la formation", "max": 12},
+        {"nom": "CONTRACTANTS", "objectif": "Générer des effets d'entraînement pour les fournisseurs/distributeurs", "max": 4}
+      ],
+      "total_max": 32,
+      "sous_criteres": [
+        "Impact quantitatif sur les employés (création d'emplois / 100 000 € investis)",
+        "Impact qualitatif sur les employés (travail décent, salaires décents, assurance maladie, sécurité)",
+        "Part significative d'employés femmes (>30%) ou de personnes exclues du marché (>10%)",
+        "Impact sur les clients locaux (déficit d'offre, biens de première nécessité)",
+        "Impact sur les fournisseurs/distributeurs locaux",
+        "Soutien aux entrepreneurs locaux",
+        "Principe d'additionnalité"
+      ],
+      "bonus": ["Bonus BOP (base of the pyramid)", "Bonus Certification", "Bonus Amélioration niveau technologique/compétences", "Bonus/Malus environnemental"]
+    },
+    {
+      "id": "2",
+      "nom": "Due Diligence ESG",
+      "moment": "Instruction / due diligence",
+      "objet": "Analyser et évaluer les risques ESG et leur niveau de management, identifier les opportunités d'amélioration.",
+      "sections": [
+        {"nom": "Aspects généraux", "themes": ["Légalité de l'activité", "Respect des normes et régulations"]},
+        {"nom": "Aspects Gouvernance", "themes": ["Corruption / LAB, intégrité du promoteur", "Caractéristiques du secteur et obtention des contrats", "États financiers (CAC, provisionnement)", "Gouvernance (contrôle interne, pacte d'actionnaires, AG, CA)", "Assurance", "Protection des données"]},
+        {"nom": "Normes de performance de l'IFC", "ref": "ifc_performance_standards"}
+      ]
+    },
+    {
+      "id": "3",
+      "nom": "Bilan des due diligence",
+      "moment": "Comité d'investissement",
+      "objet": "Synthétiser les risques et opportunités ESG identifiés + bilan du rating d'impact.",
+      "tableau": {
+        "par_categorie": ["E", "S", "G"],
+        "colonnes": ["Points forts", "Enjeux/risques identifiés", "Management des enjeux / Solution", "Opportunités d'actions", "Niveau"]
+      }
+    },
+    {
+      "id": "4",
+      "nom": "Plan d'actions & monitoring",
+      "moment": "1ère année d'investissement puis suivi semestriel (validé par le Conseil d'administration)",
+      "objet": "Actions prioritaires pour améliorer le management des enjeux ESG. Intégré au contrat d'actionnariat. Suivi du pourcentage d'actions en retard.",
+      "colonnes": ["Catégorie (E/S/G)", "Action programmée", "Priorité", "Personne responsable (RI/PR/RM/AT)", "Estimation du coût", "Livrable(s) / indicateur(s) de résultat", "Bénéfices pour l'entreprise", "Statut de l'action", "Date début planifiée", "Date fin planifiée", "Date début réelle", "Date fin réelle", "Actions en retard", "Commentaires"],
+      "suivi": "Semestriel, validé par le Conseil d'administration ; mise à jour du rating des risques et opportunités ESG si nécessaire."
+    }
+  ],
+  "ifc_performance_standards": [
+    {"code": "PS1", "nom": "Évaluation & gestion des risques environnementaux et sociaux", "description": "Système d'évaluation et de gestion des risques (SGES), personne en charge du suivi."},
+    {"code": "PS2", "nom": "Main d'œuvre et conditions de travail", "description": "Santé et sécurité au travail, mécanismes de plaintes, contrats de travail, salaires."},
+    {"code": "PS3", "nom": "Utilisation rationnelle des ressources et prévention de la pollution", "description": "Efficacité énergétique, déchets, matières dangereuses, émissions de CO2, consommation d'eau."},
+    {"code": "PS4", "nom": "Santé, sécurité et sûreté des communautés affectées", "description": "Communautés locales autour des lieux de production, sûreté, consommateurs."},
+    {"code": "PS5", "nom": "Acquisition des terres et réinstallations involontaires", "description": "Acquisition de terres, déplacements de population."},
+    {"code": "PS6", "nom": "Conservation de la biodiversité et gestion durable des ressources naturelles vivantes", "description": "Impacts directs ou indirects sur la biodiversité (y compris via les fournisseurs)."},
+    {"code": "PS7", "nom": "Peuples autochtones", "description": "Le projet affecte-t-il des peuples autochtones ?"},
+    {"code": "PS8", "nom": "Patrimoine culturel", "description": "Le projet affecte-t-il un patrimoine culturel ?"},
+    {"code": "GOUV", "nom": "Gouvernance", "description": "Formalisation de la gouvernance, états financiers, corruption dans le secteur."}
+  ],
+  "liste_exclusion": {
+    "ref": "Liste d'exclusion d'I&P / IPDEV 2",
+    "note": "À reprendre intégralement depuis l'outil ; vérifiée à l'ouverture du dossier."
+  }
+}

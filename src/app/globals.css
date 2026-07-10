@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Charte Idawa Capital (design final) */
+  --espresso: #4a2617;
+  --brown: #3a1e12;
+  --cream: #faf6f0;
+  --surface: #ffffff;
+  --surface-cream: #fbf7f1;
+  --camel: #a9714b;
+  --gold: #c9a87c;
+  --ink: #33200f;
+  --text-2: #7a6552;
+  --text-3: #a8937e;
+  --border: #eae0d3;
+  --border-strong: #e0d3c0;
+  --sep: #f0e8dc;
+  --sep-2: #f3ede3;
+
+  /* Statuts */
+  --green-bg: #e7f0e8; --green-fg: #2f6140;
+  --amber-bg: #f7ecd9; --amber-fg: #8a5a18;
+  --red-bg: #f6e4e0;   --red-fg: #a6412e;
+  --neutral-bg: #f0e9de; --neutral-fg: #6b5744;
+
+  /* Palette catégorielle chaude (programmes / data-viz) */
+  --cat-olive: #7c7a3a;
+  --cat-terracotta: #b5623f;
+  --cat-prune: #8a4b5a;
+  --cat-amber: #b07a2e;
+  --cat-taupe: #6b5744;
+
+  --accent-soft: #f3e7d6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: var(--cream);
+  --color-surface: var(--surface);
+  --color-espresso: var(--espresso);
+  --color-brown: var(--brown);
+  --color-camel: var(--camel);
+  --color-gold: var(--gold);
+  --color-ink: var(--ink);
+  --color-border: var(--border);
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-franklin);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-franklin), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--espresso); text-decoration: none; }
+a:hover { color: var(--camel); }
+img { display: block; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-playfair), Georgia, serif;
+  color: var(--ink);
+  margin: 0;
+}
+
+.serif { font-family: var(--font-playfair), Georgia, serif; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Barre de défilement discrète, teintée marque */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid var(--cream);
+}
+
+/* Composants réutilisables */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(74, 38, 23, 0.05), 0 12px 34px -20px rgba(74, 38, 23, 0.22);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-green { background: var(--green-bg); color: var(--green-fg); }
+.badge-amber { background: var(--amber-bg); color: var(--amber-fg); }
+.badge-red { background: var(--red-bg); color: var(--red-fg); }
+.badge-neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn-primary { background: var(--espresso); color: #fff; border-color: var(--espresso); }
+.btn-primary:hover { background: #5c331f; }
+.btn-ghost { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+.btn-ghost:hover { border-color: var(--camel); color: var(--espresso); }
+
+/* Ligne de deal (Pipeline) — grille robuste + responsive */
+.deal-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 188px 84px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--sep);
+}
+.deal-row:first-child { border-top: none; }
+@media (max-width: 920px) {
+  .deal-row { grid-template-columns: 34px minmax(0, 1fr) 84px; }
+  .deal-team { display: none !important; }
 }

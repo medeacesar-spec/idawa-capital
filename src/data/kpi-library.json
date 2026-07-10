@@ -1,0 +1,632 @@
+{
+  "meta": {
+    "description": "Bibliothèque de KPIs par industrie et sous-secteur pour Idawa Capital. Base de départ, éditable en Admin.",
+    "categories": ["Management", "Commercial", "Production", "Support"],
+    "version": 1
+  },
+  "industries": [
+    {
+      "name": "Agro-industrie & Agriculture",
+      "subSectors": [
+        {
+          "name": "Production agricole (vivrier, cultures de rente)",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Trésorerie", "Coût de production / ha"],
+            "Commercial": ["Volume récolté vendu (t)", "Prix de vente moyen", "Contrats d'achat sécurisés", "Nouveaux acheteurs"],
+            "Production": ["Rendement (t/ha)", "Surface cultivée (ha)", "Taux de pertes post-récolte (%)", "Coût des intrants / ha"],
+            "Support": ["Effectif (permanents + saisonniers)", "Heures de formation", "Taux d'accidents de travail"]
+          }
+        },
+        {
+          "name": "Élevage & aviculture",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu (têtes / kg)", "Prix de vente moyen", "Nouveaux clients / contrats", "Taux de fidélisation"],
+            "Production": ["Taux de mortalité (%)", "Indice de conversion alimentaire", "Rendement (ponte / croissance)", "Coût alimentaire / unité"],
+            "Support": ["Effectif", "Turnover (%)", "Incidents sanitaires"]
+          }
+        },
+        {
+          "name": "Pêche & aquaculture",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu (t)", "Prix moyen au kg", "Nouveaux débouchés / clients", "Part export (%)"],
+            "Production": ["Rendement par bassin / campagne", "Taux de survie (%)", "Taux de pertes (%)", "Coût de l'alimentation"],
+            "Support": ["Effectif", "Formation", "Conformité sanitaire"]
+          }
+        },
+        {
+          "name": "Transformation agroalimentaire",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu (t)", "Nouveaux distributeurs", "Prix de vente moyen", "Taux de retour produits (%)"],
+            "Production": ["Volume produit", "Rendement matière (%)", "Taux de pertes / gaspillage (%)", "Taux de qualité / conformité (%)", "Capacité utilisée (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Accidents de travail", "Certifications actives"]
+          }
+        },
+        {
+          "name": "Intrants & mécanisation agricole",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Rotation des stocks", "Trésorerie"],
+            "Commercial": ["Volume vendu", "Nombre de clients agriculteurs", "Ticket moyen", "Couverture géographique"],
+            "Production": ["Taux de rupture de stock (%)", "Délai de livraison", "Taux de SAV / retours (%)"],
+            "Support": ["Effectif", "Techniciens terrain", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Négoce & distribution agricole",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "BFR", "Trésorerie"],
+            "Commercial": ["Volume négocié (t)", "Nombre de fournisseurs / clients", "Marge par tonne", "Part de marché"],
+            "Production": ["Taux de pertes en stockage (%)", "Rotation des stocks", "Délai de rotation"],
+            "Support": ["Effectif", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Industrie manufacturière",
+      "subSectors": [
+        {
+          "name": "Textile, habillement & cuir",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu (unités)", "Nouveaux clients / commandes", "Prix de vente moyen", "Part export (%)"],
+            "Production": ["Volume produit", "Taux de défaut / rebut (%)", "Capacité utilisée (%)", "Délai de production", "Coût unitaire"],
+            "Support": ["Effectif", "Turnover (%)", "Accidents de travail", "Absentéisme (%)"]
+          }
+        },
+        {
+          "name": "Matériaux de construction",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu (t / m³)", "Nouveaux clients (BTP)", "Prix moyen", "Carnet de commandes"],
+            "Production": ["Volume produit", "Capacité utilisée (%)", "Taux de rebut (%)", "Coût énergétique / unité"],
+            "Support": ["Effectif", "Accidents de travail", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Emballage & plasturgie",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu", "Nouveaux clients", "Prix de vente moyen", "Taux de fidélisation"],
+            "Production": ["Volume produit", "Taux de rebut (%)", "Capacité utilisée (%)", "Taux de recyclage (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Accidents de travail"]
+          }
+        },
+        {
+          "name": "Chimie, cosmétique & hygiène",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Volume vendu", "Nombre de références (SKU)", "Nouveaux points de vente", "Prix moyen"],
+            "Production": ["Volume produit", "Taux de conformité qualité (%)", "Taux de rebut (%)", "Capacité utilisée (%)"],
+            "Support": ["Effectif", "Certifications / normes", "Accidents de travail"]
+          }
+        },
+        {
+          "name": "Bois & ameublement",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Trésorerie", "BFR"],
+            "Commercial": ["Volume vendu", "Nouveaux clients / commandes", "Ticket moyen", "Délai de livraison client"],
+            "Production": ["Rendement matière (%)", "Taux de rebut (%)", "Délai de production", "Capacité utilisée (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Accidents de travail"]
+          }
+        },
+        {
+          "name": "Métallurgie & fabrication métallique",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge brute (%)", "Trésorerie"],
+            "Commercial": ["Carnet de commandes", "Nouveaux clients", "Prix moyen", "Taux de conversion des devis (%)"],
+            "Production": ["Volume produit (t)", "Taux de rebut (%)", "Capacité utilisée (%)", "Coût énergétique"],
+            "Support": ["Effectif", "Accidents de travail", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Énergie & Environnement",
+      "subSectors": [
+        {
+          "name": "Électricité & solaire (off-grid / mini-réseaux)",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Trésorerie", "Runway (mois)"],
+            "Commercial": ["Kits / raccordements installés", "Nouveaux clients", "Taux de recouvrement PAYGO (%)", "Attrition (%)", "ARPU"],
+            "Production": ["kWh distribués", "Taux de disponibilité (%)", "Taux de panne (%)", "Délai d'installation"],
+            "Support": ["Techniciens terrain", "Délai d'intervention (h)", "Satisfaction clients"]
+          }
+        },
+        {
+          "name": "Distribution d'hydrocarbures & gaz",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Trésorerie", "BFR"],
+            "Commercial": ["Volume distribué (litres / kg)", "Nombre de points de vente", "Nouveaux clients B2B", "Part de marché"],
+            "Production": ["Taux de rupture d'approvisionnement (%)", "Rotation des stocks", "Pertes / écarts (%)"],
+            "Support": ["Effectif", "Incidents HSE", "Conformité réglementaire"]
+          }
+        },
+        {
+          "name": "Eau, assainissement & déchets",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Trésorerie", "Taux de recouvrement (%)"],
+            "Commercial": ["Nombre d'abonnés / clients", "Nouveaux raccordements", "Volume facturé", "Attrition (%)"],
+            "Production": ["Volume traité", "Taux de pertes / non-facturé (%)", "Taux de disponibilité du service (%)", "Conformité qualité (%)"],
+            "Support": ["Effectif", "Délai d'intervention", "Incidents HSE"]
+          }
+        },
+        {
+          "name": "Cuisson propre",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Trésorerie", "Runway (mois)"],
+            "Commercial": ["Unités vendues", "Nouveaux clients", "Taux de recouvrement (%)", "Rachat / recharge (%)"],
+            "Production": ["Volume produit / distribué", "Taux de SAV (%)", "Délai de livraison", "Crédits carbone générés"],
+            "Support": ["Effectif", "Réseau de distribution", "Satisfaction clients"]
+          }
+        },
+        {
+          "name": "Efficacité énergétique",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre de projets signés", "Pipeline commercial", "Économies générées client (kWh)", "Nouveaux clients"],
+            "Production": ["Projets livrés", "Délai de mise en œuvre", "Taux de performance garantie (%)"],
+            "Support": ["Effectif", "Techniciens certifiés", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "BTP & Immobilier",
+      "subSectors": [
+        {
+          "name": "Construction & travaux publics",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge sur chantiers (%)", "Trésorerie", "BFR"],
+            "Commercial": ["Carnet de commandes", "Taux de conversion des appels d'offres (%)", "Nouveaux marchés signés"],
+            "Production": ["Taux d'avancement des chantiers (%)", "Respect des délais (%)", "Dépassement de budget (%)", "Taux de reprise / malfaçon (%)"],
+            "Support": ["Effectif", "Accidents de travail", "Taux de sous-traitance (%)"]
+          }
+        },
+        {
+          "name": "Promotion immobilière",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge de promotion (%)", "Trésorerie", "Endettement / LTV"],
+            "Commercial": ["Taux de pré-commercialisation (%)", "Unités vendues", "Prix de vente au m²", "Délai d'écoulement"],
+            "Production": ["Taux d'avancement des programmes (%)", "Respect des délais (%)", "Coût de construction / m²"],
+            "Support": ["Effectif", "Litiges clients", "Taux de sous-traitance (%)"]
+          }
+        },
+        {
+          "name": "Négoce de matériaux",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Rotation des stocks", "Trésorerie"],
+            "Commercial": ["Volume vendu", "Nombre de clients actifs", "Ticket moyen", "Nouveaux clients"],
+            "Production": ["Taux de rupture de stock (%)", "Délai de livraison", "Taux de retour (%)"],
+            "Support": ["Effectif", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Gestion & services immobiliers",
+          "kpis": {
+            "Management": ["Chiffre d'affaires (honoraires)", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Surface / lots sous gestion", "Taux d'occupation (%)", "Nouveaux mandats", "Taux de rétention clients"],
+            "Production": ["Taux de recouvrement des loyers (%)", "Délai de traitement des demandes", "Taux de vacance (%)"],
+            "Support": ["Effectif", "Satisfaction locataires", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commerce & Distribution",
+      "subSectors": [
+        {
+          "name": "Commerce de détail",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Rotation des stocks", "Trésorerie"],
+            "Commercial": ["Ventes / m²", "Panier moyen", "Nombre de transactions", "Taux de fidélisation"],
+            "Production": ["Taux de rupture de stock (%)", "Taux de démarque / perte (%)", "Rotation des stocks"],
+            "Support": ["Effectif", "Turnover (%)", "Ventes / employé"]
+          }
+        },
+        {
+          "name": "Grande distribution & supérettes",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "EBITDA", "Trésorerie"],
+            "Commercial": ["Chiffre d'affaires / magasin", "Panier moyen", "Fréquentation (tickets)", "Nombre de magasins"],
+            "Production": ["Taux de rupture de stock (%)", "Taux de démarque (%)", "Taux de péremption (%)", "Rotation des stocks"],
+            "Support": ["Effectif", "Turnover (%)", "Productivité / employé"]
+          }
+        },
+        {
+          "name": "Grossistes & import-export",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "BFR", "Trésorerie"],
+            "Commercial": ["Volume distribué", "Nombre de clients actifs", "Marge par produit", "Part export / import (%)"],
+            "Production": ["Rotation des stocks", "Délai de dédouanement", "Taux de rupture (%)"],
+            "Support": ["Effectif", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Commerce en ligne (e-commerce)",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Trésorerie", "Runway (mois)"],
+            "Commercial": ["Visiteurs / trafic", "Taux de conversion (%)", "Panier moyen", "Coût d'acquisition client (CAC)", "Taux de rachat (%)"],
+            "Production": ["Nombre de commandes", "Délai de livraison", "Taux de retour (%)", "Taux de rupture (%)"],
+            "Support": ["Effectif", "Tickets support", "Délai de résolution"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transport & Logistique",
+      "subSectors": [
+        {
+          "name": "Transport de marchandises",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Volume transporté (t / conteneurs)", "Nombre de clients actifs", "Prix / km ou / tonne", "Taux de fidélisation"],
+            "Production": ["Taux de remplissage (%)", "Taux de ponctualité (%)", "Coût / km", "Taux d'immobilisation flotte (%)"],
+            "Support": ["Effectif (chauffeurs)", "Accidents / incidents", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Transport de personnes",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre de passagers", "Taux de remplissage (%)", "Recette / km", "Nouveaux abonnés"],
+            "Production": ["Taux de ponctualité (%)", "Taux de disponibilité flotte (%)", "Coût / km", "Accidents / 100 000 km"],
+            "Support": ["Effectif", "Satisfaction clients", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Logistique & entreposage",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Surface / volume sous gestion", "Taux d'occupation entrepôt (%)", "Nouveaux clients", "Taux de rétention"],
+            "Production": ["Précision des stocks (%)", "Délai de préparation de commande", "Taux d'erreur de picking (%)", "Rotation des stocks"],
+            "Support": ["Effectif", "Accidents de travail", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Livraison dernier kilomètre",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge par livraison (%)", "Trésorerie", "Runway (mois)"],
+            "Commercial": ["Nombre de livraisons", "Nouveaux clients / marchands", "Coût par livraison", "Taux de fidélisation"],
+            "Production": ["Taux de livraison à l'heure (%)", "Taux d'échec de livraison (%)", "Livraisons / coursier / jour", "Délai moyen"],
+            "Support": ["Effectif (coursiers)", "Satisfaction clients", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Services portuaires & douaniers",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Volume traité (conteneurs / t)", "Nombre de clients", "Nouveaux comptes", "Part de marché"],
+            "Production": ["Délai de traitement / dédouanement", "Taux de conformité (%)", "Temps d'attente moyen"],
+            "Support": ["Effectif", "Conformité réglementaire", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Technologie & Télécoms",
+      "subSectors": [
+        {
+          "name": "Fintech & mobile money",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge nette (%)", "Burn rate mensuel", "Runway (mois)"],
+            "Commercial": ["Utilisateurs actifs (MAU)", "Volume de transactions (TPV)", "Nouveaux comptes", "ARPU", "Taux d'attrition (%)"],
+            "Production": ["Nombre de transactions", "Taux de réussite des transactions (%)", "Disponibilité plateforme (%)", "Temps de traitement"],
+            "Support": ["Effectif", "Tickets support", "Délai de résolution", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Logiciels & SaaS",
+          "kpis": {
+            "Management": ["Chiffre d'affaires (ARR)", "Marge brute (%)", "Burn rate mensuel", "Runway (mois)"],
+            "Commercial": ["Revenu récurrent mensuel (MRR)", "Nouveaux clients", "Taux d'attrition (churn %)", "Expansion / upsell (%)", "CAC / LTV"],
+            "Production": ["Disponibilité (uptime %)", "Adoption / usage produit", "Vélocité de développement", "Nombre de bugs critiques"],
+            "Support": ["Effectif", "Tickets support", "NPS", "Délai de résolution"]
+          }
+        },
+        {
+          "name": "Marketplaces & plateformes",
+          "kpis": {
+            "Management": ["Chiffre d'affaires (commissions)", "Marge (take rate %)", "Burn rate mensuel", "Runway (mois)"],
+            "Commercial": ["Volume de transactions (GMV)", "Acheteurs actifs", "Vendeurs actifs", "Taux de rétention", "Panier moyen"],
+            "Production": ["Nombre de transactions", "Taux de conversion (%)", "Disponibilité plateforme (%)", "Taux de litiges (%)"],
+            "Support": ["Effectif", "Tickets support", "Délai de résolution"]
+          }
+        },
+        {
+          "name": "Télécoms & connectivité",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre d'abonnés", "ARPU", "Nouveaux abonnés (nets)", "Taux d'attrition (%)"],
+            "Production": ["Taux de disponibilité réseau (%)", "Couverture (%)", "Débit moyen", "Taux de panne (%)"],
+            "Support": ["Effectif", "Tickets support", "Délai de résolution", "Satisfaction clients"]
+          }
+        },
+        {
+          "name": "Services numériques & IT",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Taux d'utilisation (staffing %)", "Trésorerie"],
+            "Commercial": ["Carnet de commandes", "Nouveaux clients", "Taux de renouvellement", "Pipeline commercial"],
+            "Production": ["Projets livrés à temps (%)", "Marge par projet (%)", "Taux de satisfaction livraison (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Taux de certification équipe"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services financiers",
+      "subSectors": [
+        {
+          "name": "Microfinance (SFD)",
+          "kpis": {
+            "Management": ["Produits d'intérêts", "Résultat net", "Coût du risque", "Rendement des actifs (ROA)", "Trésorerie"],
+            "Commercial": ["Encours de crédit", "Nouveaux emprunteurs", "Encours d'épargne", "Taux de recouvrement (%)"],
+            "Production": ["Portefeuille à risque (PAR30 %)", "Prêts décaissés", "Délai d'octroi (jours)", "Dossiers traités / agent"],
+            "Support": ["Effectif agents", "Turnover (%)", "Satisfaction clients"]
+          }
+        },
+        {
+          "name": "Assurance & assurtech",
+          "kpis": {
+            "Management": ["Primes émises", "Ratio combiné (%)", "Résultat technique", "Trésorerie"],
+            "Commercial": ["Nombre de polices", "Nouveaux contrats", "Taux de renouvellement (%)", "Prime moyenne"],
+            "Production": ["Ratio de sinistralité (%)", "Délai de règlement des sinistres", "Taux de fraude détecté (%)"],
+            "Support": ["Effectif", "Réseau de distribution", "Satisfaction clients"]
+          }
+        },
+        {
+          "name": "Crédit, leasing & financement",
+          "kpis": {
+            "Management": ["Produit net bancaire", "Résultat net", "Coût du risque", "Rendement des fonds propres (ROE)"],
+            "Commercial": ["Encours de financement", "Nouveaux dossiers", "Montant moyen financé", "Taux de conversion (%)"],
+            "Production": ["Taux de défaut / NPL (%)", "Délai d'instruction", "Taux de recouvrement (%)"],
+            "Support": ["Effectif", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Services d'investissement & bourse",
+          "kpis": {
+            "Management": ["Chiffre d'affaires (commissions)", "Marge (%)", "Actifs sous gestion (AUM)", "Trésorerie"],
+            "Commercial": ["Nombre de clients", "Collecte nette", "Nouveaux comptes", "Rétention clients (%)"],
+            "Production": ["Volume de transactions", "Performance des portefeuilles (%)", "Délai d'exécution"],
+            "Support": ["Effectif", "Conformité réglementaire", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Santé",
+      "subSectors": [
+        {
+          "name": "Cliniques & hôpitaux",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Créances patients", "Trésorerie"],
+            "Commercial": ["Nombre de patients", "Taux d'occupation des lits (%)", "Actes / consultations", "Ticket moyen"],
+            "Production": ["Durée moyenne de séjour", "Taux de réadmission (%)", "Taux d'infection nosocomiale (%)", "Taux d'utilisation des blocs (%)"],
+            "Support": ["Effectif soignant", "Ratio personnel / patient", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Pharmacie & distribution pharmaceutique",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Rotation des stocks", "Trésorerie"],
+            "Commercial": ["Nombre de clients / ordonnances", "Panier moyen", "Ventes par référence", "Nouveaux points de vente"],
+            "Production": ["Taux de rupture de stock (%)", "Taux de péremption (%)", "Délai de réapprovisionnement"],
+            "Support": ["Effectif", "Turnover (%)", "Conformité réglementaire"]
+          }
+        },
+        {
+          "name": "Laboratoires & diagnostic",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre d'analyses / tests", "Nouveaux prescripteurs", "Ticket moyen", "Part de marché"],
+            "Production": ["Délai de rendu des résultats", "Taux d'erreur / reprise (%)", "Taux d'utilisation des équipements (%)", "Conformité qualité (%)"],
+            "Support": ["Effectif technique", "Accréditations", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "e-Santé",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Burn rate mensuel", "Runway (mois)"],
+            "Commercial": ["Utilisateurs actifs", "Nouveaux inscrits", "Taux d'attrition (%)", "Consultations / mois"],
+            "Production": ["Disponibilité plateforme (%)", "Délai de prise en charge", "Taux de complétion des parcours (%)"],
+            "Support": ["Effectif", "Tickets support", "Satisfaction patients (NPS)"]
+          }
+        },
+        {
+          "name": "Dispositifs & équipements médicaux",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Trésorerie", "BFR"],
+            "Commercial": ["Unités vendues", "Nouveaux clients (établissements)", "Carnet de commandes", "Taux de renouvellement"],
+            "Production": ["Délai de livraison", "Taux de SAV / panne (%)", "Taux de conformité réglementaire (%)"],
+            "Support": ["Effectif", "Techniciens SAV", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Éducation & Formation",
+      "subSectors": [
+        {
+          "name": "Enseignement scolaire",
+          "kpis": {
+            "Management": ["Chiffre d'affaires (scolarités)", "EBITDA", "Marge (%)", "Taux de recouvrement (%)"],
+            "Commercial": ["Nombre d'élèves inscrits", "Taux de remplissage des classes (%)", "Nouvelles inscriptions", "Taux de réinscription (%)"],
+            "Production": ["Taux de réussite aux examens (%)", "Ratio élèves / enseignant", "Taux d'assiduité (%)"],
+            "Support": ["Effectif enseignant", "Turnover (%)", "Satisfaction parents"]
+          }
+        },
+        {
+          "name": "Enseignement supérieur",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Taux de recouvrement (%)"],
+            "Commercial": ["Nombre d'étudiants", "Nouvelles inscriptions", "Taux de remplissage (%)", "Taux de rétention (%)"],
+            "Production": ["Taux de diplomation (%)", "Taux d'insertion professionnelle (%)", "Ratio étudiants / enseignant"],
+            "Support": ["Effectif académique", "Turnover (%)", "Satisfaction étudiants (NPS)"]
+          }
+        },
+        {
+          "name": "Formation professionnelle & technique",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Trésorerie", "Financements / subventions"],
+            "Commercial": ["Nombre d'apprenants", "Nouvelles inscriptions", "Taux de remplissage des sessions (%)", "Partenariats entreprises"],
+            "Production": ["Taux de complétion (%)", "Taux de certification (%)", "Taux d'insertion / emploi (%)"],
+            "Support": ["Effectif formateurs", "Satisfaction apprenants", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "EdTech",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Burn rate mensuel", "Runway (mois)"],
+            "Commercial": ["Utilisateurs actifs (MAU)", "Nouveaux inscrits", "Taux d'attrition (%)", "Taux de conversion gratuit → payant (%)"],
+            "Production": ["Taux de complétion des cours (%)", "Engagement (temps / session)", "Disponibilité plateforme (%)"],
+            "Support": ["Effectif", "Tickets support", "NPS"]
+          }
+        },
+        {
+          "name": "Formation continue",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Trésorerie", "Carnet de commandes"],
+            "Commercial": ["Nombre de sessions vendues", "Clients entreprises", "Taux de renouvellement (%)", "Ticket moyen"],
+            "Production": ["Taux de satisfaction formation (%)", "Taux de complétion (%)", "Taux de remplissage (%)"],
+            "Support": ["Effectif formateurs", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tourisme & Hôtellerie",
+      "subSectors": [
+        {
+          "name": "Hôtellerie & hébergement",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Taux d'occupation (%)", "Prix moyen par chambre (ADR)", "RevPAR", "Part de réservations directes (%)"],
+            "Production": ["Note de satisfaction / avis clients", "Taux de retour clients (%)", "Taux de réclamation (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Productivité / employé"]
+          }
+        },
+        {
+          "name": "Restauration",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Coût matière (%)", "Trésorerie"],
+            "Commercial": ["Nombre de couverts", "Ticket moyen", "Taux de fréquentation", "Taux de fidélisation"],
+            "Production": ["Coût des matières / CA (%)", "Taux de gaspillage (%)", "Temps de service moyen"],
+            "Support": ["Effectif", "Turnover (%)", "Note d'hygiène"]
+          }
+        },
+        {
+          "name": "Agences de voyage & tour-opérateurs",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Trésorerie", "BFR"],
+            "Commercial": ["Nombre de dossiers / voyages vendus", "Panier moyen", "Nouveaux clients", "Taux de conversion (%)"],
+            "Production": ["Taux de réclamation (%)", "Délai de traitement dossier", "Taux d'annulation (%)"],
+            "Support": ["Effectif", "Satisfaction clients", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Loisirs, culture & écotourisme",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre de visiteurs", "Ticket moyen", "Taux de fréquentation", "Part billetterie en ligne (%)"],
+            "Production": ["Taux de satisfaction visiteurs (%)", "Capacité utilisée (%)", "Taux de retour (%)"],
+            "Support": ["Effectif", "Saisonnalité (variation %)", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Événementiel",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge par événement (%)", "Trésorerie", "Carnet de commandes"],
+            "Commercial": ["Nombre d'événements", "Nouveaux clients", "Ticket moyen", "Taux de renouvellement"],
+            "Production": ["Taux de satisfaction client (%)", "Respect du budget (%)", "Taux d'incident (%)"],
+            "Support": ["Effectif permanent", "Recours prestataires (%)", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Médias & Communication",
+      "subSectors": [
+        {
+          "name": "Médias & audiovisuel",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Audience / téléspectateurs", "Recettes publicitaires", "Nombre d'annonceurs", "Abonnés"],
+            "Production": ["Volume de contenus produits", "Coût par production", "Taux de diffusion à l'heure (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Taux de pige (%)"]
+          }
+        },
+        {
+          "name": "Publicité & marketing",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Taux d'utilisation (staffing %)", "Trésorerie"],
+            "Commercial": ["Carnet de commandes", "Nouveaux clients (budgets)", "Taux de rétention clients (%)", "Revenu par client"],
+            "Production": ["Campagnes livrées à temps (%)", "ROI campagnes clients", "Taux de satisfaction (%)"],
+            "Support": ["Effectif", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Industries créatives & culturelles",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Trésorerie", "Revenus récurrents (droits)"],
+            "Commercial": ["Nombre de ventes / œuvres", "Nouveaux clients / licences", "Ticket moyen", "Audience"],
+            "Production": ["Volume de productions", "Délai de production", "Taux de projets rentables (%)"],
+            "Support": ["Effectif", "Recours freelances (%)", "Turnover (%)"]
+          }
+        },
+        {
+          "name": "Édition & imprimerie",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge brute (%)", "Rotation des stocks", "Trésorerie"],
+            "Commercial": ["Volume vendu (tirages)", "Nouveaux clients", "Ticket moyen", "Carnet de commandes"],
+            "Production": ["Volume produit", "Taux de rebut / gâche (%)", "Respect des délais (%)", "Capacité utilisée (%)"],
+            "Support": ["Effectif", "Accidents de travail", "Turnover (%)"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services aux entreprises & particuliers",
+      "subSectors": [
+        {
+          "name": "Conseil professionnel (juridique, comptable, audit)",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "Taux d'utilisation (staffing %)", "Trésorerie"],
+            "Commercial": ["Nombre de clients actifs", "Nouveaux mandats", "Taux de rétention (%)", "Revenu par client"],
+            "Production": ["Heures facturables (%)", "Délai de livraison des missions", "Taux de satisfaction (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Taux de certification / diplômés"]
+          }
+        },
+        {
+          "name": "Sécurité & gardiennage",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre de contrats / sites", "Nouveaux clients", "Taux de rétention (%)", "Revenu par contrat"],
+            "Production": ["Taux de couverture des postes (%)", "Incidents de sécurité", "Taux d'absentéisme agents (%)"],
+            "Support": ["Effectif agents", "Turnover (%)", "Heures de formation"]
+          }
+        },
+        {
+          "name": "Nettoyage & facility management",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "EBITDA", "Marge (%)", "Trésorerie"],
+            "Commercial": ["Nombre de contrats / sites", "Nouveaux clients", "Taux de rétention (%)", "Revenu par site"],
+            "Production": ["Taux de satisfaction client (%)", "Taux de réclamation (%)", "Taux de couverture des prestations (%)"],
+            "Support": ["Effectif", "Turnover (%)", "Absentéisme (%)"]
+          }
+        },
+        {
+          "name": "Ressources humaines & intérim",
+          "kpis": {
+            "Management": ["Chiffre d'affaires", "Marge (%)", "BFR", "Trésorerie"],
+            "Commercial": ["Nombre de placements / missions", "Nouveaux clients", "Taux de transformation (%)", "Revenu par mission"],
+            "Production": ["Délai de placement moyen", "Taux de satisfaction clients (%)", "Taux de renouvellement des missions (%)"],
+            "Support": ["Effectif interne", "Vivier de candidats", "Turnover (%)"]
+          }
+        }
+      ]
+    }
+  ]
+}

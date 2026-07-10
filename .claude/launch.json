@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "idawa-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["/Users/mdegbe/idawa-capital/scripts/dev.sh"],
+      "port": 3300
+    }
+  ]
+}
