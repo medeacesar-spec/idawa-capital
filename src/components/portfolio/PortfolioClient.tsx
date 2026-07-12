@@ -11,10 +11,10 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string }> = {
   Actif: { bg: "var(--green-bg)", fg: "var(--green-fg)" },
   "En difficulté": { bg: "var(--amber-bg)", fg: "var(--amber-fg)" },
   Sorti: { bg: "var(--neutral-bg)", fg: "var(--neutral-fg)" },
-  Radiée: { bg: "var(--red-bg)", fg: "var(--red-fg)" },
+  Radié: { bg: "var(--red-bg)", fg: "var(--red-fg)" },
 };
 
-const CLOSED_STATUS = ["Sorti", "Radiée"];
+const CLOSED_STATUS = ["Sorti", "Radié"];
 const isClosedCompany = (c: PortfolioCompany) => CLOSED_STATUS.includes(c.status);
 type StatusFilter = "actives" | "closes" | "toutes";
 

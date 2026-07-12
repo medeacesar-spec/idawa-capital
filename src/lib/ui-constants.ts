@@ -2,9 +2,9 @@
 
 export const DEAL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing", "Investi", "Perdu"];
 
-export const PORTFOLIO_STATUS = ["Actif", "En difficulté", "Sorti", "Radiée"];
+export const PORTFOLIO_STATUS = ["Actif", "En difficulté", "Sorti", "Radié"];
 // Statuts qui sortent la société du portefeuille actif (exit réalisé / perte).
-export const PORTFOLIO_CLOSED_STATUS = ["Sorti", "Radiée"];
+export const PORTFOLIO_CLOSED_STATUS = ["Sorti", "Radié"];
 
 export const PROGRAM_NATURES: { key: string; label: string }[] = [
   { key: "invest", label: "Investissement" },
