@@ -18,9 +18,13 @@ export default async function AppLayout({
   // Profil + rôle de l'utilisateur connecté
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, roles(name)")
+    .select("full_name, email, must_set_password, roles(name)")
     .eq("id", user.id)
     .single();
+
+  // Un utilisateur invité qui n'a pas encore défini son mot de passe ne peut pas
+  // accéder à l'application : on le renvoie vers la page de choix du mot de passe.
+  if (profile?.must_set_password) redirect("/reinitialiser");
 
   const roleName =
     (profile?.roles as { name?: string } | null)?.name ?? "Utilisateur";

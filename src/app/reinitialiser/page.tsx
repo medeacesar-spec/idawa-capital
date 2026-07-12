@@ -76,9 +76,13 @@ export default function ResetPasswordPage() {
     if (pwd.length < 8) { setError("Le mot de passe doit contenir au moins 8 caractères."); return; }
     if (pwd !== pwd2) { setError("Les deux mots de passe ne correspondent pas."); return; }
     setBusy(true); setError(null);
-    const { error } = await createClient().auth.updateUser({ password: pwd });
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: pwd });
+    if (error) { setBusy(false); setError("Échec : " + error.message); return; }
+    // Mot de passe défini : on lève le blocage d'accès du compte invité.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("profiles").update({ must_set_password: false }).eq("id", user.id);
     setBusy(false);
-    if (error) { setError("Échec : " + error.message); return; }
     setDone(true);
     setTimeout(() => { router.push("/dashboard"); router.refresh(); }, 1500);
   }

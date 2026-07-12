@@ -35,8 +35,10 @@ export async function inviteUser(email: string, roleId: string, fullName: string
   });
   if (error) return { error: error.message };
   const userId = data.user?.id;
-  if (userId && roleId) {
-    await admin.from("profiles").update({ role_id: roleId, full_name: fullName, email: email.trim() }).eq("id", userId);
+  if (userId) {
+    const patch: Record<string, unknown> = { full_name: fullName, email: email.trim(), must_set_password: true };
+    if (roleId) patch.role_id = roleId;
+    await admin.from("profiles").update(patch).eq("id", userId);
   }
   const inviteLink = `${origin}/auth/confirm?token_hash=${data.properties?.hashed_token}&type=invite&next=/reinitialiser`;
   // Envoi automatique de l'email d'invitation (si RESEND_API_KEY configurée).
