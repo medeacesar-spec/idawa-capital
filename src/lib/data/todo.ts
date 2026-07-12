@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type TodoItem = { kind: string; label: string; sub: string; href: string; severity: "high" | "medium"; assigneeId: string | null };
+export type TodoItem = { kind: string; label: string; sub: string; href: string; severity: "high" | "medium"; assigneeId: string | null; validation?: boolean };
 export type TodoData = { items: TodoItem[]; total: number };
 
 function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -9,13 +9,14 @@ export async function getTodoItems(): Promise<TodoData> {
   const supabase = await createClient();
   const today = todayISO();
 
-  const [coRes, dealRes, esgRes, taskRes, ddRes, vcRes] = await Promise.all([
+  const [coRes, dealRes, esgRes, taskRes, ddRes, vcRes, comRes] = await Promise.all([
     supabase.from("portfolio_companies").select("id, name"),
     supabase.from("deals").select("id, company_name"),
     supabase.from("esg_actions").select("entity_type, entity_id, action, date_end_plan, status, assignee_id").neq("status", "Réalisée"),
     supabase.from("tasks").select("entity_type, entity_id, title, due_date, status, assignee_id").neq("status", "Fait"),
     supabase.from("dd_items").select("entity_type, entity_id, item, status, assignee_id").eq("status", "Point d'attention"),
     supabase.from("value_creation").select("entity_type, entity_id, initiative, target_date, status, assignee_id"),
+    supabase.from("committee_passages").select("id, deal_id, committee_type, decision").eq("status", "Proposée"),
   ]);
   const coMap = new Map((coRes.data ?? []).map((c) => [c.id, c.name]));
   const dealMap = new Map((dealRes.data ?? []).map((d) => [d.id, d.company_name]));
@@ -41,6 +42,10 @@ export async function getTodoItems(): Promise<TodoData> {
     if (v.target_date && v.target_date < today && v.status !== "Réalisée" && v.status !== "En pause") {
       items.push({ kind: "Création de valeur", label: v.initiative, sub: `${nameOf(v.entity_type, v.entity_id)} · échéance dépassée`, href: hrefOf(v.entity_type, v.entity_id), severity: "medium", assigneeId: v.assignee_id ?? null });
     }
+  }
+
+  for (const c of comRes.data ?? []) {
+    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${dealMap.get(c.deal_id) ?? "—"}${c.decision ? ` · ${c.decision}` : ""}`, href: c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline", severity: "high", assigneeId: null, validation: true });
   }
 
   items.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "high" ? -1 : 1));

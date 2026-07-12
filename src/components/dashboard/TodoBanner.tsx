@@ -4,12 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TodoData } from "@/lib/data/todo";
 
-const KIND_COLOR: Record<string, string> = { ESG: "#7C7A3A", Action: "#8A5A18", "Due diligence": "#9A3B26", "Création de valeur": "#185FA5" };
+const KIND_COLOR: Record<string, string> = { ESG: "#7C7A3A", Action: "#8A5A18", "Due diligence": "#9A3B26", "Création de valeur": "#185FA5", "Comité": "#2F6140" };
 
-export default function TodoBanner({ data, currentUserId, canSeeAll }: { data: TodoData; currentUserId: string; canSeeAll: boolean }) {
+export default function TodoBanner({ data, currentUserId, canSeeAll, canValidateComites = false }: { data: TodoData; currentUserId: string; canSeeAll: boolean; canValidateComites?: boolean }) {
   const [scope, setScope] = useState<"mine" | "all">("mine");
   const effScope = canSeeAll ? scope : "mine";
-  const items = effScope === "all" ? data.items : data.items.filter((it) => it.assigneeId === currentUserId);
+  const items = effScope === "all"
+    ? data.items
+    : data.items.filter((it) => it.assigneeId === currentUserId || (it.validation && canValidateComites));
 
   const Toggle = canSeeAll ? (
     <div style={{ marginLeft: "auto", display: "flex", gap: 2, background: "var(--surface-2)", borderRadius: 8, padding: 2 }}>

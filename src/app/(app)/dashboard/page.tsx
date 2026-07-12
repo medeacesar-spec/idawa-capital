@@ -14,9 +14,10 @@ export default async function DashboardPage() {
     getMyPermissions(),
   ]);
   const canSeeAll = can(perms, "consolide");
+  const canValidateComites = perms.comites === "V";
   return (
     <>
-      <TodoBanner data={todo} currentUserId={user?.id ?? ""} canSeeAll={canSeeAll} />
+      <TodoBanner data={todo} currentUserId={user?.id ?? ""} canSeeAll={canSeeAll} canValidateComites={canValidateComites} />
       <DashboardClient data={data} />
     </>
   );
