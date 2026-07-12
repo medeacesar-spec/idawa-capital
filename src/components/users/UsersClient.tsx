@@ -20,8 +20,8 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
   const [pending, start] = useTransition();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", roleId: roles.find((r) => r.name === "Analyste")?.id ?? roles[0]?.id ?? "" });
-  const [result, setResult] = useState<{ inviteLink?: string; error?: string } | null>(null);
-  const [reset, setReset] = useState<{ email: string; resetLink?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ inviteLink?: string; emailed?: boolean; error?: string } | null>(null);
+  const [reset, setReset] = useState<{ email: string; resetLink?: string; emailed?: boolean; error?: string } | null>(null);
 
   function resetPwd(u: User) {
     if (!confirm(`Générer un lien de réinitialisation pour ${u.name || u.email} ?`)) return;
@@ -29,7 +29,7 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
     start(async () => {
       const res = await resetUserPassword(u.id);
       if (res.error) setReset({ email: u.email, error: res.error });
-      else setReset({ email: u.email, resetLink: res.resetLink });
+      else setReset({ email: u.email, resetLink: res.resetLink, emailed: res.emailed });
     });
   }
 
@@ -38,7 +38,7 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
     start(async () => {
       const res = await inviteUser(form.email, form.roleId, form.name);
       if (res.error) setResult({ error: res.error });
-      else { setResult({ inviteLink: res.inviteLink }); router.refresh(); }
+      else { setResult({ inviteLink: res.inviteLink, emailed: res.emailed }); router.refresh(); }
     });
   }
 
@@ -92,12 +92,16 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
         <Modal title="Inviter un utilisateur" onClose={() => setModal(false)}
           footer={result?.inviteLink ? <button className="btn btn-primary" onClick={() => setModal(false)}>Terminé</button> : <>
             <button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button>
-            <button className="btn btn-primary" disabled={pending || !form.email.trim()} onClick={submitInvite}>{pending ? "Création…" : "Créer et générer le lien"}</button>
+            <button className="btn btn-primary" disabled={pending || !form.email.trim()} onClick={submitInvite}>{pending ? "Création…" : "Créer et inviter"}</button>
           </>}>
           {result?.inviteLink ? (
             <div>
-              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Invitation créée pour <b>{form.email}</b>.</div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Transmettez-lui ce lien (email, WhatsApp…). Il choisira lui-même son mot de passe :</div>
+              {result.emailed ? (
+                <div style={{ fontSize: 13, color: "var(--green-fg)", background: "var(--green-bg)", borderRadius: 8, padding: "9px 12px", marginBottom: 8 }}>✅ Email d'invitation envoyé à <b>{form.email}</b>.</div>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Invitation créée pour <b>{form.email}</b>.</div>
+              )}
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>{result.emailed ? "Vous pouvez aussi copier le lien ci-dessous (en secours) :" : "Transmettez-lui ce lien (email, WhatsApp…). Il choisira lui-même son mot de passe :"}</div>
               <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
                 <div style={{ flex: 1, fontFamily: "monospace", fontSize: 11.5, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", wordBreak: "break-all", color: "var(--espresso)" }}>{result.inviteLink}</div>
                 <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => copy(result.inviteLink!)}>Copier</button>
@@ -126,8 +130,12 @@ export default function UsersClient({ users, roles, currentUserId }: { users: Us
             <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px" }}>{reset.error}</div>
           ) : reset.resetLink ? (
             <div>
-              <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Lien généré pour <b>{reset.email}</b>.</div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Transmettez-le à la personne — elle choisira un nouveau mot de passe :</div>
+              {reset.emailed ? (
+                <div style={{ fontSize: 13, color: "var(--green-fg)", background: "var(--green-bg)", borderRadius: 8, padding: "9px 12px", marginBottom: 8 }}>✅ Email de réinitialisation envoyé à <b>{reset.email}</b>.</div>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--ink)", marginBottom: 6 }}>✅ Lien généré pour <b>{reset.email}</b>.</div>
+              )}
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>{reset.emailed ? "Vous pouvez aussi copier le lien ci-dessous (en secours) :" : "Transmettez-le à la personne — elle choisira un nouveau mot de passe :"}</div>
               <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
                 <div style={{ flex: 1, fontFamily: "monospace", fontSize: 11.5, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", wordBreak: "break-all", color: "var(--espresso)" }}>{reset.resetLink}</div>
                 <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => copy(reset.resetLink!)}>Copier</button>

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { sendEmail, accessEmail } from "@/lib/email/resend";
 
 async function siteOrigin(): Promise<string> {
   const h = await headers();
@@ -38,8 +39,11 @@ export async function inviteUser(email: string, roleId: string, fullName: string
     await admin.from("profiles").update({ role_id: roleId, full_name: fullName, email: email.trim() }).eq("id", userId);
   }
   const inviteLink = `${origin}/auth/confirm?token_hash=${data.properties?.hashed_token}&type=invite&next=/reinitialiser`;
+  // Envoi automatique de l'email d'invitation (si RESEND_API_KEY configurée).
+  const mail = accessEmail({ fullName, link: inviteLink, kind: "invite" });
+  const sent = await sendEmail({ to: email.trim(), subject: mail.subject, html: mail.html });
   revalidatePath("/utilisateurs");
-  return { ok: true, inviteLink };
+  return { ok: true, inviteLink, emailed: sent.ok };
 }
 
 const PERM_DOMAINS = ["pipeline", "portefeuille", "comites", "reporting", "consolide", "partenaires", "config", "users"];
@@ -84,7 +88,9 @@ export async function resetUserPassword(userId: string) {
   });
   if (error) return { error: error.message };
   const resetLink = `${origin}/auth/confirm?token_hash=${data.properties?.hashed_token}&type=recovery&next=/reinitialiser`;
-  return { ok: true, resetLink };
+  const mail = accessEmail({ link: resetLink, kind: "recovery" });
+  const sent = await sendEmail({ to: email, subject: mail.subject, html: mail.html });
+  return { ok: true, resetLink, emailed: sent.ok };
 }
 
 export async function deleteUser(userId: string) {

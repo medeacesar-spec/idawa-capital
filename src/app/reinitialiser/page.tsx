@@ -15,6 +15,12 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    createClient().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, [ready]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -87,6 +93,11 @@ export default function ResetPasswordPage() {
           </div>
         ) : ready ? (
           <form onSubmit={submit}>
+            {email && (
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 9, padding: "9px 12px", marginBottom: 16, textAlign: "center" }}>
+                Compte : <b style={{ color: "var(--ink)" }}>{email}</b>
+              </div>
+            )}
             <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Nouveau mot de passe</label>
             <input type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" style={{ ...inputStyle, marginBottom: 14 }} />
             <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Confirmer</label>
