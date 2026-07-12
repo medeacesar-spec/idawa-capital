@@ -9,6 +9,7 @@ import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
 import CommitteeDocs from "./CommitteeDocs";
 import { setCommitteeValidation } from "@/app/(app)/pipeline/actions";
+import { DEAL_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
@@ -52,6 +53,19 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   const [convertOpen, setConvertOpen] = useState(false);
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
   const converted = !!deal.convertedCompanyId || deal.status === "investi";
+
+  // Gouvernance : la conversion en participation exige une décision d'investissement favorable validée en comité.
+  const hasValidatedInvestment = deal.committees.some(
+    (c) => c.outcome === "Investissement" && c.status === "Validée" && (c.decision === "Favorable" || c.decision === "Favorable sous conditions")
+  );
+  function onConvertClick() {
+    if (!hasValidatedInvestment) {
+      alert("La conversion en participation nécessite d'abord une décision d'investissement favorable, validée en Comité d'investissement (onglet Comités).");
+      setTab("Comités");
+      return;
+    }
+    setConvertOpen(true);
+  }
 
   async function removeCommittee(id: string) {
     if (!confirm("Supprimer ce passage en comité ?")) return;
@@ -101,8 +115,9 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               Saisir un reporting
             </button>
-            <button className="btn btn-primary" onClick={() => setConvertOpen(true)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            <button className="btn btn-primary" onClick={onConvertClick} title={hasValidatedInvestment ? "" : "Nécessite une décision d'investissement validée en comité"} style={{ opacity: hasValidatedInvestment ? 1 : 0.55 }}>
+              {!hasValidatedInvestment && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>}
+              {hasValidatedInvestment && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
               Convertir en participation
             </button>
           </div>
@@ -160,6 +175,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
                     <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : 16 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
+                        {c.outcome && <span className="badge badge-amber">{c.outcome}</span>}
                         {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
                         <span className={`badge ${validated ? "badge-green" : "badge-amber"}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                           {validated ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>Décision validée</> : "Proposée"}
@@ -203,7 +219,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
       {tab === "Contacts" && <EntityContacts entityType="deal" entityId={deal.id} contacts={deal.contacts} />}
 
-      {comModal.open && <CommitteeFormModal dealId={deal.id} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
+      {comModal.open && <CommitteeFormModal dealId={deal.id} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
     </div>
   );

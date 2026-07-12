@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { CompanyDetail } from "@/lib/data/companyDetail";
+import type { CompanyDetail, CompanyDecision } from "@/lib/data/companyDetail";
 import { fmtM, fmtMult, fmtPct } from "@/lib/format";
+import CommitteeFormModal from "@/components/pipeline/CommitteeFormModal";
+import CommitteeDocs from "@/components/pipeline/CommitteeDocs";
+import { setCompanyDecisionValidation } from "@/app/(app)/portefeuille/actions";
+import { COMPANY_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
@@ -16,8 +20,9 @@ const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "aoû
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
 
-const BASE_TABS = ["KPIs", "Suivi", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const BASE_TABS = ["KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
+const OUTCOME_BADGE: Record<string, string> = { Sortie: "badge-neutral", Radiation: "badge-red" };
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return (
@@ -28,11 +33,29 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-export default function CompanyDetailClient({ company }: { company: CompanyDetail }) {
+export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState("KPIs");
+  const [decModal, setDecModal] = useState<{ open: boolean; passage: CompanyDecision | null }>({ open: false, passage: null });
+  const [decBusy, setDecBusy] = useState<string | null>(null);
   const equity = company.trackingType === "equity";
   const TABS = company.originDealId ? [...BASE_TABS, "Origine / instruction"] : BASE_TABS;
+  const isClosed = company.status === "Sorti" || company.status === "Radié";
+
+  async function toggleDecision(id: string, validate: boolean) {
+    if (validate && !confirm("Valider officiellement cette décision de comité ? Le statut de la société sera mis à jour et la décision verrouillée.")) return;
+    setDecBusy(id);
+    const res = await setCompanyDecisionValidation(id, validate);
+    setDecBusy(null);
+    if (res?.error) { alert(res.error); return; }
+    router.refresh();
+  }
+  async function removeDecision(id: string) {
+    if (!confirm("Supprimer cette décision de comité ?")) return;
+    const { createClient } = await import("@/lib/supabase/client");
+    await createClient().from("committee_passages").delete().eq("id", id);
+    router.refresh();
+  }
 
   const facts: [string, string][] = equity
     ? [["Investi", fmtM(company.invested)], ["Valeur", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
@@ -85,6 +108,71 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
       {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} />}
 
       {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} users={company.users} />}
+
+      {tab === "Décisions" && (
+        <div>
+          <div className="card" style={{ padding: "14px 18px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6, maxWidth: 560 }}>
+              La <b style={{ color: "var(--ink)" }}>sortie</b> ou la <b style={{ color: "var(--ink)" }}>radiation</b> d'une participation se décide en <b style={{ color: "var(--ink)" }}>Comité d'investissement</b> et doit être <b style={{ color: "var(--ink)" }}>validée par la Direction</b>. Le statut de la société bascule automatiquement à la validation.
+              <span style={{ display: "block", marginTop: 6 }}>Statut actuel : <span className="badge" style={{ background: isClosed ? "var(--red-bg)" : "var(--green-bg)", color: isClosed ? "var(--red-fg)" : "var(--green-fg)" }}>{company.status}</span></span>
+            </div>
+            {canEditComites && !isClosed && (
+              <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => setDecModal({ open: true, passage: null })}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                Enregistrer une décision
+              </button>
+            )}
+          </div>
+          {company.decisions.length === 0 ? (
+            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucune décision de comité enregistrée sur cette participation.</div>
+          ) : (
+            <div className="card" style={{ padding: "18px 20px" }}>
+              {company.decisions.map((c, i) => {
+                const last = i === company.decisions.length - 1;
+                const validated = c.status === "Validée";
+                const col = validated ? "var(--green-fg)" : "var(--camel)";
+                return (
+                  <div key={c.id} style={{ display: "flex", gap: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{ width: 13, height: 13, borderRadius: "50%", background: last ? col : "var(--surface)", border: `2px solid ${col}`, flexShrink: 0 }} />
+                      {!last && <div style={{ flex: 1, width: 2, background: "var(--border)", margin: "2px 0" }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
+                        {c.outcome && <span className={`badge ${OUTCOME_BADGE[c.outcome] ?? "badge-neutral"}`}>{c.outcome}</span>}
+                        {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
+                        <span className={`badge ${validated ? "badge-green" : "badge-amber"}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          {validated ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>Validée</> : "Proposée"}
+                        </span>
+                        <span className="row-actions" style={{ marginLeft: "auto" }}>
+                          {canEditComites && !validated && <button onClick={() => setDecModal({ open: true, passage: c })} aria-label="Modifier" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>}
+                          {canEditComites && !validated && <button onClick={() => removeDecision(c.id)} aria-label="Supprimer" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}{validated && c.validatedBy ? ` · validée par ${c.validatedBy}${c.validatedAt ? " le " + frMonth(c.validatedAt.slice(0, 10)) : ""}` : ""}</div>
+                      {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
+                      <CommitteeDocs companyId={company.id} committeeId={c.id} docs={c.docs} />
+                      {canValidateComites && (
+                        <div style={{ marginTop: 8 }}>
+                          {validated ? (
+                            <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={decBusy === c.id} onClick={() => toggleDecision(c.id, false)}>{decBusy === c.id ? "…" : "Annuler la validation"}</button>
+                          ) : (
+                            <button className="btn btn-primary" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={decBusy === c.id} onClick={() => toggleDecision(c.id, true)}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                              {decBusy === c.id ? "…" : "Valider la décision"}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} users={company.users} />}
       {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
@@ -141,6 +229,16 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
       {tab === "Documents" && <EntityDocuments entityType="company" entityId={company.id} entityName={company.name} docs={company.documents} />}
 
       {tab === "Contacts" && <EntityContacts entityType="company" entityId={company.id} contacts={company.contacts} />}
+
+      {decModal.open && (
+        <CommitteeFormModal
+          companyId={company.id}
+          outcomes={COMPANY_COMMITTEE_OUTCOMES}
+          defaultType="Comité d'investissement"
+          passage={decModal.passage}
+          onClose={() => setDecModal({ open: false, passage: null })}
+        />
+      )}
     </div>
   );
 }

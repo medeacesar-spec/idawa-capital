@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { PORTFOLIO_STATUS } from "@/lib/ui-constants";
 import type { PortfolioCompany, PortfolioProgram, SubSectorOption } from "@/lib/data/portfolio";
 
 const M = 1_000_000;
@@ -35,6 +34,7 @@ export default function CompanyFormModal({
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const isEquity = f.trackingType === "equity";
+  const isClosed = f.status === "Sorti" || f.status === "Radié";
 
   async function submit() {
     if (!f.name.trim()) return;
@@ -93,9 +93,16 @@ export default function CompanyFormModal({
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Statut">
-          <Select value={f.status} onChange={(e) => set("status", e.target.value)}>
-            {PORTFOLIO_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </Select>
+          {isClosed ? (
+            <div style={{ padding: "9px 11px", border: "1px solid var(--border)", borderRadius: 9, background: "var(--surface-cream)", fontSize: 12.5 }}>
+              <span className="badge" style={{ background: "var(--red-bg)", color: "var(--red-fg)", marginRight: 6 }}>{f.status}</span>
+              <span style={{ color: "var(--text-3)", fontSize: 11 }}>décision de comité — voir l'onglet « Décisions »</span>
+            </div>
+          ) : (
+            <Select value={f.status} onChange={(e) => set("status", e.target.value)}>
+              {["Actif", "En difficulté"].map((s) => <option key={s} value={s}>{s}</option>)}
+            </Select>
+          )}
         </Field>
         <Field label="Date d'entrée"><Input type="date" value={f.investedDate} onChange={(e) => set("investedDate", e.target.value)} /></Field>
       </div>

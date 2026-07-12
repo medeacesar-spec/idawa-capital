@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CommitteeDoc } from "@/lib/data/dealDetail";
 
-export default function CommitteeDocs({ dealId, committeeId, docs }: { dealId: string; committeeId: string; docs: CommitteeDoc[] }) {
+export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: { dealId?: string; companyId?: string; committeeId: string; docs: CommitteeDoc[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -19,7 +19,7 @@ export default function CommitteeDocs({ dealId, committeeId, docs }: { dealId: s
     const path = `${Date.now()}-${Math.round(Math.random() * 1e6)}-${safe}`;
     const up = await supabase.storage.from("documents").upload(path, file);
     if (!up.error) {
-      await supabase.from("documents").insert({ title: file.name.replace(/\.[^.]+$/, ""), category: "Comité", storage_path: path, deal_id: dealId, committee_id: committeeId });
+      await supabase.from("documents").insert({ title: file.name.replace(/\.[^.]+$/, ""), category: "Comité", storage_path: path, deal_id: dealId ?? null, company_id: companyId ?? null, committee_id: committeeId });
     }
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";

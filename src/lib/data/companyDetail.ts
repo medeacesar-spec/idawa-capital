@@ -10,6 +10,8 @@ export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
 export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null };
 export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null };
+export type CommitteeDocRef = { id: string; title: string; storagePath: string | null };
+export type CompanyDecision = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDocRef[] };
 export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
 
 export type CompanyDetail = {
@@ -29,6 +31,7 @@ export type CompanyDetail = {
   originDealId: string | null;
   originDealName: string | null;
   originCommittees: OriginCommittee[];
+  decisions: CompanyDecision[];
   originNotes: OriginNote[];
   notes: SuiviNote[];
   tasks: SuiviTask[];
@@ -65,6 +68,22 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
 
   const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, users] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getFundUsers()]);
 
+  // Décisions de comité prises sur la société (post-investissement : sortie / radiation).
+  const { data: decRows } = await supabase.from("committee_passages")
+    .select("id, committee_type, session_date, decision, conditions, participants, outcome, status, validated_by, validated_at")
+    .eq("company_id", id).order("session_date");
+  const decIds = (decRows ?? []).map((d) => d.id);
+  const { data: decDocs } = decIds.length
+    ? await supabase.from("documents").select("id, title, storage_path, committee_id").in("committee_id", decIds)
+    : { data: [] as { id: string; title: string; storage_path: string | null; committee_id: string }[] };
+  const decisions: CompanyDecision[] = (decRows ?? []).map((d) => ({
+    id: d.id, committeeType: d.committee_type, sessionDate: d.session_date, decision: d.decision, conditions: d.conditions,
+    participants: d.participants, outcome: d.outcome ?? null, status: d.status ?? "Proposée",
+    validatedBy: d.validated_by ? (users.find((u) => u.id === d.validated_by)?.name ?? "—") : null,
+    validatedAt: d.validated_at ?? null,
+    docs: (decDocs ?? []).filter((x) => x.committee_id === d.id).map((x) => ({ id: x.id, title: x.title, storagePath: x.storage_path })),
+  }));
+
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
@@ -76,6 +95,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originDealId: c.origin_deal_id ?? null,
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
+    decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
     notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation,
     kpis, kpiLibrary, users, contacts: contactRes.data ?? [],

@@ -33,6 +33,11 @@ export const DOC_CATEGORIES = ["Juridique", "Reporting", "Financier", "Comité",
 export const COMMITTEE_TYPES = ["Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi"];
 export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "Ajourné", "Défavorable"];
 
+// Nature d'une décision structurante prise en comité (déclenche un changement de cycle de vie une fois validée).
+export const COMMITTEE_OUTCOME_NONE = "Aucune (suivi)";
+export const DEAL_COMMITTEE_OUTCOMES = ["Investissement"]; // sur un dossier : feu vert pour convertir en participation
+export const COMPANY_COMMITTEE_OUTCOMES = ["Sortie", "Radiation"]; // sur une participation : bascule Sorti / Radié
+
 export const NOTE_TYPES = ["Réunion", "Appel", "Email", "Note"];
 export const TASK_STATUS = ["À faire", "En cours", "Fait"];
 
