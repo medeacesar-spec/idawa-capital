@@ -15,6 +15,8 @@ export type DealDetail = {
   companyName: string;
   stage: string;
   status: string | null;
+  dealState: string;
+  rejectionReason: string | null;
   amount: number;
   probability: number | null;
   valuationPre: number | null;
@@ -46,7 +48,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const supabase = await createClient();
   const { data: d } = await supabase
     .from("deals")
-    .select("id, company_name, stage, status, amount, probability, valuation_pre, ownership_target, thesis, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close")
+    .select("id, company_name, stage, status, deal_state, rejection_reason, amount, probability, valuation_pre, ownership_target, thesis, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close")
     .eq("id", id).single();
   if (!d) return null;
 
@@ -68,7 +70,8 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
-    id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null, amount: Number(d.amount ?? 0),
+    id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null,
+    dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, amount: Number(d.amount ?? 0),
     probability: d.probability, valuationPre: d.valuation_pre != null ? Number(d.valuation_pre) : null,
     ownershipTarget: d.ownership_target != null ? Number(d.ownership_target) : null,
     convertedCompanyId: (convRes.data as { id?: string } | null)?.id ?? null,

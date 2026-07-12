@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { DEAL_STAGES } from "@/lib/ui-constants";
+import { DEAL_FUNNEL_STAGES } from "@/lib/ui-constants";
 import type { PipelineDeal, PipelineProgram, PipelineSubSector, PipelineMember } from "@/lib/data/pipeline";
 
 const M = 1_000_000;
@@ -69,7 +69,7 @@ export default function DealFormModal({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Étape">
           <Select value={f.stage} onChange={(e) => set("stage", e.target.value)}>
-            {DEAL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+            {DEAL_FUNNEL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
           </Select>
         </Field>
         <Field label="Programme">

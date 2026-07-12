@@ -46,8 +46,8 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const [progRes, compRes, dealRes, indRes] = await Promise.all([
     supabase.from("programs").select("id, name, color, nature, position, status").order("position"),
-    supabase.from("portfolio_companies").select("invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type"),
-    supabase.from("deals").select("amount, stage, program_id"),
+    supabase.from("portfolio_companies").select("invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type, origin_deal_id"),
+    supabase.from("deals").select("id, amount, stage, program_id, deal_state"),
     supabase.from("program_indicators").select("program_id, name, program_indicator_values(period, value)"),
   ]);
 
@@ -58,6 +58,11 @@ export async function getDashboardData(): Promise<DashboardData> {
   const companies = allCompanies.filter((c) => (c.tracking_type ?? "equity") === "equity");
   const deals = dealRes.data ?? [];
   const indicators = indRes.data ?? [];
+  // Un dossier est réellement « au pipeline actif » s'il est à une étape de l'entonnoir,
+  // en état Actif, et pas déjà converti en participation.
+  const convertedDealIds = new Set(allCompanies.map((c) => c.origin_deal_id).filter(Boolean));
+  const isActiveDeal = (d: { id: string; stage: string; deal_state?: string | null }) =>
+    ACTIVE_STAGES.includes(d.stage) && (d.deal_state ?? "Actif") === "Actif" && !convertedDealIds.has(d.id);
 
   // Carte : programme -> { nom indicateur : valeur (T2 2026) }
   const indMap: Record<string, Record<string, number>> = {};
@@ -75,7 +80,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     const tvpi = invested > 0 ? valuation / invested : null;
     const tri = comps.length ? sum(comps, "tri") / comps.length : null;
     const pdeals = deals.filter((d) => d.program_id === p.id);
-    const active = pdeals.filter((d) => ACTIVE_STAGES.includes(d.stage));
+    const active = pdeals.filter(isActiveDeal);
     const ind = indMap[p.id] ?? {};
     const budget = ind["Budget alloué"] ?? null;
     const disbursed = ind["Montant décaissé"] ?? null;
@@ -101,9 +106,9 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   });
 
-  const activeDeals = deals.filter((d) => ACTIVE_STAGES.includes(d.stage));
+  const activeDeals = deals.filter(isActiveDeal);
   const funnel = ACTIVE_STAGES.map((s) => {
-    const rows = deals.filter((d) => d.stage === s);
+    const rows = activeDeals.filter((d) => d.stage === s);
     return { stage: s, count: rows.length, amount: sum(rows, "amount") };
   });
 

@@ -1,6 +1,19 @@
 // Constantes utilisables côté client (aucune dépendance serveur).
 
 export const DEAL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing", "Investi", "Perdu"];
+// Étapes de l'entonnoir (progression d'un dossier actif) — sans les issues terminales.
+export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing"];
+// États d'un dossier (situation), distincts de l'étape.
+export const DEAL_STATES = ["Actif", "En veille", "Écarté"];
+export const REJECTION_REASONS = [
+  "Hors thèse d'investissement",
+  "Non prioritaire après analyse",
+  "Valorisation trop élevée",
+  "Équipe / gouvernance insuffisante",
+  "Perdu face à la concurrence",
+  "Abandonné par la cible",
+  "Autre",
+];
 
 export const PORTFOLIO_STATUS = ["Actif", "En difficulté", "Sorti", "Radié"];
 // Statuts qui sortent la société du portefeuille actif (exit réalisé / perte).

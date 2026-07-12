@@ -7,6 +7,7 @@ import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
+import RejectDealModal from "./RejectDealModal";
 import CommitteeDocs from "./CommitteeDocs";
 import { setCommitteeValidation } from "@/app/(app)/pipeline/actions";
 import { DEAL_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
@@ -51,8 +52,19 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
     router.refresh();
   }
   const [convertOpen, setConvertOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [stateBusy, setStateBusy] = useState(false);
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
   const converted = !!deal.convertedCompanyId || deal.status === "investi";
+
+  async function changeState(next: string) {
+    setStateBusy(true);
+    const payload: Record<string, unknown> = { deal_state: next };
+    if (next !== "Écarté") payload.rejection_reason = null;
+    await createClient().from("deals").update(payload).eq("id", deal.id);
+    setStateBusy(false);
+    router.refresh();
+  }
 
   // Gouvernance : la conversion en participation exige une décision d'investissement favorable validée en comité.
   const hasValidatedInvestment = deal.committees.some(
@@ -123,6 +135,32 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           </div>
         )}
       </div>
+
+      {!converted && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14, padding: "9px 12px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface-cream)" }}>
+          <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>État du dossier</span>
+          {deal.dealState === "En veille" ? (
+            <span className="badge badge-amber">En veille</span>
+          ) : deal.dealState === "Écarté" ? (
+            <span className="badge badge-neutral">Écarté{deal.rejectionReason ? ` · ${deal.rejectionReason}` : ""}</span>
+          ) : (
+            <span className="badge badge-green">Actif</span>
+          )}
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {deal.dealState === "Actif" && (
+              <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("En veille")}>Mettre en veille</button>
+            )}
+            {deal.dealState === "En veille" && (
+              <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("Actif")}>Réactiver</button>
+            )}
+            {deal.dealState === "Écarté" ? (
+              <button className="btn btn-primary" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("Actif")}>Réactiver le dossier</button>
+            ) : (
+              <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px", color: "var(--red-fg)" }} disabled={stateBusy} onClick={() => setRejectOpen(true)}>Écarter</button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 18 }}>
         {facts.map(([k, v]) => (
@@ -221,6 +259,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
       {comModal.open && <CommitteeFormModal dealId={deal.id} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
+      {rejectOpen && <RejectDealModal dealId={deal.id} onClose={() => setRejectOpen(false)} />}
     </div>
   );
 }

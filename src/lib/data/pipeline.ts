@@ -17,6 +17,8 @@ export type PipelineDeal = {
   analystId: string | null;
   expectedClose: string | null;
   convertedCompanyId: string | null;
+  dealState: string;
+  rejectionReason: string | null;
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
@@ -39,7 +41,7 @@ export async function getPipelineData(): Promise<PipelineData> {
   const [dealRes, progRes, subRes, indRes, profRes, convRes] = await Promise.all([
     supabase
       .from("deals")
-      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at")
+      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason")
       .order("created_at", { ascending: false }),
     supabase.from("programs").select("id, name, color, position, status").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
@@ -75,6 +77,8 @@ export async function getPipelineData(): Promise<PipelineData> {
       analystId: d.analyst_id,
       expectedClose: d.expected_close,
       convertedCompanyId: convMap.get(d.id) ?? null,
+      dealState: d.deal_state ?? "Actif",
+      rejectionReason: d.rejection_reason ?? null,
     };
   });
 

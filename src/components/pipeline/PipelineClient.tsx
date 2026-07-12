@@ -17,11 +17,12 @@ const STAGE_COLOR: Record<string, string> = {
   Perdu: "#A6412E",
 };
 
-const CLOSED_STAGES = ["Investi", "Perdu"];
-// Un dossier est « clôturé » s'il est marqué Investi/Perdu OU s'il a déjà été converti
-// en participation (lien convertedCompanyId) — la conversion ne repositionne pas toujours le stage.
-const isClosed = (d: PipelineDeal) => CLOSED_STAGES.includes(d.stage) || !!d.convertedCompanyId;
-type StatusFilter = "actifs" | "clotures" | "tous";
+const isConverted = (d: PipelineDeal) => !!d.convertedCompanyId;
+const isRejected = (d: PipelineDeal) => d.dealState === "Écarté";
+// Clôturé = investi (participation liée) OU écarté.
+const isClosed = (d: PipelineDeal) => isConverted(d) || isRejected(d);
+const isVeille = (d: PipelineDeal) => !isConverted(d) && d.dealState === "En veille";
+type StatusFilter = "actifs" | "veille" | "clotures" | "tous";
 
 function initials(name: string): string {
   const clean = name.replace(/[^A-Za-zÀ-ÿ ]/g, "");
@@ -45,8 +46,12 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
   const [modal, setModal] = useState<{ open: boolean; deal: PipelineDeal | null }>({ open: false, deal: null });
   const byProgram = scope === "all" ? data.deals : data.deals.filter((d) => d.programId === scope);
   const closedCount = byProgram.filter(isClosed).length;
+  const veilleCount = byProgram.filter(isVeille).length;
   const list = byProgram.filter((d) =>
-    status === "tous" ? true : status === "clotures" ? isClosed(d) : !isClosed(d)
+    status === "tous" ? true
+      : status === "clotures" ? isClosed(d)
+      : status === "veille" ? isVeille(d)
+      : (!isClosed(d) && !isVeille(d))
   );
   const total = list.reduce((a, d) => a + d.amount, 0);
 
@@ -78,6 +83,7 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
       <div style={{ display: "inline-flex", gap: 2, marginBottom: 12, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 999, padding: 3 }}>
         {([
           { id: "actifs", label: "En cours" },
+          { id: "veille", label: `En veille${veilleCount ? ` · ${veilleCount}` : ""}` },
           { id: "clotures", label: `Clôturés${closedCount ? ` · ${closedCount}` : ""}` },
           { id: "tous", label: "Tous" },
         ] as { id: StatusFilter; label: string }[]).map((t) => {
@@ -127,16 +133,21 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
                     {d.programName}
                   </span>
                 )}
-                {d.convertedCompanyId && (
+                {d.convertedCompanyId ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "var(--green-bg)", color: "var(--green-fg)", flexShrink: 0, whiteSpace: "nowrap" }}>
                     ✓ Converti
                   </span>
-                )}
+                ) : d.dealState === "En veille" ? (
+                  <span style={{ padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "var(--amber-bg)", color: "var(--amber-fg)", flexShrink: 0, whiteSpace: "nowrap" }}>En veille</span>
+                ) : d.dealState === "Écarté" ? (
+                  <span style={{ padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "var(--neutral-bg)", color: "var(--neutral-fg)", flexShrink: 0, whiteSpace: "nowrap" }}>Écarté</span>
+                ) : null}
               </div>
               <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {d.sector ? `${d.sector} · ` : ""}
-                <span style={{ color: STAGE_COLOR[d.stage] ?? "var(--text-2)", fontWeight: 600 }}>{d.stage}</span>
-                {d.probability != null ? ` · ${d.probability}%` : ""}
+                {d.dealState === "Écarté" && !d.convertedCompanyId
+                  ? <span style={{ color: "var(--text-2)" }}>{d.rejectionReason ?? "Écarté"}</span>
+                  : <><span style={{ color: STAGE_COLOR[d.stage] ?? "var(--text-2)", fontWeight: 600 }}>{d.stage}</span>{d.probability != null ? ` · ${d.probability}%` : ""}</>}
               </div>
             </div>
             <div className="deal-team" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
