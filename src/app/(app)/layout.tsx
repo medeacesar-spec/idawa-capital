@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AppHeader";
+import IdleTimeout from "@/components/IdleTimeout";
 import { createClient } from "@/lib/supabase/server";
 import { getMyPermissions } from "@/lib/auth/permissions";
 import { allowedNavKeys } from "@/lib/nav";
@@ -35,6 +36,7 @@ export default async function AppLayout({
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--ink)" }}>
+      <IdleTimeout />
       <Sidebar userName={displayName} roleName={roleName} allowedKeys={allowedKeys} />
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--cream)" }}>
         <AppHeader />

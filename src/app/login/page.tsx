@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("raison") === "inactivite") {
+      setNotice("Vous avez été déconnecté après 30 minutes d'inactivité. Reconnectez-vous pour continuer.");
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +55,12 @@ export default function LoginPage() {
         <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-2)", margin: "0 0 26px" }}>
           Pilotage du pipeline et du portefeuille
         </p>
+
+        {notice && (
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px", marginBottom: 18, lineHeight: 1.5 }}>
+            {notice}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Email</label>
