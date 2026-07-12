@@ -18,23 +18,39 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") { setReady(true); setChecking(false); }
+    const invalid = "Ce lien est invalide ou a expiré. Redemandez-en un depuis « Mot de passe oublié ».";
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN")) { setReady(true); setChecking(false); }
     });
-    const code = new URLSearchParams(window.location.search).get("code");
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) { setLinkError("Ce lien est invalide ou a expiré. Redemandez-en un depuis « Mot de passe oublié »."); }
-        else setReady(true);
+    (async () => {
+      try {
+        const search = new URLSearchParams(window.location.search);
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const code = search.get("code");
+        const access_token = hash.get("access_token");
+        const refresh_token = hash.get("refresh_token");
+        if (search.get("error_description") || hash.get("error_description")) {
+          setLinkError(invalid);
+        } else if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          setReady(true);
+        } else if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (error) throw error;
+          window.history.replaceState(null, "", window.location.pathname);
+          setReady(true);
+        } else {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) setReady(true);
+          else setLinkError(invalid);
+        }
+      } catch {
+        setLinkError(invalid);
+      } finally {
         setChecking(false);
-      });
-    } else {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) setReady(true);
-        else setLinkError("Lien invalide. Ouvrez la page depuis le lien reçu par email, ou redemandez un lien.");
-        setChecking(false);
-      });
-    }
+      }
+    })();
     return () => sub.subscription.unsubscribe();
   }, []);
 

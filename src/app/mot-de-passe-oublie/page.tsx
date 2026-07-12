@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div>
             <div style={{ fontSize: 13, color: "var(--green-fg)", background: "var(--green-bg)", borderRadius: 8, padding: "12px 14px", lineHeight: 1.55 }}>
-              Si un compte existe pour <b>{email}</b>, un email contenant un lien de réinitialisation vient d'être envoyé. Ouvrez-le et suivez le lien pour choisir un nouveau mot de passe.
+              Si un compte existe pour <b>{email}</b>, un email contenant un lien de réinitialisation vient d'être envoyé. Ouvrez-le et suivez le lien pour choisir un nouveau mot de passe.<br /><b>Pensez à vérifier votre courrier indésirable (spam)</b> : le message peut s'y trouver.
             </div>
             <div style={{ textAlign: "center", marginTop: 18 }}><a href="/login" style={{ fontSize: 12.5, color: "var(--camel)", fontWeight: 600, textDecoration: "none" }}>← Retour à la connexion</a></div>
           </div>
