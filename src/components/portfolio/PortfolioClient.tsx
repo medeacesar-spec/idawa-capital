@@ -11,7 +11,12 @@ const STATUS_BADGE: Record<string, { bg: string; fg: string }> = {
   Actif: { bg: "var(--green-bg)", fg: "var(--green-fg)" },
   "En difficulté": { bg: "var(--amber-bg)", fg: "var(--amber-fg)" },
   Sorti: { bg: "var(--neutral-bg)", fg: "var(--neutral-fg)" },
+  Radiée: { bg: "var(--red-bg)", fg: "var(--red-fg)" },
 };
+
+const CLOSED_STATUS = ["Sorti", "Radiée"];
+const isClosedCompany = (c: PortfolioCompany) => CLOSED_STATUS.includes(c.status);
+type StatusFilter = "actives" | "closes" | "toutes";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null): string {
@@ -101,11 +106,16 @@ function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
 export default function PortfolioClient({ data }: { data: PortfolioData }) {
   const router = useRouter();
   const [scope, setScope] = useState<string>("all");
+  const [status, setStatus] = useState<StatusFilter>("actives");
   const [modal, setModal] = useState<{ open: boolean; company: PortfolioCompany | null }>({ open: false, company: null });
 
   const active = data.programs.filter((p) => p.status !== "Clos");
   const closed = data.programs.filter((p) => p.status === "Clos");
-  const list = scope === "all" ? data.companies.filter((c) => c.programStatus !== "Clos") : data.companies.filter((c) => c.programId === scope);
+  const byProgram = scope === "all" ? data.companies.filter((c) => c.programStatus !== "Clos") : data.companies.filter((c) => c.programId === scope);
+  const closedCount = byProgram.filter(isClosedCompany).length;
+  const list = byProgram.filter((c) =>
+    status === "toutes" ? true : status === "closes" ? isClosedCompany(c) : !isClosedCompany(c)
+  );
   const equity = list.filter((c) => c.trackingType === "equity");
   const accomp = list.filter((c) => c.trackingType === "accompagnement");
   const invested = equity.reduce((a, c) => a + c.invested, 0);
@@ -153,6 +163,24 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
         </div>
       </div>
 
+      {/* Filtre par statut */}
+      <div style={{ display: "inline-flex", gap: 2, marginBottom: 12, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 999, padding: 3 }}>
+        {([
+          { id: "actives", label: "En portefeuille" },
+          { id: "closes", label: `Sorties & radiées${closedCount ? ` · ${closedCount}` : ""}` },
+          { id: "toutes", label: "Toutes" },
+        ] as { id: StatusFilter; label: string }[]).map((t) => {
+          const on = t.id === status;
+          return (
+            <button key={t.id} onClick={() => setStatus(t.id)}
+              style={{ padding: "6px 14px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none",
+                background: on ? "var(--espresso)" : "transparent", color: on ? "#fff" : "var(--text-2)" }}>
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div style={{ display: "flex", gap: 18, marginBottom: 14, fontSize: 12.5, color: "var(--text-2)", flexWrap: "wrap" }}>
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(equity.length)}</b> participation{equity.length > 1 ? "s" : ""}</span>
         {accomp.length > 0 && <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(accomp.length)}</b> accompagnée{accomp.length > 1 ? "s" : ""}</span>}
@@ -162,7 +190,11 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
       </div>
 
       {list.length === 0 ? (
-        <div className="card" style={{ padding: "28px 0", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucune entreprise pour ce périmètre.</div>
+        <div className="card" style={{ padding: "28px 0", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>
+          {status === "actives" && closedCount > 0
+            ? <>Aucune entreprise active pour ce périmètre. <button onClick={() => setStatus("closes")} style={{ background: "none", border: "none", color: "var(--camel)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", fontSize: 13, textDecoration: "underline" }}>{closedCount} en historique (sorties & radiées)</button></>
+            : "Aucune entreprise pour ce périmètre."}
+        </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
           {list.map((c) =>
