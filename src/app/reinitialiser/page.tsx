@@ -40,9 +40,12 @@ export default function ResetPasswordPage() {
         if (search.get("error_description") || hash.get("error_description")) {
           setLinkError(invalid);
         } else if (token_hash && otpType) {
-          // Validation côté navigateur (résiste au pré-scan des liens par email).
-          const { error } = await supabase.auth.verifyOtp({ type: otpType as "invite" | "recovery" | "email", token_hash });
+          // Efface une éventuelle session déjà ouverte (ex : l'admin qui teste le lien)
+          // pour ne pas confondre les comptes, puis valide le jeton de la personne invitée.
+          await supabase.auth.signOut({ scope: "local" });
+          const { data, error } = await supabase.auth.verifyOtp({ type: otpType as "invite" | "recovery" | "email", token_hash });
           if (error) throw error;
+          setEmail(data.user?.email ?? null);
           window.history.replaceState(null, "", window.location.pathname);
           setReady(true);
         } else if (code) {
