@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
 import { getDealDetail } from "@/lib/data/dealDetail";
 import DealDetailClient from "@/components/pipeline/DealDetailClient";
+import { getMyPermissions } from "@/lib/auth/permissions";
 
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const deal = await getDealDetail(id);
+  const [deal, { perms }] = await Promise.all([getDealDetail(id), getMyPermissions()]);
   if (!deal) notFound();
-  return <DealDetailClient deal={deal} />;
+  const comites = perms.comites ?? "-";
+  const canEditComites = comites === "E" || comites === "V";
+  const canValidateComites = comites === "V";
+  return <DealDetailClient deal={deal} canEditComites={canEditComites} canValidateComites={canValidateComites} />;
 }

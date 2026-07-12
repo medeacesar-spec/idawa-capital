@@ -8,6 +8,7 @@ import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
 import CommitteeDocs from "./CommitteeDocs";
+import { setCommitteeValidation } from "@/app/(app)/pipeline/actions";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
@@ -34,10 +35,20 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return <div className="card" style={{ padding: "32px 28px" }}><div className="serif" style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>{title}</div><div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>{desc}</div></div>;
 }
 
-export default function DealDetailClient({ deal }: { deal: DealDetail }) {
+export default function DealDetailClient({ deal, canEditComites = true, canValidateComites = false }: { deal: DealDetail; canEditComites?: boolean; canValidateComites?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
   const [comModal, setComModal] = useState<{ open: boolean; passage: CommitteePassage | null }>({ open: false, passage: null });
+  const [comBusy, setComBusy] = useState<string | null>(null);
+
+  async function toggleValidation(id: string, validate: boolean) {
+    if (validate && !confirm("Valider officiellement cette décision de comité ? Le passage sera verrouillé.")) return;
+    setComBusy(id);
+    const res = await setCommitteeValidation(id, validate);
+    setComBusy(null);
+    if (res?.error) { alert(res.error); return; }
+    router.refresh();
+  }
   const [convertOpen, setConvertOpen] = useState(false);
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
   const converted = !!deal.convertedCompanyId || deal.status === "investi";
@@ -125,18 +136,21 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Passages en comité <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— un dossier peut repasser plusieurs fois</span></div>
-            <button className="btn btn-primary" onClick={() => setComModal({ open: true, passage: null })}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-              Enregistrer un passage
-            </button>
+            {canEditComites && (
+              <button className="btn btn-primary" onClick={() => setComModal({ open: true, passage: null })}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                Enregistrer un passage
+              </button>
+            )}
           </div>
           {deal.committees.length === 0 ? (
-            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun passage en comité. Cliquez « Enregistrer un passage » pour ajouter un comité et son compte-rendu.</div>
+            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun passage en comité{canEditComites ? ". Cliquez « Enregistrer un passage » pour ajouter un comité et son compte-rendu." : "."}</div>
           ) : (
             <div className="card" style={{ padding: "18px 20px" }}>
               {deal.committees.map((c, i) => {
                 const last = i === deal.committees.length - 1;
                 const col = DECISION_COLOR[c.decision ?? ""] ?? "var(--text-3)";
+                const validated = c.status === "Validée";
                 return (
                   <div key={c.id} style={{ display: "flex", gap: 12 }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -147,14 +161,29 @@ export default function DealDetailClient({ deal }: { deal: DealDetail }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
                         {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
+                        <span className={`badge ${validated ? "badge-green" : "badge-amber"}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          {validated ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>Décision validée</> : "Proposée"}
+                        </span>
                         <span className="row-actions" style={{ marginLeft: "auto" }}>
-                          <button onClick={() => setComModal({ open: true, passage: c })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-                          <button onClick={() => removeCommittee(c.id)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+                          {canEditComites && !validated && <button onClick={() => setComModal({ open: true, passage: c })} aria-label="Modifier" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>}
+                          {canEditComites && !validated && <button onClick={() => removeCommittee(c.id)} aria-label="Supprimer" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>}
                         </span>
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}{validated && c.validatedBy ? ` · validée par ${c.validatedBy}${c.validatedAt ? " le " + frMonth(c.validatedAt.slice(0, 10)) : ""}` : ""}</div>
                       {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
                       <CommitteeDocs dealId={deal.id} committeeId={c.id} docs={c.docs} />
+                      {canValidateComites && (
+                        <div style={{ marginTop: 8 }}>
+                          {validated ? (
+                            <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={comBusy === c.id} onClick={() => toggleValidation(c.id, false)}>{comBusy === c.id ? "…" : "Annuler la validation"}</button>
+                          ) : (
+                            <button className="btn btn-primary" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={comBusy === c.id} onClick={() => toggleValidation(c.id, true)}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                              {comBusy === c.id ? "…" : "Valider la décision"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
