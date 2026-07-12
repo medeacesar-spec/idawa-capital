@@ -1,5 +1,6 @@
 import { getAuditLog, TABLE_LABEL, ACTION_LABEL } from "@/lib/data/audit";
 import { requirePerm } from "@/lib/auth/permissions";
+import AuditExportButton from "@/components/journal/AuditExportButton";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDateTime(s: string | null) {
@@ -17,7 +18,10 @@ export default async function JournalPage() {
 
   return (
     <div>
-      <div style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 12 }}>Historique des créations, modifications et suppressions ({entries.length} dernières).</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>Historique des créations, modifications et suppressions ({entries.length} dernières affichées). L'export contient tout le journal.</div>
+        <AuditExportButton />
+      </div>
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
