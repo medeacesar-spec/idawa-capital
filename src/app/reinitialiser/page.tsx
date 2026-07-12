@@ -33,10 +33,18 @@ export default function ResetPasswordPage() {
         const search = new URLSearchParams(window.location.search);
         const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
         const code = search.get("code");
+        const token_hash = search.get("token_hash");
+        const otpType = search.get("type");
         const access_token = hash.get("access_token");
         const refresh_token = hash.get("refresh_token");
         if (search.get("error_description") || hash.get("error_description")) {
           setLinkError(invalid);
+        } else if (token_hash && otpType) {
+          // Validation côté navigateur (résiste au pré-scan des liens par email).
+          const { error } = await supabase.auth.verifyOtp({ type: otpType as "invite" | "recovery" | "email", token_hash });
+          if (error) throw error;
+          window.history.replaceState(null, "", window.location.pathname);
+          setReady(true);
         } else if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;

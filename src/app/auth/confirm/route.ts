@@ -1,38 +1,21 @@
-import { createServerClient } from "@supabase/ssr";
-import { type EmailOtpType } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-// Valide un lien d'invitation / de réinitialisation (token_hash) côté serveur,
-// écrit la session sur la réponse de redirection, puis renvoie vers la page
-// où l'utilisateur choisit son mot de passe.
+// IMPORTANT : ne PAS valider (verifyOtp) le jeton ici, côté serveur.
+// Les messageries (Outlook/Microsoft notamment) pré-ouvrent les liens pour les
+// scanner ; une validation au GET consommerait le jeton à usage unique avant que
+// l'utilisateur ne clique. On se contente donc de TRANSMETTRE le jeton à la page
+// /reinitialiser, qui le validera côté navigateur (JS) — invisible pour les scanners.
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
+  const type = searchParams.get("type");
   const next = searchParams.get("next") ?? "/reinitialiser";
 
   if (token_hash && type) {
-    const cookieStore = await cookies();
-    const response = NextResponse.redirect(`${origin}${next}`);
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
-          },
-        },
-      }
-    );
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
-    if (!error) return response;
+    const url = new URL(`${origin}${next}`);
+    url.searchParams.set("token_hash", token_hash);
+    url.searchParams.set("type", type);
+    return NextResponse.redirect(url);
   }
   return NextResponse.redirect(`${origin}/login?erreur=lien`);
 }
