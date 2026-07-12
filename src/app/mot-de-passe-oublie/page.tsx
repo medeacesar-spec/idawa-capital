@@ -18,7 +18,13 @@ export default function ForgotPasswordPage() {
       redirectTo: `${window.location.origin}/reinitialiser`,
     });
     setLoading(false);
-    if (error) { setError("Une erreur est survenue. Réessayez."); return; }
+    if (error) {
+      const m = error.message?.toLowerCase() ?? "";
+      if (m.includes("rate") || m.includes("limit")) setError("Trop d'envois récents — le service email est limité à quelques messages par heure. Réessayez plus tard, ou demandez à un administrateur de générer un lien (bouton 🔑).");
+      else if (m.includes("redirect")) setError("URL de redirection non autorisée dans Supabase. À corriger : Authentication → URL Configuration → Redirect URLs.");
+      else setError(error.message || "Une erreur est survenue. Réessayez.");
+      return;
+    }
     setSent(true);
   }
 
