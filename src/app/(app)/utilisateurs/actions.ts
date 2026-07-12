@@ -42,6 +42,26 @@ export async function inviteUser(email: string, roleId: string, fullName: string
   return { ok: true, inviteLink };
 }
 
+const PERM_DOMAINS = ["pipeline", "portefeuille", "comites", "reporting", "consolide", "partenaires", "config", "users"];
+const PERM_LEVELS = ["-", "L", "V", "E"];
+
+export async function setRolePermission(roleId: string, domain: string, level: string) {
+  if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
+  if (!PERM_DOMAINS.includes(domain) || !PERM_LEVELS.includes(level)) return { error: "Valeur invalide." };
+  const admin = createAdminClient();
+  const { data: role } = await admin.from("roles").select("name, permissions").eq("id", roleId).single();
+  if (!role) return { error: "Rôle introuvable." };
+  // Garde-fou : ne pas retirer l'accès Utilisateurs à l'Administrateur (risque de verrouillage).
+  if (role.name === "Administrateur" && domain === "users" && level !== "E") {
+    return { error: "L'accès « Utilisateurs & rôles » de l'Administrateur ne peut pas être réduit." };
+  }
+  const perms = { ...((role.permissions as Record<string, string>) ?? {}), [domain]: level };
+  const { error } = await admin.from("roles").update({ permissions: perms }).eq("id", roleId);
+  if (error) return { error: error.message };
+  revalidatePath("/utilisateurs");
+  return { ok: true };
+}
+
 export async function setUserRole(userId: string, roleId: string) {
   if (!(await assertAdmin())) return { error: "Accès réservé à la direction." };
   const admin = createAdminClient();

@@ -1,4 +1,10 @@
-type Role = { name: string; permissions: Record<string, string> | null };
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { setRolePermission } from "@/app/(app)/utilisateurs/actions";
+
+type Role = { id: string; name: string; permissions: Record<string, string> | null };
 
 const DOMAINS: { key: string; label: string }[] = [
   { key: "pipeline", label: "Pipeline" },
@@ -11,21 +17,50 @@ const DOMAINS: { key: string; label: string }[] = [
   { key: "users", label: "Utilisateurs & rôles" },
 ];
 
-const LEVEL: Record<string, { t: string; bg: string; fg: string }> = {
-  E: { t: "Édition", bg: "var(--green-bg)", fg: "var(--green-fg)" },
-  V: { t: "Validation", bg: "var(--amber-bg)", fg: "var(--amber-fg)" },
-  L: { t: "Lecture", bg: "var(--neutral-bg)", fg: "var(--neutral-fg)" },
-  "-": { t: "—", bg: "transparent", fg: "var(--text-3)" },
-};
+const LEVELS = [
+  { v: "E", t: "Édition", bg: "var(--green-bg)", fg: "var(--green-fg)" },
+  { v: "V", t: "Validation", bg: "var(--amber-bg)", fg: "var(--amber-fg)" },
+  { v: "L", t: "Lecture", bg: "var(--neutral-bg)", fg: "var(--neutral-fg)" },
+  { v: "-", t: "—", bg: "transparent", fg: "var(--text-3)" },
+];
+const LV = Object.fromEntries(LEVELS.map((l) => [l.v, l]));
 
 export default function AccessMatrix({ roles }: { roles: Role[] }) {
-  const th: React.CSSProperties = { padding: "9px 12px", fontSize: 11, fontWeight: 700, color: "var(--text-2)", textAlign: "center", whiteSpace: "nowrap", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" };
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [perms, setPerms] = useState<Record<string, Record<string, string>>>(
+    Object.fromEntries(roles.map((r) => [r.id, { ...(r.permissions ?? {}) } as Record<string, string>]))
+  );
+  const [busyCell, setBusyCell] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  function change(roleId: string, domain: string, level: string) {
+    const prev = perms[roleId]?.[domain] ?? "-";
+    if (prev === level) return;
+    setErr(null);
+    setBusyCell(roleId + domain);
+    setPerms((p) => ({ ...p, [roleId]: { ...p[roleId], [domain]: level } })); // optimiste
+    start(async () => {
+      const res = await setRolePermission(roleId, domain, level);
+      setBusyCell(null);
+      if (res.error) {
+        setErr(res.error);
+        setPerms((p) => ({ ...p, [roleId]: { ...p[roleId], [domain]: prev } })); // annulation
+      } else {
+        router.refresh();
+      }
+    });
+  }
+
+  const th: React.CSSProperties = { padding: "9px 10px", fontSize: 11, fontWeight: 700, color: "var(--text-2)", textAlign: "center", whiteSpace: "nowrap", borderBottom: "1px solid var(--border)", background: "var(--surface-2)" };
+
   return (
     <div style={{ marginTop: 28 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
         <h2 className="serif" style={{ fontSize: 17, color: "var(--espresso)", margin: 0 }}>Matrice des accès par rôle</h2>
-        <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>Qui peut faire quoi, par domaine de l'application.</span>
+        <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>Cliquez une cellule pour changer le niveau d'accès — enregistré aussitôt.</span>
       </div>
+      {err && <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px", marginBottom: 10 }}>{err}</div>}
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -37,13 +72,23 @@ export default function AccessMatrix({ roles }: { roles: Role[] }) {
             </thead>
             <tbody>
               {roles.map((r, i) => (
-                <tr key={r.name}>
-                  <td style={{ padding: "10px 12px", fontSize: 12.5, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", borderTop: i === 0 ? "none" : "1px solid var(--sep)", position: "sticky", left: 0, background: "var(--surface)" }}>{r.name}</td>
+                <tr key={r.id}>
+                  <td style={{ padding: "8px 10px", fontSize: 12.5, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", borderTop: i === 0 ? "none" : "1px solid var(--sep)", position: "sticky", left: 0, background: "var(--surface)" }}>{r.name}</td>
                   {DOMAINS.map((d) => {
-                    const lv = LEVEL[r.permissions?.[d.key] ?? "-"] ?? LEVEL["-"];
+                    const lvl = perms[r.id]?.[d.key] ?? "-";
+                    const meta = LV[lvl] ?? LV["-"];
+                    const cellBusy = busyCell === r.id + d.key;
                     return (
-                      <td key={d.key} style={{ padding: "10px 12px", textAlign: "center", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                        <span style={{ display: "inline-block", padding: "3px 9px", borderRadius: 999, fontSize: 10.5, fontWeight: 600, background: lv.bg, color: lv.fg }}>{lv.t}</span>
+                      <td key={d.key} style={{ padding: "6px 8px", textAlign: "center", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+                        <select
+                          value={lvl}
+                          disabled={pending}
+                          onChange={(e) => change(r.id, d.key, e.target.value)}
+                          title="Changer le niveau d'accès"
+                          style={{ appearance: "none", WebkitAppearance: "none", MozAppearance: "none", cursor: "pointer", textAlign: "center", textAlignLast: "center", fontFamily: "inherit", fontSize: 10.5, fontWeight: 600, padding: "4px 10px", borderRadius: 999, border: "1px solid transparent", background: meta.bg, color: meta.fg, opacity: cellBusy ? 0.5 : 1 }}
+                        >
+                          {LEVELS.map((l) => <option key={l.v} value={l.v}>{l.t}</option>)}
+                        </select>
                       </td>
                     );
                   })}
