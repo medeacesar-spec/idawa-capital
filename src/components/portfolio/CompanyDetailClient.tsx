@@ -36,7 +36,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
 
   const facts: [string, string][] = equity
     ? [["Investi", fmtM(company.invested)], ["Valeur", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
-    : [["Type", "Accompagnement"], ["Statut", company.status], ["Programme", company.programName ?? "—"], ["Suivie depuis", frMonth(company.investedDate)]];
+    : [["Type", "Accélération"], ["Statut", company.status], ["Programme", company.programName ?? "—"], ["Suivie depuis", frMonth(company.investedDate)]];
 
   return (
     <div>
@@ -48,7 +48,7 @@ export default function CompanyDetailClient({ company }: { company: CompanyDetai
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="serif" style={{ fontSize: 21, fontWeight: 600, color: "var(--ink)" }}>{company.name}</div>
           <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-            {equity ? "Participation" : "Accompagnement"} {company.status === "Actif" ? "active" : `· ${company.status}`}
+            {equity ? "Participation" : "Accélération"} {company.status === "Actif" ? "active" : `· ${company.status}`}
             {company.originDealName && ` · issue du deal ${company.originDealName}`}
           </div>
         </div>

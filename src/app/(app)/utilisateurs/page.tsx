@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import UsersClient from "@/components/users/UsersClient";
+import AccessMatrix from "@/components/users/AccessMatrix";
 import { getMyPermissions, can } from "@/lib/auth/permissions";
 
 export default async function UtilisateursPage() {
@@ -21,7 +22,7 @@ export default async function UtilisateursPage() {
 
   const [profRes, rolesRes] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, role_id, roles(name)").order("created_at"),
-    supabase.from("roles").select("id, name").order("name"),
+    supabase.from("roles").select("id, name, permissions").order("created_at"),
   ]);
 
   const users = (profRes.data ?? []).map((p) => ({
@@ -31,7 +32,13 @@ export default async function UtilisateursPage() {
     roleId: p.role_id as string | null,
     roleName: (p.roles as { name?: string } | null)?.name ?? "Sans rôle",
   }));
-  const roles = (rolesRes.data ?? []).map((r) => ({ id: r.id, name: r.name }));
+  const rolesFull = (rolesRes.data ?? []).map((r) => ({ id: r.id, name: r.name, permissions: (r.permissions as Record<string, string> | null) }));
+  const roles = rolesFull.map((r) => ({ id: r.id, name: r.name }));
 
-  return <UsersClient users={users} roles={roles} currentUserId={user?.id ?? ""} />;
+  return (
+    <>
+      <UsersClient users={users} roles={roles} currentUserId={user?.id ?? ""} />
+      <AccessMatrix roles={rolesFull} />
+    </>
+  );
 }

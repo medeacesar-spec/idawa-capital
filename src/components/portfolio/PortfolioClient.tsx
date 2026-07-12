@@ -90,7 +90,7 @@ function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
         <Actions onEdit={onEdit} onDelete={onDelete} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-cream)", borderRadius: 9, padding: "9px 11px" }}>
-        <span className="badge badge-amber">Accompagnement</span>
+        <span className="badge badge-amber">Accélération</span>
         <span style={{ fontSize: 11, color: "var(--text-2)" }}>Suivie depuis {frMonth(c.investedDate)}</span>
       </div>
       <ProgramTag c={c} />

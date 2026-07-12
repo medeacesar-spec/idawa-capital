@@ -51,7 +51,7 @@ export const NAV_REQ: Record<string, { domain: string; min?: string }> = {
   performance: { domain: "consolide" },
   esg: { domain: "consolide" },
   reporting: { domain: "reporting" },
-  partenaires: { domain: "consolide" },
+  partenaires: { domain: "partenaires" },
   utilisateurs: { domain: "users" },
   journal: { domain: "users" },
   kpi: { domain: "config" },

@@ -75,7 +75,7 @@ export default function CompanyFormModal({
         <Field label="Type de suivi">
           <Select value={f.trackingType} onChange={(e) => set("trackingType", e.target.value)}>
             <option value="equity">Participation (equity)</option>
-            <option value="accompagnement">Accompagnement</option>
+            <option value="accompagnement">Accélération</option>
           </Select>
         </Field>
         <Field label="Programme">

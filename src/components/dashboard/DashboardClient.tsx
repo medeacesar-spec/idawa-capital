@@ -6,7 +6,7 @@ import { fmtM, fmtMult, fmtPct, fmtInt, fmtFCFA } from "@/lib/format";
 
 const NATURE_LABEL: Record<ProgNature, string> = {
   invest: "Investissement",
-  accompagnement: "Accompagnement",
+  accompagnement: "Accélération",
   mixte: "Mixte",
 };
 const NATURE_BADGE: Record<ProgNature, { bg: string; fg: string }> = {

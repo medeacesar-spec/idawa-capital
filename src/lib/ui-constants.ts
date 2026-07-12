@@ -7,7 +7,7 @@ export const PORTFOLIO_STATUS = ["Actif", "En difficulté", "Sorti"];
 export const PROGRAM_NATURES: { key: string; label: string }[] = [
   { key: "invest", label: "Investissement" },
   { key: "mixte", label: "Mixte" },
-  { key: "accompagnement", label: "Accompagnement" },
+  { key: "accompagnement", label: "Accélération" },
 ];
 
 export const PROGRAM_STATUS = ["Actif", "Clos"];

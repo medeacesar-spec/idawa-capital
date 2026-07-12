@@ -20,7 +20,7 @@ const REL_ICON: Record<string, string> = {
   "Co-investisseur": "👥",
 };
 
-export default function PartnersClient({ data }: { data: PartnersData }) {
+export default function PartnersClient({ data, canEdit = true }: { data: PartnersData; canEdit?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [filter, setFilter] = useState<string>("all");
@@ -73,10 +73,12 @@ export default function PartnersClient({ data }: { data: PartnersData }) {
             );
           })}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, partner: null })}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Nouveau partenaire
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => setModal({ open: true, partner: null })}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nouveau partenaire
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ padding: "4px 18px" }}>
@@ -125,15 +127,17 @@ export default function PartnersClient({ data }: { data: PartnersData }) {
                   </div>
                 </div>
               )}
-              <div className="row-actions">
-                <button onClick={() => setModal({ open: true, partner: p })} aria-label="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-                <button onClick={() => remove(p)} aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
-              </div>
+              {canEdit && (
+                <div className="row-actions">
+                  <button onClick={() => setModal({ open: true, partner: p })} aria-label="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+                  <button onClick={() => remove(p)} aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-      {modal.open && <PartnerFormModal partner={modal.partner} programs={data.programs} onClose={() => setModal({ open: false, partner: null })} />}
+      {modal.open && canEdit && <PartnerFormModal partner={modal.partner} programs={data.programs} onClose={() => setModal({ open: false, partner: null })} />}
     </div>
   );
 }
