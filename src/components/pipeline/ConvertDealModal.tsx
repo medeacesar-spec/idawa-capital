@@ -34,6 +34,8 @@ export default function ConvertDealModal({ deal, onClose }: { deal: DealDetail; 
       p_country: country || null,
     });
     if (rpcErr) { setError(rpcErr.message); setBusy(false); return; }
+    // Marque le dossier comme investi pour qu'il quitte le pipeline actif.
+    await supabase.from("deals").update({ stage: "Investi" }).eq("id", deal.id);
     router.push(`/portefeuille/${data}`);
   }
 
