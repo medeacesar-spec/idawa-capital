@@ -183,7 +183,7 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
 
       <div style={{ display: "flex", gap: 18, marginBottom: 14, fontSize: 12.5, color: "var(--text-2)", flexWrap: "wrap" }}>
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(equity.length)}</b> participation{equity.length > 1 ? "s" : ""}</span>
-        {accomp.length > 0 && <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(accomp.length)}</b> accompagnée{accomp.length > 1 ? "s" : ""}</span>}
+        {accomp.length > 0 && <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(accomp.length)}</b> accélérée{accomp.length > 1 ? "s" : ""}</span>}
         {invested > 0 && <span>Investi <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(invested)}</b></span>}
         {valuation > 0 && <span>Valeur <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(valuation)}</b></span>}
         {tvpi != null && <span>TVPI <b className="serif tnum" style={{ color: "var(--green-fg)" }}>{fmtMult(tvpi)}</b></span>}

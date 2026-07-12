@@ -188,7 +188,7 @@ function ProgramView({ p }: { p: ProgramMetrics }) {
           <>
             <Tile k="Budget alloué" v={p.budget != null ? fmtM(p.budget) : "—"} />
             <Tile k="Montant décaissé" v={p.disbursed != null ? fmtM(p.disbursed) : "—"} d={p.execRate != null ? fmtPct(p.execRate) : undefined} dc="var(--amber-fg)" sub="taux d'exécution" />
-            <Tile k="PME accompagnées" v={p.pme != null ? fmtInt(p.pme) : "—"} />
+            <Tile k="PME accélérées" v={p.pme != null ? fmtInt(p.pme) : "—"} />
             <Tile k="Emplois créés" v={p.jobs != null ? fmtInt(p.jobs) : "—"} dc="var(--green-fg)" />
           </>
         )}

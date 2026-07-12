@@ -78,7 +78,7 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
       {/* Indicateurs d'accompagnement */}
       {showAccomp && (
         <div style={panel}>
-          <h3 style={h3}>Indicateurs d'accompagnement</h3>
+          <h3 style={h3}>Indicateurs d'accélération</h3>
           <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 6 }}>Choisissez les indicateurs suivis pour ce programme (cochez dans le catalogue, ajoutez les vôtres, et fixez une cible).</div>
           {ACCOMPAGNEMENT_CATALOG.map((cat) => {
             const color = ACCOMP_CATEGORY_COLOR[cat.category];
