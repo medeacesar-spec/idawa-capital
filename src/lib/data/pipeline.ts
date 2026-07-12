@@ -16,6 +16,7 @@ export type PipelineDeal = {
   officerId: string | null;
   analystId: string | null;
   expectedClose: string | null;
+  convertedCompanyId: string | null;
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
@@ -35,7 +36,7 @@ const displayName = (p?: { full_name?: string | null; email?: string | null } | 
 export async function getPipelineData(): Promise<PipelineData> {
   const supabase = await createClient();
 
-  const [dealRes, progRes, subRes, indRes, profRes] = await Promise.all([
+  const [dealRes, progRes, subRes, indRes, profRes, convRes] = await Promise.all([
     supabase
       .from("deals")
       .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at")
@@ -44,6 +45,7 @@ export async function getPipelineData(): Promise<PipelineData> {
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
     supabase.from("industries").select("id, name"),
     supabase.from("profiles").select("id, full_name, email"),
+    supabase.from("portfolio_companies").select("id, origin_deal_id").not("origin_deal_id", "is", null),
   ]);
 
   const allPrograms = progRes.data ?? [];
@@ -52,6 +54,7 @@ export async function getPipelineData(): Promise<PipelineData> {
   const subMap = new Map((subRes.data ?? []).map((s) => [s.id, s.name]));
   const indMap = new Map((indRes.data ?? []).map((i) => [i.id, i.name]));
   const profMap = new Map((profRes.data ?? []).map((p) => [p.id, p]));
+  const convMap = new Map((convRes.data ?? []).map((c) => [c.origin_deal_id, c.id]));
 
   const deals: PipelineDeal[] = (dealRes.data ?? []).map((d) => {
     const prog = d.program_id ? progMap.get(d.program_id) : null;
@@ -71,6 +74,7 @@ export async function getPipelineData(): Promise<PipelineData> {
       officerId: d.investment_officer_id,
       analystId: d.analyst_id,
       expectedClose: d.expected_close,
+      convertedCompanyId: convMap.get(d.id) ?? null,
     };
   });
 

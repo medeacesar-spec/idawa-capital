@@ -17,6 +17,10 @@ const STAGE_COLOR: Record<string, string> = {
   Perdu: "#A6412E",
 };
 
+const CLOSED_STAGES = ["Investi", "Perdu"];
+const isClosed = (d: PipelineDeal) => CLOSED_STAGES.includes(d.stage);
+type StatusFilter = "actifs" | "clotures" | "tous";
+
 function initials(name: string): string {
   const clean = name.replace(/[^A-Za-zÀ-ÿ ]/g, "");
   const caps = clean.replace(/[^A-Z]/g, "");
@@ -35,8 +39,13 @@ function Avatar({ label, bg, color }: { label: string; bg: string; color: string
 export default function PipelineClient({ data }: { data: PipelineData }) {
   const router = useRouter();
   const [scope, setScope] = useState<string>("all");
+  const [status, setStatus] = useState<StatusFilter>("actifs");
   const [modal, setModal] = useState<{ open: boolean; deal: PipelineDeal | null }>({ open: false, deal: null });
-  const list = scope === "all" ? data.deals : data.deals.filter((d) => d.programId === scope);
+  const byProgram = scope === "all" ? data.deals : data.deals.filter((d) => d.programId === scope);
+  const closedCount = byProgram.filter(isClosed).length;
+  const list = byProgram.filter((d) =>
+    status === "tous" ? true : status === "clotures" ? isClosed(d) : !isClosed(d)
+  );
   const total = list.reduce((a, d) => a + d.amount, 0);
 
   async function remove(d: PipelineDeal) {
@@ -63,10 +72,28 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
         })}
       </div>
 
+      {/* Filtre par statut */}
+      <div style={{ display: "inline-flex", gap: 2, marginBottom: 12, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 999, padding: 3 }}>
+        {([
+          { id: "actifs", label: "En cours" },
+          { id: "clotures", label: `Clôturés${closedCount ? ` · ${closedCount}` : ""}` },
+          { id: "tous", label: "Tous" },
+        ] as { id: StatusFilter; label: string }[]).map((t) => {
+          const on = t.id === status;
+          return (
+            <button key={t.id} onClick={() => setStatus(t.id)}
+              style={{ padding: "6px 14px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none",
+                background: on ? "var(--espresso)" : "transparent", color: on ? "#fff" : "var(--text-2)" }}>
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Stats + action */}
       <div style={{ display: "flex", gap: 18, marginBottom: 10, fontSize: 12.5, color: "var(--text-2)", alignItems: "center", flexWrap: "wrap" }}>
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> dossier{list.length > 1 ? "s" : ""}</span>
-        <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA en jeu</span>
+        <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA {status === "clotures" ? "clôturés" : "en jeu"}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=pipeline")}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -98,6 +125,11 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
                     {d.programName}
                   </span>
                 )}
+                {d.stage === "Investi" && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: "var(--green-bg)", color: "var(--green-fg)", flexShrink: 0, whiteSpace: "nowrap" }}>
+                    ✓ Converti
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {d.sector ? `${d.sector} · ` : ""}
@@ -116,10 +148,18 @@ export default function PipelineClient({ data }: { data: PipelineData }) {
               </div>
             </div>
             <div className="serif tnum" style={{ textAlign: "right", fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{fmtM(d.amount)}</div>
-            <div className="row-actions">
-              <button onClick={(e) => { e.stopPropagation(); setModal({ open: true, deal: d }); }} aria-label="Modifier" title="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-              <button onClick={(e) => { e.stopPropagation(); remove(d); }} aria-label="Supprimer" title="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
-            </div>
+            {d.stage === "Investi" ? (
+              d.convertedCompanyId ? (
+                <div className="row-actions">
+                  <button onClick={(e) => { e.stopPropagation(); router.push(`/portefeuille/${d.convertedCompanyId}`); }} aria-label="Voir la participation" title="Voir la participation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3h7v7" /><path d="M10 14L21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></svg></button>
+                </div>
+              ) : <span />
+            ) : (
+              <div className="row-actions">
+                <button onClick={(e) => { e.stopPropagation(); setModal({ open: true, deal: d }); }} aria-label="Modifier" title="Modifier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
+                <button onClick={(e) => { e.stopPropagation(); remove(d); }} aria-label="Supprimer" title="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+              </div>
+            )}
           </div>
         ))}
       </div>
