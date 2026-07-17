@@ -5,6 +5,14 @@ export const DEAL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociatio
 export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing"];
 // États d'un dossier (situation), distincts de l'étape.
 export const DEAL_STATES = ["Actif", "En veille", "Écarté"];
+// Instruments de financement d'une participation.
+export const INSTRUMENT_TYPES: { key: string; label: string; kind: "equity" | "debt" }[] = [
+  { key: "equity", label: "Capital (equity)", kind: "equity" },
+  { key: "quasi-equity", label: "Quasi-equity (prêt d'actionnaire)", kind: "debt" },
+  { key: "pret-campagne", label: "Prêt de campagne", kind: "debt" },
+];
+export const INSTRUMENT_PERIODICITY = ["mensuelle", "trimestrielle", "semestrielle", "annuelle"];
+
 // Source d'entrée du dossier dans le pipeline (pour analyses par source).
 export const DEAL_SOURCES = [
   "Réseau / relations",

@@ -15,12 +15,13 @@ import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
+import InstrumentsTab from "./InstrumentsTab";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
 
-const BASE_TABS = ["KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const BASE_TABS = ["Investissement", "KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 const OUTCOME_BADGE: Record<string, string> = { Sortie: "badge-neutral", Radiation: "badge-red" };
 
@@ -104,6 +105,8 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
           return <button key={t} onClick={() => setTab(t)} style={{ padding: "9px 12px", border: "none", background: "none", cursor: "pointer", fontSize: 12.5, fontWeight: on ? 600 : 500, color: on ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${on ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{t}</button>;
         })}
       </div>
+
+      {tab === "Investissement" && <InstrumentsTab companyId={company.id} instruments={company.instruments} />}
 
       {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} />}
 
