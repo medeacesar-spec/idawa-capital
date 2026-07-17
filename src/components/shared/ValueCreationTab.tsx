@@ -48,7 +48,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{it.initiative}</div>
                 <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>
-                  {it.lever ?? "—"}{it.owner ? ` · ${it.owner}` : ""}{frDate(it.targetDate) ? ` · échéance ${frDate(it.targetDate)}` : ""}
+                  {it.lever ?? "—"}{it.owner ? ` · ${it.owner}` : ""}{frDate(it.targetDate) ? ` · échéance ${frDate(it.targetDate)}` : frDate(it.createdAt) ? ` · ajoutée le ${frDate(it.createdAt)}` : ""}
                 </div>
                 {it.impact && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 4, lineHeight: 1.5 }}>Impact visé : {it.impact}</div>}
               </div>

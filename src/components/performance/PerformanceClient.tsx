@@ -41,7 +41,7 @@ export default function PerformanceClient({ data }: { data: PerformanceData }) {
         <Tile k="RVPI (résiduel)" v={fmtMult(data.rvpi)} sub="Valeur résiduelle / appelé" />
         <Tile k="Capital appelé" v={fmtM(data.paidIn)} sub="Investi à ce jour" />
         <Tile k="Distribué" v={fmtM(data.distributed)} sub="Sorties / dividendes" />
-        <Tile k="Valeur (NAV)" v={fmtM(data.nav)} sub="Valorisation actuelle" color="var(--green-fg)" />
+        <Tile k="Valorisation (NAV)" v={fmtM(data.nav)} sub="Valorisation actuelle" color="var(--green-fg)" />
         <Tile k="Plus-value" v={fmtM(data.distributed + data.nav - data.paidIn)} sub="Gain total" color={data.distributed + data.nav - data.paidIn >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
       </div>
 
@@ -50,7 +50,7 @@ export default function PerformanceClient({ data }: { data: PerformanceData }) {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr>
-              <th style={{ ...th, textAlign: "left" }}>Société</th><th style={th}>Millésime</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valeur</th><th style={th}>TVPI</th><th style={th}>DPI</th><th style={th}>TRI</th>
+              <th style={{ ...th, textAlign: "left" }}>Société</th><th style={th}>Millésime</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valorisation</th><th style={th}>TVPI</th><th style={th}>DPI</th><th style={th}>TRI</th>
             </tr></thead>
             <tbody>
               {data.companies.map((c) => (
@@ -75,7 +75,7 @@ export default function PerformanceClient({ data }: { data: PerformanceData }) {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr>
-              <th style={{ ...th, textAlign: "left" }}>Année</th><th style={th}>Lignes</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valeur</th><th style={th}>TVPI</th><th style={th}>TRI</th>
+              <th style={{ ...th, textAlign: "left" }}>Année</th><th style={th}>Lignes</th><th style={th}>Appelé</th><th style={th}>Distribué</th><th style={th}>Valorisation</th><th style={th}>TVPI</th><th style={th}>TRI</th>
             </tr></thead>
             <tbody>
               {data.vintages.length === 0 ? (

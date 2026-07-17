@@ -40,6 +40,7 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 export default function DealDetailClient({ deal, canEditComites = true, canValidateComites = false }: { deal: DealDetail; canEditComites?: boolean; canValidateComites?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [comModal, setComModal] = useState<{ open: boolean; passage: CommitteePassage | null }>({ open: false, passage: null });
   const [comBusy, setComBusy] = useState<string | null>(null);
 
@@ -89,8 +90,11 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   const facts: [string, string][] = [
     ["Montant", fmtM(deal.amount)],
     ["Probabilité", deal.probability != null ? `${deal.probability} %` : "—"],
-    ["Valo pré-money", deal.valuationPre != null ? fmtM(deal.valuationPre) : "—"],
-    ["Closing prévu", frMonth(deal.expectedClose)],
+    ["Source", deal.source ?? "—"],
+    ...(showAdvanced ? ([
+      ["Valo pré-money", deal.valuationPre != null ? fmtM(deal.valuationPre) : "—"],
+      ["Closing prévu", frMonth(deal.expectedClose)],
+    ] as [string, string][]) : []),
     ["Chargé", deal.officer ?? "—"],
     ["Analyste", deal.analyst ?? "—"],
   ];
@@ -162,13 +166,18 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${facts.length}, 1fr)`, gap: 10, marginBottom: 8 }}>
         {facts.map(([k, v]) => (
           <div key={k} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
             <div style={{ fontSize: 11, color: "var(--text-2)" }}>{k}</div>
             <div className="serif tnum" style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</div>
           </div>
         ))}
+      </div>
+      <div style={{ marginBottom: 18 }}>
+        <button type="button" onClick={() => setShowAdvanced((a) => !a)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: "var(--camel)" }}>
+          {showAdvanced ? "− Masquer les champs avancés" : "+ Champs avancés (valo pré-money, closing)"}
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>

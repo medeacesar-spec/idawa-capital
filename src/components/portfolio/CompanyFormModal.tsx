@@ -111,7 +111,7 @@ export default function CompanyFormModal({
           <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-2)", margin: "6px 0 10px", paddingTop: 8, borderTop: "1px solid var(--sep)" }}>Données financières</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Investi (M FCFA)"><Input type="number" value={f.invested} onChange={(e) => set("invested", e.target.value)} placeholder="250" /></Field>
-            <Field label="Valeur actuelle (M FCFA)"><Input type="number" value={f.valuation} onChange={(e) => set("valuation", e.target.value)} placeholder="390" /></Field>
+            <Field label="Valorisation actuelle (M FCFA)"><Input type="number" value={f.valuation} onChange={(e) => set("valuation", e.target.value)} placeholder="390" /></Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Field label="Multiple (TVPI)"><Input type="number" step="0.01" value={f.tvpi} onChange={(e) => set("tvpi", e.target.value)} placeholder="1.56" /></Field>

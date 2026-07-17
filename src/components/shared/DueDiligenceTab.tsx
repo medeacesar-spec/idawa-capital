@@ -10,6 +10,8 @@ import type { DdItem } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Terminé": "badge-green", "Point d'attention": "badge-red" };
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function frDate(d: string | null) { if (!d) return ""; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
 
 export default function DueDiligenceTab({ entityType, entityId, items, users }: { entityType: "deal" | "company"; entityId: string; items: DdItem[]; users: FundUser[] }) {
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
                     <span className={`badge ${STATUS_BADGE[it.status] ?? "badge-neutral"}`} style={{ cursor: "pointer", minWidth: 92, textAlign: "center" }}>{it.status}</span>
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{it.item}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{it.item}{it.createdAt ? <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 400 }}> · ajouté le {frDate(it.createdAt)}</span> : null}</div>
                     {it.note && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 2, lineHeight: 1.5 }}>{it.note}</div>}
                   </div>
                   <div className="row-actions">

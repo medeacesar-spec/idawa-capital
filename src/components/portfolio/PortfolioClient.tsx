@@ -69,7 +69,7 @@ function EquityCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, textAlign: "center" }}>
         <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Investi</div><div className="serif tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(c.invested)}</div></div>
-        <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Valeur</div><div className="serif tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(c.valuation)}</div></div>
+        <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Valorisation</div><div className="serif tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(c.valuation)}</div></div>
         <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Multiple</div><div className="serif tnum" style={{ fontSize: 12.5, fontWeight: 600, color: multColor }}>{fmtMult(c.tvpi)}</div></div>
       </div>
       <div style={{ marginTop: 9, display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--text-2)" }}>
@@ -185,7 +185,7 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(equity.length)}</b> participation{equity.length > 1 ? "s" : ""}</span>
         {accomp.length > 0 && <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(accomp.length)}</b> accélérée{accomp.length > 1 ? "s" : ""}</span>}
         {invested > 0 && <span>Investi <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(invested)}</b></span>}
-        {valuation > 0 && <span>Valeur <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(valuation)}</b></span>}
+        {valuation > 0 && <span>Valorisation <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(valuation)}</b></span>}
         {tvpi != null && <span>TVPI <b className="serif tnum" style={{ color: "var(--green-fg)" }}>{fmtMult(tvpi)}</b></span>}
       </div>
 

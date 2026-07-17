@@ -8,7 +8,7 @@ import { getFundUsers, type FundUser } from "./users";
 
 export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
-export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null };
+export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null; createdAt: string | null };
 export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null };
 export type CommitteeDocRef = { id: string; title: string; storagePath: string | null };
 export type CompanyDecision = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDocRef[] };
@@ -58,7 +58,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
     c.origin_deal_id ? supabase.from("deals").select("company_name").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
     supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("company_id", id),
-    supabase.from("documents").select("id, title, category, storage_path").eq("company_id", id),
+    supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
   ]);
 
   const [ocRes, onRes] = await Promise.all([
@@ -99,6 +99,6 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
     notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation,
     kpis, kpiLibrary, users, contacts: contactRes.data ?? [],
-    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path })),
+    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, createdAt: d.created_at ?? null })),
   };
 }

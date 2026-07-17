@@ -5,6 +5,17 @@ export const DEAL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociatio
 export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing"];
 // États d'un dossier (situation), distincts de l'étape.
 export const DEAL_STATES = ["Actif", "En veille", "Écarté"];
+// Source d'entrée du dossier dans le pipeline (pour analyses par source).
+export const DEAL_SOURCES = [
+  "Réseau / relations",
+  "Recommandation / apporteur",
+  "Sourcing proactif",
+  "Candidature spontanée",
+  "Incubateur / accélérateur",
+  "Événement / concours",
+  "Partenaire (banque, I&P…)",
+  "Autre",
+];
 export const REJECTION_REASONS = [
   "Hors thèse d'investissement",
   "Non prioritaire après analyse",

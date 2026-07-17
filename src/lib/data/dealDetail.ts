@@ -8,7 +8,7 @@ import { getFundUsers, type FundUser } from "./users";
 export type CommitteeDoc = { id: string; title: string; storagePath: string | null };
 export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDoc[] };
 export type DealContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
-export type DealDoc = { id: string; title: string; category: string | null; storagePath: string | null };
+export type DealDoc = { id: string; title: string; category: string | null; storagePath: string | null; createdAt: string | null };
 
 export type DealDetail = {
   id: string;
@@ -17,6 +17,7 @@ export type DealDetail = {
   status: string | null;
   dealState: string;
   rejectionReason: string | null;
+  source: string | null;
   amount: number;
   probability: number | null;
   valuationPre: number | null;
@@ -48,7 +49,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const supabase = await createClient();
   const { data: d } = await supabase
     .from("deals")
-    .select("id, company_name, stage, status, deal_state, rejection_reason, amount, probability, valuation_pre, ownership_target, thesis, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close")
+    .select("id, company_name, stage, status, deal_state, rejection_reason, deal_source, amount, probability, valuation_pre, ownership_target, thesis, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close")
     .eq("id", id).single();
   if (!d) return null;
 
@@ -59,7 +60,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     d.analyst_id ? supabase.from("profiles").select("full_name, email").eq("id", d.analyst_id).single() : Promise.resolve({ data: null }),
     supabase.from("committee_passages").select("id, committee_type, session_date, decision, conditions, participants, outcome, status, validated_by, validated_at").eq("deal_id", id).order("session_date"),
     supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("deal_id", id),
-    supabase.from("documents").select("id, title, category, storage_path").eq("deal_id", id),
+    supabase.from("documents").select("id, title, category, storage_path, created_at").eq("deal_id", id),
     supabase.from("portfolio_companies").select("id").eq("origin_deal_id", id).maybeSingle(),
   ]);
 
@@ -71,7 +72,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const prog = progRes.data as { name?: string; color?: string } | null;
   return {
     id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null,
-    dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, amount: Number(d.amount ?? 0),
+    dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, source: d.deal_source ?? null, amount: Number(d.amount ?? 0),
     probability: d.probability, valuationPre: d.valuation_pre != null ? Number(d.valuation_pre) : null,
     ownershipTarget: d.ownership_target != null ? Number(d.ownership_target) : null,
     convertedCompanyId: (convRes.data as { id?: string } | null)?.id ?? null,
@@ -83,7 +84,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     expectedClose: d.expected_close,
     committees: (comRes.data ?? []).map((c) => ({ id: c.id, committeeType: c.committee_type, sessionDate: c.session_date, decision: c.decision, conditions: c.conditions, participants: c.participants, outcome: c.outcome ?? null, status: c.status ?? "Proposée", validatedBy: c.validated_by ? (users.find((u) => u.id === c.validated_by)?.name ?? "—") : null, validatedAt: c.validated_at ?? null, docs: (comDocs ?? []).filter((doc) => doc.committee_id === c.id).map((doc) => ({ id: doc.id, title: doc.title, storagePath: doc.storage_path })) })),
     contacts: contactRes.data ?? [],
-    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path })),
+    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, createdAt: d.created_at ?? null })),
     notes: suivi.notes, tasks: suivi.tasks, esg, kpis, kpiLibrary, dueDiligence, valueCreation, users,
   };
 }

@@ -84,7 +84,7 @@ function GlobalView({ data }: { data: DashboardData }) {
     <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 13, marginBottom: 16 }}>
         <Tile k="Capital investi" v={fmtM(g.invested)} sub={`FCFA · ${data.programs.reduce((a, p) => a + p.companies, 0)} participations`} />
-        <Tile k="Valeur du portefeuille" v={fmtM(g.valuation)} d={`${delta >= 0 ? "+" : ""}${delta}%`} dc={delta >= 0 ? "var(--green-fg)" : "var(--red-fg)"} sub="vs capital investi" />
+        <Tile k="Valorisation du portefeuille" v={fmtM(g.valuation)} d={`${delta >= 0 ? "+" : ""}${delta}%`} dc={delta >= 0 ? "var(--green-fg)" : "var(--red-fg)"} sub="vs capital investi" />
         <Tile k="Multiple (TVPI)" v={fmtMult(g.tvpi)} dc="var(--green-fg)" sub="Performance globale" />
         <Tile k="Dossiers actifs" v={fmtInt(g.activeDealsCount)} sub={`${fmtM(g.pipelineAmount)} en pipeline`} />
       </div>
@@ -168,7 +168,7 @@ function GlobalView({ data }: { data: DashboardData }) {
 function ProgramView({ p }: { p: ProgramMetrics }) {
   const fin = p.nature !== "accompagnement";
   const note = fin
-    ? "Suivi financier : capital déployé, valeur et multiples."
+    ? "Suivi financier : capital déployé, valorisation et multiples."
     : "Suivi d'activité et d'impact : budget, bénéficiaires et emplois.";
   return (
     <>
@@ -180,7 +180,7 @@ function ProgramView({ p }: { p: ProgramMetrics }) {
         {fin ? (
           <>
             <Tile k="Capital investi" v={fmtM(p.invested)} sub={`${p.companies} participations`} />
-            <Tile k="Valeur actuelle" v={fmtM(p.valuation)} />
+            <Tile k="Valorisation actuelle" v={fmtM(p.valuation)} />
             <Tile k="Multiple (TVPI)" v={fmtMult(p.tvpi)} dc="var(--green-fg)" />
             <Tile k="TRI moyen" v={fmtPct(p.tri)} dc={num(p.tri) >= 0 ? "var(--green-fg)" : "var(--red-fg)"} />
           </>

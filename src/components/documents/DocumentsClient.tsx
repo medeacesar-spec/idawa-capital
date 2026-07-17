@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { DocumentsData, DocRow } from "@/lib/data/documents";
 import DocumentUploadModal from "./DocumentUploadModal";
+import SortToggle from "./SortToggle";
 
 const CAT_COLOR: Record<string, string> = { Juridique: "#8A4B5A", Reporting: "#185FA5", Financier: "#3B6D11", Comité: "#B07A2E", ESG: "#7C7A3A" };
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function frDate(d: string | null) { if (!d) return ""; const dt = d.slice(0, 10); return `${parseInt(dt.slice(8, 10), 10)} ${MONTHS[parseInt(dt.slice(5, 7), 10) - 1] ?? ""} ${dt.slice(0, 4)}`; }
 
 export default function DocumentsClient({ data }: { data: DocumentsData }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
+  const [sort, setSort] = useState<"recent" | "alpha">("recent");
   const [modal, setModal] = useState(false);
-  const list = filter === "all" ? data.documents : data.documents.filter((d) => d.category === filter);
+  const filtered = filter === "all" ? data.documents : data.documents.filter((d) => d.category === filter);
+  const list = [...filtered].sort((a, b) =>
+    sort === "alpha"
+      ? a.title.localeCompare(b.title, "fr", { sensitivity: "base" })
+      : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+  );
 
   async function download(d: DocRow) {
     if (!d.storagePath) return;
@@ -43,10 +52,13 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
             );
           })}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Déposer un document
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <SortToggle sort={sort} setSort={setSort} />
+          <button className="btn btn-primary" onClick={() => setModal(true)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Déposer un document
+          </button>
+        </div>
       </div>
 
       {list.length === 0 ? (
@@ -64,7 +76,7 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: d.storagePath ? "var(--espresso)" : "var(--ink)" }}>{d.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>{d.linkedTo ? `Lié à ${d.linkedTo}` : "Général"}{!d.storagePath ? " · aucun fichier" : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>{d.linkedTo ? `Lié à ${d.linkedTo}` : "Général"}{d.createdAt ? ` · ${frDate(d.createdAt)}` : ""}{!d.storagePath ? " · aucun fichier" : ""}</div>
                 </div>
               </div>
               {d.category && <span className="badge" style={{ background: `${CAT_COLOR[d.category] ?? "#6B5744"}1a`, color: CAT_COLOR[d.category] ?? "#6B5744" }}>{d.category}</span>}

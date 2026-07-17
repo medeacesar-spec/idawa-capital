@@ -56,7 +56,7 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", textDecoration: t.status === "Fait" ? "line-through" : "none", opacity: t.status === "Fait" ? 0.6 : 1 }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t.assigneeLabel ? t.assigneeLabel : "Non assignée"}{t.dueDate ? ` · échéance ${frDate(t.dueDate)}` : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t.assigneeLabel ? t.assigneeLabel : "Non assignée"}{t.dueDate ? ` · échéance ${frDate(t.dueDate)}` : t.createdAt ? ` · ajoutée le ${frDate(t.createdAt)}` : ""}</div>
                 </div>
                 <div className="row-actions">
                   <button onClick={() => setTaskModal({ open: true, task: t })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>

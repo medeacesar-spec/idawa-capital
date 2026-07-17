@@ -64,7 +64,7 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
                 <span title={ESG_CATEGORY_LABEL[ac.category ?? ""] ?? ""} style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: `${CAT_COLOR[ac.category ?? ""] ?? "#6B5744"}1a`, color: CAT_COLOR[ac.category ?? ""] ?? "#6B5744", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{ac.category ?? "?"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, color: "var(--ink)" }}>{ac.action}</div>
-                  <div style={{ fontSize: 11, color: isOverdue(ac) ? "var(--red-fg)" : "var(--text-3)" }}>{ac.responsibleCode ? ac.responsibleCode : "Non assignée"}{ac.dateEndPlan ? ` · échéance ${frDate(ac.dateEndPlan)}` : ""}{isOverdue(ac) ? " · en retard" : ""}</div>
+                  <div style={{ fontSize: 11, color: isOverdue(ac) ? "var(--red-fg)" : "var(--text-3)" }}>{ac.responsibleCode ? ac.responsibleCode : "Non assignée"}{ac.dateEndPlan ? ` · échéance ${frDate(ac.dateEndPlan)}` : ac.createdAt ? ` · ajoutée le ${frDate(ac.createdAt)}` : ""}{isOverdue(ac) ? " · en retard" : ""}</div>
                 </div>
                 {ac.status && <span className={`badge ${STATUS_COLOR[ac.status] ?? "badge-neutral"}`}>{ac.status}</span>}
                 <div className="row-actions">

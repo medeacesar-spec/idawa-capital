@@ -58,7 +58,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
   }
 
   const facts: [string, string][] = equity
-    ? [["Investi", fmtM(company.invested)], ["Valeur", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
+    ? [["Investi", fmtM(company.invested)], ["Valorisation", fmtM(company.valuation)], ["Multiple", fmtMult(company.tvpi)], ["TRI", fmtPct(company.tri)], ["Participation", company.ownership != null ? `${company.ownership} %` : "—"], ["Entrée", frMonth(company.investedDate)]]
     : [["Type", "Accélération"], ["Statut", company.status], ["Programme", company.programName ?? "—"], ["Suivie depuis", frMonth(company.investedDate)]];
 
   return (

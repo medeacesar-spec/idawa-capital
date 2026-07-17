@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type EsgAssessment = { id: string; riskCategory: string | null; exclusionOk: boolean | null; ehsSector: string | null };
-export type EsgAction = { id: string; category: string | null; action: string | null; responsibleCode: string | null; assigneeId: string | null; status: string | null; dateEndPlan: string | null; comment: string | null };
+export type EsgAction = { id: string; category: string | null; action: string | null; responsibleCode: string | null; assigneeId: string | null; status: string | null; dateEndPlan: string | null; comment: string | null; createdAt: string | null };
 export type EsgImpact = { id: string; dimension: string | null; score: number | null; maxScore: number | null };
 export type EsgData = { assessment: EsgAssessment | null; actions: EsgAction[]; impacts: EsgImpact[] };
 
@@ -9,13 +9,13 @@ export async function getEsg(entityType: "deal" | "company", entityId: string): 
   const supabase = await createClient();
   const [aRes, actRes, impRes] = await Promise.all([
     supabase.from("esg_assessments").select("id, risk_category, exclusion_ok, ehs_sector").eq("entity_type", entityType).eq("entity_id", entityId).maybeSingle(),
-    supabase.from("esg_actions").select("id, category, action, responsible_code, assignee_id, status, date_end_plan, comment").eq("entity_type", entityType).eq("entity_id", entityId).order("date_end_plan", { ascending: true }),
+    supabase.from("esg_actions").select("id, category, action, responsible_code, assignee_id, status, date_end_plan, comment, created_at").eq("entity_type", entityType).eq("entity_id", entityId).order("date_end_plan", { ascending: true }),
     supabase.from("esg_impact_ratings").select("id, dimension, score, max_score").eq("entity_type", entityType).eq("entity_id", entityId),
   ]);
   const a = aRes.data as { id: string; risk_category: string | null; exclusion_ok: boolean | null; ehs_sector: string | null } | null;
   return {
     assessment: a ? { id: a.id, riskCategory: a.risk_category, exclusionOk: a.exclusion_ok, ehsSector: a.ehs_sector } : null,
-    actions: (actRes.data ?? []).map((x) => ({ id: x.id, category: x.category, action: x.action, responsibleCode: x.responsible_code, assigneeId: x.assignee_id, status: x.status, dateEndPlan: x.date_end_plan, comment: x.comment })),
+    actions: (actRes.data ?? []).map((x) => ({ id: x.id, category: x.category, action: x.action, responsibleCode: x.responsible_code, assigneeId: x.assignee_id, status: x.status, dateEndPlan: x.date_end_plan, comment: x.comment, createdAt: x.created_at ?? null })),
     impacts: (impRes.data ?? []).map((x) => ({ id: x.id, dimension: x.dimension, score: x.score != null ? Number(x.score) : null, maxScore: x.max_score != null ? Number(x.max_score) : null })),
   };
 }

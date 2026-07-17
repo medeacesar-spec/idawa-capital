@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { DEAL_FUNNEL_STAGES } from "@/lib/ui-constants";
+import { DEAL_FUNNEL_STAGES, DEAL_SOURCES } from "@/lib/ui-constants";
 import type { PipelineDeal, PipelineProgram, PipelineSubSector, PipelineMember } from "@/lib/data/pipeline";
 
 const M = 1_000_000;
@@ -31,8 +31,10 @@ export default function DealFormModal({
     officerId: deal?.officerId ?? "",
     analystId: deal?.analystId ?? "",
     expectedClose: deal?.expectedClose ?? "",
+    dealSource: deal?.source ?? "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const [advanced, setAdvanced] = useState(!!deal?.expectedClose);
 
   async function submit() {
     if (!f.companyName.trim()) return;
@@ -48,6 +50,7 @@ export default function DealFormModal({
       investment_officer_id: f.officerId || null,
       analyst_id: f.analystId || null,
       expected_close: f.expectedClose || null,
+      deal_source: f.dealSource || null,
     };
     if (deal) await supabase.from("deals").update(payload).eq("id", deal.id);
     else await supabase.from("deals").insert(payload);
@@ -85,10 +88,25 @@ export default function DealFormModal({
           {subSectors.map((s) => <option key={s.id} value={s.id}>{s.industry} — {s.name}</option>)}
         </Select>
       </Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Montant (M FCFA)"><Input type="number" value={f.amount} onChange={(e) => set("amount", e.target.value)} placeholder="200" /></Field>
         <Field label="Probabilité (%)"><Input type="number" value={f.probability} onChange={(e) => set("probability", e.target.value)} placeholder="70" /></Field>
-        <Field label="Closing prévu"><Input type="date" value={f.expectedClose} onChange={(e) => set("expectedClose", e.target.value)} /></Field>
+      </div>
+      <Field label="Source d'entrée">
+        <Select value={f.dealSource} onChange={(e) => set("dealSource", e.target.value)}>
+          <option value="">— À préciser —</option>
+          {DEAL_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </Select>
+      </Field>
+      <div style={{ margin: "2px 0 10px" }}>
+        <button type="button" onClick={() => setAdvanced((a) => !a)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "var(--camel)" }}>
+          {advanced ? "− Masquer les champs avancés" : "+ Champs avancés"}
+        </button>
+        {advanced && (
+          <div style={{ marginTop: 10 }}>
+            <Field label="Closing prévu (indicatif)"><Input type="date" value={f.expectedClose} onChange={(e) => set("expectedClose", e.target.value)} /></Field>
+          </div>
+        )}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Chargé d'investissement">
