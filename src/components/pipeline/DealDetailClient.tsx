@@ -90,7 +90,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   const facts: [string, string][] = [
     ["Montant", fmtM(deal.amount)],
     ["Probabilité", deal.probability != null ? `${deal.probability} %` : "—"],
-    ["Source", deal.source ?? "—"],
+    ["Source", deal.source ? (deal.sourceDetail ? `${deal.source} — ${deal.sourceDetail}` : deal.source) : (deal.sourceDetail ?? "—")],
     ...(showAdvanced ? ([
       ["Valo pré-money", deal.valuationPre != null ? fmtM(deal.valuationPre) : "—"],
       ["Closing prévu", frMonth(deal.expectedClose)],

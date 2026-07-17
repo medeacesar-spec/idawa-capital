@@ -32,6 +32,7 @@ export default function DealFormModal({
     analystId: deal?.analystId ?? "",
     expectedClose: deal?.expectedClose ?? "",
     dealSource: deal?.source ?? "",
+    dealSourceDetail: deal?.sourceDetail ?? "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const [advanced, setAdvanced] = useState(!!deal?.expectedClose);
@@ -51,6 +52,7 @@ export default function DealFormModal({
       analyst_id: f.analystId || null,
       expected_close: f.expectedClose || null,
       deal_source: f.dealSource || null,
+      deal_source_detail: f.dealSourceDetail.trim() || null,
     };
     if (deal) await supabase.from("deals").update(payload).eq("id", deal.id);
     else await supabase.from("deals").insert(payload);
@@ -92,12 +94,15 @@ export default function DealFormModal({
         <Field label="Montant (M FCFA)"><Input type="number" value={f.amount} onChange={(e) => set("amount", e.target.value)} placeholder="200" /></Field>
         <Field label="Probabilité (%)"><Input type="number" value={f.probability} onChange={(e) => set("probability", e.target.value)} placeholder="70" /></Field>
       </div>
-      <Field label="Source d'entrée">
-        <Select value={f.dealSource} onChange={(e) => set("dealSource", e.target.value)}>
-          <option value="">— À préciser —</option>
-          {DEAL_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </Select>
-      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Source d'entrée">
+          <Select value={f.dealSource} onChange={(e) => set("dealSource", e.target.value)}>
+            <option value="">— À préciser —</option>
+            {DEAL_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </Select>
+        </Field>
+        <Field label="Précision / nom"><Input value={f.dealSourceDetail} onChange={(e) => set("dealSourceDetail", e.target.value)} placeholder="Ex : Etrilabs" /></Field>
+      </div>
       <div style={{ margin: "2px 0 10px" }}>
         <button type="button" onClick={() => setAdvanced((a) => !a)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "var(--camel)" }}>
           {advanced ? "− Masquer les champs avancés" : "+ Champs avancés"}
