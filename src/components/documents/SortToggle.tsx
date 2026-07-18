@@ -2,10 +2,10 @@
 
 export type DocSort = "recent" | "alpha";
 
-export default function SortToggle({ sort, setSort }: { sort: DocSort; setSort: (s: DocSort) => void }) {
+export default function SortToggle({ sort, setSort, alphaLabel = "A → Z" }: { sort: DocSort; setSort: (s: DocSort) => void; alphaLabel?: string }) {
   const opts: { id: DocSort; label: string }[] = [
     { id: "recent", label: "Récents" },
-    { id: "alpha", label: "A → Z" },
+    { id: "alpha", label: alphaLabel },
   ];
   return (
     <div style={{ display: "inline-flex", gap: 2, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 999, padding: 3 }}>

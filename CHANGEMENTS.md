@@ -17,7 +17,7 @@
 | Source d'entrée du dossier (+ précision/nom) | fait |
 | Valo pré-money & date de closing masquées (champs avancés) | fait |
 | Une date sur chaque événement (tâches, DD, création de valeur, ESG) | fait |
-| **Correction** — Documents : le tri alphabétique doit porter sur le **nom de l'entreprise** (et non le titre du document) | à faire |
+| **Correction** — Documents : le tri alphabétique doit porter sur le **nom de l'entreprise** (et non le titre du document) | à tester |
 
 ---
 
@@ -33,8 +33,8 @@
 | **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
 | **1d** — Moteur OHADA : saisie **complète** des états financiers → totaux, SIG, bilan fonctionnel, ratios | fait | 0016 |
 | **1d-bis** — Import d'états financiers **sans frais** : analyseur qui s'accroche aux **codes OHADA** imprimés + écran de vérification. Entrées : ① copier-coller ② Excel/CSV ③ PDF numérique (pdf.js) ④ image/scan (Tesseract.js, bonus). **Aucune clé API, aucun coût.** | à faire | non |
-| **Correction 1d** — Navigation des exercices : afficher les plus **récents en premier**, pouvoir ajouter une année **antérieure ET postérieure**, retirer une colonne | à faire | non |
-| **Correction 1b-2** — Vue dédiée des **remboursements par prêt** : engagements, historique des paiements, restant dû (aujourd'hui enfoui dans l'échéancier dépliable) | à faire | non |
+| **Correction 1d** — Navigation des exercices : afficher les plus **récents en premier**, pouvoir ajouter une année **antérieure ET postérieure**, retirer une colonne | à tester | non |
+| **Correction 1b-2** — Vue dédiée des **remboursements par prêt** : engagements, historique des paiements, restant dû → nouvel onglet **Remboursements** sur la fiche société | à tester | non |
 
 ---
 

@@ -14,11 +14,24 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
   const router = useRouter();
   const [section, setSection] = useState<OhadaSection>("resultat");
   const [extraYears, setExtraYears] = useState<number[]>([]);
+  const [hiddenYears, setHiddenYears] = useState<number[]>([]);
 
   const thisYear = new Date().getFullYear();
   let years = Array.from(new Set([...Object.keys(values).map(Number), ...extraYears]));
   for (let i = 1; years.length < 3; i++) years = Array.from(new Set([...years, thisYear - i]));
-  years.sort((a, b) => a - b);
+  // Les exercices les plus récents s'affichent en premier.
+  years = years.filter((y) => !hiddenYears.includes(y)).sort((a, b) => b - a);
+
+  // Retirer une colonne ne supprime rien en base : l'exercice disparaît seulement de l'écran.
+  function hideYear(y: number) {
+    setHiddenYears((h) => [...h, y]);
+    setExtraYears((e) => e.filter((x) => x !== y));
+  }
+  function addYear(delta: 1 | -1) {
+    const next = (delta === 1 ? Math.max(...years) : Math.min(...years)) + delta;
+    setHiddenYears((h) => h.filter((x) => x !== next));
+    setExtraYears((e) => (e.includes(next) ? e : [...e, next]));
+  }
 
   // Valeurs complétées des totaux et soldes, par exercice.
   const computed: Record<number, Record<string, number>> = {};
@@ -55,10 +68,16 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
             );
           })}
         </div>
-        <button className="btn btn-primary" onClick={() => setExtraYears((e) => [...e, Math.min(...years) - 1])}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Exercice antérieur
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn" onClick={() => addYear(1)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Exercice postérieur
+          </button>
+          <button className="btn btn-primary" onClick={() => addYear(-1)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Exercice antérieur
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: "6px 14px", overflowX: "auto" }}>
@@ -66,7 +85,19 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
           <thead>
             <tr>
               <th style={{ ...th, textAlign: "left", width: "auto", minWidth: 300 }}>Poste</th>
-              {years.map((y) => <th key={y} style={{ ...th, color: "var(--camel)", fontSize: 11.5 }}>{y}</th>)}
+              {years.map((y) => (
+                <th key={y} style={{ ...th, color: "var(--camel)", fontSize: 11.5 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    {y}
+                    {years.length > 1 && (
+                      <button onClick={() => hideYear(y)} title={`Retirer l'exercice ${y} de l'affichage`} aria-label={`Retirer l'exercice ${y}`}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-3)", padding: 0, lineHeight: 1, display: "flex" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                      </button>
+                    )}
+                  </span>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>

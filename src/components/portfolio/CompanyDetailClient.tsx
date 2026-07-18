@@ -16,6 +16,7 @@ import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 import InstrumentsTab from "./InstrumentsTab";
+import RepaymentsTab from "./RepaymentsTab";
 import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 
@@ -23,7 +24,7 @@ const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "aoû
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
 
-const BASE_TABS = ["Investissement", "Structuration", "États financiers", "KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
+const BASE_TABS = ["Investissement", "Remboursements", "Structuration", "États financiers", "KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 const OUTCOME_BADGE: Record<string, string> = { Sortie: "badge-neutral", Radiation: "badge-red" };
 
@@ -109,6 +110,8 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       </div>
 
       {tab === "Investissement" && <InstrumentsTab companyId={company.id} instruments={company.instruments} />}
+
+      {tab === "Remboursements" && <RepaymentsTab instruments={company.instruments} />}
 
       {tab === "Structuration" && <StructurationTab companyId={company.id} data={company.structuration} />}
 

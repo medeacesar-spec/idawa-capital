@@ -17,11 +17,14 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
   const [sort, setSort] = useState<"recent" | "alpha">("recent");
   const [modal, setModal] = useState(false);
   const filtered = filter === "all" ? data.documents : data.documents.filter((d) => d.category === filter);
-  const list = [...filtered].sort((a, b) =>
-    sort === "alpha"
-      ? a.title.localeCompare(b.title, "fr", { sensitivity: "base" })
-      : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
-  );
+  // Tri alphabétique = par NOM D'ENTREPRISE (le titre ne départage qu'à entreprise égale).
+  // Les documents généraux, non rattachés à une entreprise, sont renvoyés en fin de liste.
+  const list = [...filtered].sort((a, b) => {
+    if (sort !== "alpha") return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+    if (!a.linkedTo !== !b.linkedTo) return a.linkedTo ? -1 : 1;
+    const byEntity = (a.linkedTo ?? "").localeCompare(b.linkedTo ?? "", "fr", { sensitivity: "base" });
+    return byEntity !== 0 ? byEntity : a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
+  });
 
   async function download(d: DocRow) {
     if (!d.storagePath) return;
@@ -53,7 +56,7 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
           })}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <SortToggle sort={sort} setSort={setSort} />
+          <SortToggle sort={sort} setSort={setSort} alphaLabel="A → Z (entreprise)" />
           <button className="btn btn-primary" onClick={() => setModal(true)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Déposer un document

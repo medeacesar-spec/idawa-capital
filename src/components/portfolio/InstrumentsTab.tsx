@@ -104,7 +104,7 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
       )}
 
       <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 12 }}>
-        Échéancier d'amortissement calculé automatiquement (dépliable sur chaque prêt). Le suivi des créances réelles — facturation, encaissements, arriérés — arrive à l'étape suivante.
+        Échéancier d'amortissement calculé automatiquement (dépliable sur chaque prêt), avec saisie du facturé et de l'encaissé. La vue d'ensemble des engagements et l'historique des paiements se trouvent dans l'onglet <b>Remboursements</b>.
       </div>
 
       {modal.open && <InstrumentFormModal companyId={companyId} instrument={modal.instrument} onClose={() => setModal({ open: false, instrument: null })} />}
