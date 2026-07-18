@@ -26,7 +26,20 @@ const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "aoû
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
 function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase(); }
 
-const BASE_TABS = ["Investissement", "Remboursements", "Structuration", "États financiers", "KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Valorisation", "Flux financiers", "Cap table", "Documents", "Contacts"];
+// Quinze onglets à plat étaient illisibles. Nouss demandait de séparer les données
+// d'investissement de la performance : on regroupe donc par NATURE de l'information,
+// et chaque famille garde ses propres onglets.
+const FAMILIES: { key: string; label: string; hint: string; tabs: string[] }[] = [
+  { key: "invest", label: "Investissement", hint: "ce que le fonds a engagé et décaissé",
+    tabs: ["Investissement", "Remboursements", "Flux financiers", "Cap table"] },
+  { key: "valo", label: "Valorisation", hint: "arrêtée une fois par exercice, et piste de sortie",
+    tabs: ["Valorisation", "Structuration"] },
+  { key: "perf", label: "Performance", hint: "ce que fait l'entreprise, exercice après exercice",
+    tabs: ["États financiers", "KPIs", "Budget & BP"] },
+  { key: "suivi", label: "Suivi & gouvernance", hint: "la vie du dossier",
+    tabs: ["Suivi", "Décisions", "ESG", "Création de valeur", "Documents", "Contacts"] },
+];
+const BASE_TABS = FAMILIES.flatMap((f) => f.tabs);
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 // Rouge = la participation se termine ; ambre = signal de vigilance ; vert = engagement accru.
 const OUTCOME_BADGE: Record<string, string> = {
@@ -50,7 +63,11 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
   const [decModal, setDecModal] = useState<{ open: boolean; passage: CompanyDecision | null }>({ open: false, passage: null });
   const [decBusy, setDecBusy] = useState<string | null>(null);
   const equity = company.trackingType === "equity";
-  const TABS = company.originDealId ? [...BASE_TABS, "Origine / instruction"] : BASE_TABS;
+  const families = company.originDealId
+    ? FAMILIES.map((f) => (f.key === "suivi" ? { ...f, tabs: [...f.tabs, "Origine / instruction"] } : f))
+    : FAMILIES;
+  const familyOf = (t: string) => families.find((f) => f.tabs.includes(t)) ?? families[0];
+  const family = familyOf(tab);
   const isClosed = company.status === "Sorti" || company.status === "Radié";
 
   async function toggleDecision(id: string, validate: boolean) {
@@ -111,9 +128,23 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       <ReadOnlyNotice what="cette société" />
 
-      {/* Tabs */}
+      {/* Familles, puis onglets de la famille choisie */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {families.map((f) => {
+          const on = f.key === family.key;
+          return (
+            <button key={f.key} onClick={() => setTab(f.tabs[0])} title={f.hint}
+              style={{ padding: "8px 15px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                background: on ? "var(--espresso)" : "var(--surface)", color: on ? "#fff" : "var(--text-2)",
+                border: `1px solid ${on ? "var(--espresso)" : "var(--border-strong)"}` }}>
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 8 }}>{family.hint}</div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
-        {TABS.map((t) => {
+        {family.tabs.map((t) => {
           const on = t === tab;
           return <button key={t} onClick={() => setTab(t)} style={{ padding: "9px 12px", border: "none", background: "none", cursor: "pointer", fontSize: 12.5, fontWeight: on ? 600 : 500, color: on ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${on ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{t}</button>;
         })}

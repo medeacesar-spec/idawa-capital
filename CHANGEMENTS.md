@@ -30,7 +30,7 @@
 | **Budget & BP** — grille OHADA en colonnes d'années, saisie directe, postes modifiables | fait | non |
 | **Résumé Investissement** séparé par les 3 types d'instruments | fait | non |
 | **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | fait | 0014 |
-| **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
+| **1c** — Réorganisation fiche société en 4 familles : Investissement / Valorisation / Performance / Suivi & gouvernance, navigation à deux niveaux | à tester | non |
 | **1d** — Moteur OHADA : saisie **complète** des états financiers → totaux, SIG, bilan fonctionnel, ratios | fait | 0016 |
 | **1d-bis** — Import d'états financiers **sans frais** : analyseur qui s'accroche aux **codes OHADA** imprimés + écran de vérification. Entrées : ① copier-coller ② Excel/CSV ③ PDF numérique (pdf.js) ④ image/scan (Tesseract.js, bonus). **Aucune clé API, aucun coût.** | ① copier-coller **à tester** · ②③④ à faire | non |
 | **Correction 1d** — Navigation des exercices : plus **récents en premier**, ajout d'une année **antérieure ET postérieure**, retrait d'une colonne, **fenêtre glissante de 3 exercices avec flèches** (aucune année perdue) — même principe sur **Budget & BP** | à tester | non |
