@@ -17,6 +17,7 @@
 | Source d'entrée du dossier (+ précision/nom) | fait |
 | Valo pré-money & date de closing masquées (champs avancés) | fait |
 | Une date sur chaque événement (tâches, DD, création de valeur, ESG) | fait |
+| **Correction** — Documents : le tri alphabétique doit porter sur le **nom de l'entreprise** (et non le titre du document) | à faire |
 
 ---
 
@@ -32,6 +33,8 @@
 | **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
 | **1d** — Moteur OHADA : saisie **complète** des états financiers → totaux, SIG, bilan fonctionnel, ratios | fait | 0016 |
 | **1d-bis** — Import d'états financiers en **PDF / image** avec reconnaissance visuelle (pré-remplissage automatique) | à faire | non |
+| **Correction 1d** — Navigation des exercices : afficher les plus **récents en premier**, pouvoir ajouter une année **antérieure ET postérieure**, retirer une colonne | à faire | non |
+| **Correction 1b-2** — Vue dédiée des **remboursements par prêt** : engagements, historique des paiements, restant dû (aujourd'hui enfoui dans l'échéancier dépliable) | à faire | non |
 
 ---
 
@@ -41,6 +44,7 @@
 |---|---|---|
 | Performance trimestrielle : CA / EBE / taux d'EBE vs N-1 **et** vs budget (▲▼▬) | à faire | oui |
 | Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | fait | 0015 |
+| **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples au lieu d'un seul) | à faire | oui |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
 
