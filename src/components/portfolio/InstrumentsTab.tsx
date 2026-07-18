@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fmtM } from "@/lib/format";
 import { INSTRUMENT_TYPES } from "@/lib/ui-constants";
 import type { Instrument } from "@/lib/data/instruments";
-import { computeSchedule } from "@/lib/finance/amortization";
+import { computeSchedule, paymentBehaviour, type PaymentStatus } from "@/lib/finance/amortization";
 import InstrumentFormModal from "./InstrumentFormModal";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -16,6 +16,22 @@ const fmtN = (v: number) => Math.round(v).toLocaleString("fr-FR");
 const typeLabel = (t: string) => INSTRUMENT_TYPES.find((x) => x.key === t)?.label ?? t;
 const kindOf = (t: string) => INSTRUMENT_TYPES.find((x) => x.key === t)?.kind ?? "debt";
 const TYPE_BADGE: Record<string, string> = { equity: "badge-green", "quasi-equity": "badge-amber", "pret-campagne": "badge-neutral" };
+
+const STATUS_BADGE: Record<PaymentStatus, string> = {
+  "à venir": "badge-neutral", soldée: "badge-green", anticipée: "badge-green",
+  partielle: "badge-amber", manquée: "badge-red", "non saisie": "badge-neutral",
+};
+
+export function StatusBadge({ status, daysLate }: { status: PaymentStatus; daysLate: number | null }) {
+  if (status === "à venir") return <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>à venir</span>;
+  const late = daysLate != null && daysLate > 0;
+  const label = status === "soldée" && late ? "réglée en retard" : status === "anticipée" ? "soldée +" : status;
+  return (
+    <span className={`badge ${STATUS_BADGE[status]}`} title={late ? `${daysLate} jour${daysLate > 1 ? "s" : ""} de retard` : undefined}>
+      {label}{late ? ` · ${daysLate} j` : ""}
+    </span>
+  );
+}
 
 export default function InstrumentsTab({ companyId, instruments }: { companyId: string; instruments: Instrument[] }) {
   const router = useRouter();
@@ -126,16 +142,10 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
   const td: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontSize: 11.5, color: "var(--ink)", whiteSpace: "nowrap" };
   const inp: React.CSSProperties = { width: 92, padding: "4px 6px", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11.5, fontFamily: "inherit", textAlign: "right", outline: "none", background: "var(--surface)", color: "var(--ink)" };
 
-  const today = new Date().toISOString().slice(0, 10);
   const payOf = (n: number) => instrument.payments.find((p) => p.periodNo === n);
-  const totalInvoiced = instrument.payments.reduce((a, p) => a + (p.invoiced ?? 0), 0);
   const totalPaid = instrument.payments.reduce((a, p) => a + (p.paid ?? 0), 0);
-  const arrears = sched.rows.reduce((a, row) => {
-    if (!row.date || row.date > today) return a;
-    const p = payOf(row.n);
-    const due = p?.invoiced ?? row.payment;
-    return a + Math.max(0, due - (p?.paid ?? 0));
-  }, 0);
+  const behaviour = paymentBehaviour(sched.rows);
+  const arrears = behaviour.arrears;
 
   async function savePayment(n: number, dueDate: string | null, field: "amount_invoiced" | "amount_paid" | "paid_date", raw: string) {
     const supabase = createClient();
@@ -166,7 +176,7 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
       </div>
       {open && (
         <div style={{ overflowX: "auto", marginTop: 10 }}>
-          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 900 }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 1180 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th style={{ ...th, textAlign: "left" }}>N°</th>
@@ -177,28 +187,28 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                 <th style={th}>Solde restant dû</th>
                 <th style={{ ...th, borderLeft: "1px solid var(--border)", color: "var(--camel)" }}>Facturé</th>
                 <th style={{ ...th, color: "var(--camel)" }}>Encaissé</th>
+                <th style={{ ...th, color: "var(--camel)", textAlign: "left" }}>Payé le</th>
                 <th style={{ ...th, color: "var(--camel)" }}>Reste</th>
+                <th style={{ ...th, color: "var(--camel)", textAlign: "left" }}>Statut</th>
               </tr>
             </thead>
             <tbody>
               {sched.rows.map((row) => {
                 const p = payOf(row.n);
-                const due = p?.invoiced ?? row.payment;
-                const rest = due - (p?.paid ?? 0);
-                const late = !row.settled && !!row.date && row.date <= today && rest > 0.5;
+                const alert = row.status === "manquée" || row.status === "partielle";
                 if (row.settled) {
                   return (
                     <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", opacity: 0.55 }}>
                       <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
                       <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
-                      <td colSpan={7} style={{ ...td, textAlign: "left", color: "var(--green-fg)", fontStyle: "italic" }}>
-                        prêt soldé — plus d'échéance due
+                      <td colSpan={9} style={{ ...td, textAlign: "left", color: "var(--green-fg)", fontStyle: "italic" }}>
+                        prêt soldé — plus d&apos;échéance due
                       </td>
                     </tr>
                   );
                 }
                 return (
-                  <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", background: late ? "var(--red-bg)" : undefined }}>
+                  <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", background: alert ? "var(--red-bg)" : undefined }}>
                     <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
                     <td style={{ ...td, textAlign: "left" }}>
                       {frDay(row.date)}
@@ -216,8 +226,16 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                       <input key={`p${row.n}${p?.paid ?? ""}`} defaultValue={p?.paid ?? ""}
                         onBlur={(e) => savePayment(row.n, row.date, "amount_paid", e.target.value)} style={inp} inputMode="numeric" />
                     </td>
-                    <td style={{ ...td, fontWeight: 600, color: rest > 0.5 ? (late ? "var(--red-fg)" : "var(--text-2)") : "var(--green-fg)" }} className="tnum">
-                      {rest > 0.5 ? fmtN(rest) : "soldé"}
+                    <td style={{ ...td, textAlign: "left" }}>
+                      <input key={`d${row.n}${p?.paidDate ?? ""}`} defaultValue={p?.paidDate ?? ""} type="date"
+                        onBlur={(e) => savePayment(row.n, row.date, "paid_date", e.target.value)}
+                        style={{ ...inp, width: 130, textAlign: "left" }} />
+                    </td>
+                    <td style={{ ...td, fontWeight: 600, color: row.shortfall > 0.5 ? "var(--red-fg)" : row.surplus > 0.5 ? "var(--green-fg)" : "var(--text-2)" }} className="tnum">
+                      {row.shortfall > 0.5 ? fmtN(row.shortfall) : row.surplus > 0.5 ? `+${fmtN(row.surplus)}` : "—"}
+                    </td>
+                    <td style={{ ...td, textAlign: "left" }}>
+                      <StatusBadge status={row.status} daysLate={row.daysLate} />
                     </td>
                   </tr>
                 );
@@ -225,9 +243,11 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
             </tbody>
           </table>
           <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 6 }}>
-            Montants en FCFA. Colonnes grises = prévisionnel, colonnes ambre = réel à saisir (« Facturé » vaut l'échéance prévue si laissé vide). Ligne rouge = échéance passée non soldée.
+            Montants en FCFA. Colonnes grises = prévisionnel, colonnes ambre = réel à saisir (« Facturé » vaut l&apos;échéance prévue si laissé vide).
             <br />
-            <b>Remboursement anticipé pris en compte</b> : tout encaissement supérieur aux intérêts amortit le capital, et les échéances suivantes sont <b>recalculées sur le solde restant</b>. Si le prêt est soldé avant terme, les échéances restantes s'annulent.
+            <b>Le réel commande le prévisionnel.</b> Payé <b>plus</b> que dû : l&apos;échéance est soldée, le surplus amortit le capital et les échéances suivantes <b>baissent</b> — jusqu&apos;à solder le prêt avant terme. Payé <b>moins</b> que dû : l&apos;échéance passe en <b>partielle</b>, le manque reste dû et les échéances suivantes <b>remontent</b>. Rien encaissé : échéance <b>manquée</b>, le capital ne s&apos;amortit pas.
+            <br />
+            « Non saisie » = échéance passée dont on ignore le sort : ce n&apos;est pas un impayé, c&apos;est une ligne à renseigner. La <b>date de paiement</b> alimente le retard moyen et donc le comportement de paiement.
           </div>
         </div>
       )}

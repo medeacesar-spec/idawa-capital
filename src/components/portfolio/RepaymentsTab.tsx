@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { fmtM } from "@/lib/format";
 import { INSTRUMENT_TYPES } from "@/lib/ui-constants";
 import type { Instrument } from "@/lib/data/instruments";
-import { computeSchedule } from "@/lib/finance/amortization";
+import { computeSchedule, paymentBehaviour, type PaymentBehaviour } from "@/lib/finance/amortization";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDay(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -33,10 +33,11 @@ type LoanSummary = {
   nextAmount: number;
   settled: boolean;
   hasSchedule: boolean;
+  behaviour: PaymentBehaviour;
 };
 
 function summarize(i: Instrument, today: string): LoanSummary {
-  const sched = computeSchedule(i);
+  const sched = computeSchedule(i, today);
   const committed = i.amountCommitted ?? 0;
   const disbursed = i.amountDisbursed ?? 0;
   const principal = disbursed || committed;
@@ -46,14 +47,12 @@ function summarize(i: Instrument, today: string): LoanSummary {
   if (!sched) {
     return { instrument: i, committed, disbursed, totalDue: 0, collected, invoiced, principalRepaid: 0,
       interestPaid: 0, outstanding: principal - collected, arrears: 0, nextDate: null, nextAmount: 0,
-      settled: false, hasSchedule: false };
+      settled: false, hasSchedule: false, behaviour: paymentBehaviour([]) };
   }
 
-  const payOf = (n: number) => i.payments.find((p) => p.periodNo === n);
   let principalRepaid = 0;
   let interestPaid = 0;
   let outstanding = principal;
-  let arrears = 0;
   let nextDate: string | null = null;
   let nextAmount = 0;
 
@@ -61,24 +60,65 @@ function summarize(i: Instrument, today: string): LoanSummary {
     if (row.settled) continue;
     if (row.actual) {
       principalRepaid += row.principal;
-      interestPaid += Math.min(row.payment, row.interest);
+      interestPaid += Math.min(row.paid, row.interest);
       outstanding = row.balance;
     }
-    const p = payOf(row.n);
-    const due = p?.invoiced ?? row.payment;
-    const rest = due - (p?.paid ?? 0);
-    if (row.date && row.date <= today) {
-      if (rest > 0.5) arrears += rest;
-    } else if (!nextDate && rest > 0.5) {
+    if (row.date && row.date > today && !nextDate && row.expected - row.paid > 0.5) {
       nextDate = row.date;
-      nextAmount = rest;
+      nextAmount = row.expected - row.paid;
     }
   }
+  const behaviour = paymentBehaviour(sched.rows);
   const settled = outstanding <= 0.5 && principalRepaid > 0;
 
   return { instrument: i, committed, disbursed, totalDue: sched.totalPaid, collected, invoiced,
-    principalRepaid, interestPaid, outstanding: Math.max(0, outstanding), arrears, nextDate, nextAmount,
-    settled, hasSchedule: true };
+    principalRepaid, interestPaid, outstanding: Math.max(0, outstanding), arrears: behaviour.arrears,
+    nextDate, nextAmount, settled, hasSchedule: true, behaviour };
+}
+
+/** Comportement de paiement : ce que l'historique dit de la discipline de l'entrepreneur. */
+function BehaviourBlock({ b }: { b: PaymentBehaviour }) {
+  if (b.tracked === 0 && b.unrecorded === 0) return null;
+  const items: [string, string, string | null][] = [
+    ["Honorées", String(b.onTime), null],
+    ["Réglées en retard", String(b.late), b.avgDaysLate != null ? `${b.avgDaysLate} j en moyenne` : null],
+    ["Partielles", String(b.partial), null],
+    ["Manquées", String(b.missed), null],
+    ["Non saisies", String(b.unrecorded), "à renseigner"],
+  ];
+  const rate = b.reliability;
+  const rateColor = rate == null ? "var(--text-3)" : rate >= 0.9 ? "var(--green-fg)" : rate >= 0.7 ? "var(--amber-fg)" : "var(--red-fg)";
+  return (
+    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "baseline" }}>
+      <span style={{ fontSize: 11, color: "var(--text-2)" }}>
+        Ponctualité{" "}
+        <b className="tnum" style={{ color: rateColor, fontSize: 13 }}>
+          {rate == null ? "—" : `${Math.round(rate * 100)} %`}
+        </b>
+        {b.tracked > 0 && <span style={{ color: "var(--text-3)" }}> sur {b.tracked} échéance{b.tracked > 1 ? "s" : ""} suivie{b.tracked > 1 ? "s" : ""}</span>}
+      </span>
+      {items.filter(([, v]) => v !== "0").map(([k, v, sub]) => (
+        <span key={k} style={{ fontSize: 11, color: "var(--text-2)" }}>
+          {k} <b className="tnum" style={{ color: "var(--ink)" }}>{v}</b>
+          {sub && <span style={{ color: "var(--text-3)" }}> ({sub})</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function mergeBehaviour(list: PaymentBehaviour[]): PaymentBehaviour {
+  const m: PaymentBehaviour = { tracked: 0, onTime: 0, late: 0, partial: 0, missed: 0, unrecorded: 0,
+    arrears: 0, avgDaysLate: null, reliability: null };
+  let lateDays = 0;
+  for (const b of list) {
+    m.tracked += b.tracked; m.onTime += b.onTime; m.late += b.late; m.partial += b.partial;
+    m.missed += b.missed; m.unrecorded += b.unrecorded; m.arrears += b.arrears;
+    if (b.avgDaysLate != null) lateDays += b.avgDaysLate * b.late;
+  }
+  if (m.late > 0) m.avgDaysLate = Math.round(lateDays / m.late);
+  if (m.tracked > 0) m.reliability = m.onTime / m.tracked;
+  return m;
 }
 
 export default function RepaymentsTab({ instruments }: { instruments: Instrument[] }) {
@@ -120,6 +160,13 @@ export default function RepaymentsTab({ instruments }: { instruments: Instrument
             </div>
           );
         })}
+      </div>
+
+      <div className="card" style={{ padding: "12px 16px", marginBottom: 14 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
+          Comportement de paiement <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— tous prêts confondus, à verser au dossier pour les décisions futures</span>
+        </div>
+        <BehaviourBlock b={mergeBehaviour(s.map((x) => x.behaviour))} />
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
@@ -175,6 +222,10 @@ export default function RepaymentsTab({ instruments }: { instruments: Instrument
                     <div className="serif tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{v}</div>
                   </div>
                 ))}
+              </div>
+
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sep)" }}>
+                <BehaviourBlock b={x.behaviour} />
               </div>
 
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sep)", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
