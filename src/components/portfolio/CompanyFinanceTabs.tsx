@@ -8,6 +8,7 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES, VALUATION_METHODS, OHADA_PL_LINES } from "@/lib/ui-constants";
 import { fmtM } from "@/lib/format";
 import type { FinancialRow, FlowRow, CapRow } from "@/lib/data/companyFinance";
+import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -43,9 +44,13 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
   const [newLines, setNewLines] = useState<string[]>([]);
 
   const thisYear = new Date().getFullYear();
-  let years = Array.from(new Set([...rows.map((r) => r.period), ...extraYears]));
-  for (let i = 0; years.length < 3; i++) years = Array.from(new Set([...years, String(thisYear + i)]));
-  years.sort();
+  let allYears = Array.from(new Set([...rows.map((r) => r.period), ...extraYears]));
+  for (let i = 0; allYears.length < YEAR_WINDOW; i++) allYears = Array.from(new Set([...allYears, String(thisYear + i)]));
+  allYears.sort();
+
+  // Grille en ordre chronologique : la fenêtre s'ouvre par défaut sur les exercices les plus récents.
+  const win = useYearWindow(allYears, "end");
+  const years = win.visible;
 
   const dataLabels = Array.from(new Set(rows.map((r) => r.label)));
   const customLabels = Array.from(new Set([
@@ -72,8 +77,11 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
   }
 
   function addYear() {
-    const max = years.reduce((a, y) => Math.max(a, parseInt(y, 10) || 0), thisYear);
-    setExtraYears((e) => [...e, String(max + 1)]);
+    const max = allYears.reduce((a, y) => Math.max(a, parseInt(y, 10) || 0), thisYear);
+    const next = String(max + 1);
+    const updated = Array.from(new Set([...allYears, next])).sort();
+    setExtraYears((e) => [...e, next]);
+    win.reveal(updated.indexOf(next), updated.length); // faire défiler jusqu'au nouvel exercice
   }
   function addLine() {
     const name = prompt("Nom du nouveau poste :");
@@ -104,7 +112,8 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Budget & business plan <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— grille OHADA, budget vs réalisé, en M FCFA</span></div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <YearNav win={win} label="années" />
           <button className="btn btn-ghost" onClick={addLine}>{iconAdd} Poste</button>
           <button className="btn btn-primary" onClick={addYear}>{iconAdd} Année</button>
         </div>
@@ -169,7 +178,7 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
         </table>
       </div>
       <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>
-        Saisie directe en M FCFA (enregistrée en quittant la case). Grille OHADA standard — ajoutez vos propres postes, renommez-les, effacez une ligne. « + Année » ajoute une colonne.
+        Saisie directe en M FCFA (enregistrée en quittant la case). Grille OHADA standard — ajoutez vos propres postes, renommez-les, effacez une ligne. « + Année » ajoute une colonne ; les flèches font défiler les exercices, aucune année n&apos;est perdue.
       </div>
     </div>
   );
