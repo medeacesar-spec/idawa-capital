@@ -51,6 +51,7 @@ des instruments de financement, une valorisation et une cap table sans objet.
 | Décisions de comité propres à l'accélération : admission, prolongation, sortie, exclusion | à tester | 0025 |
 | Classification E&S déplacée de Structuration vers ESG : elle vaut pour tous les types | à tester | non |
 | Saisie des indicateurs au niveau programme (budget, taux d'exécution, pourcentages) | à tester | non |
+| **Consolidation de l'accélération** sur la page Performance : entreprises suivies, budget, décaissé, taux d'exécution, indicateurs par programme | à tester | non |
 | Agrégation des valeurs entreprise dans le tableau de bord du programme | à tester | non |
 
 ---
