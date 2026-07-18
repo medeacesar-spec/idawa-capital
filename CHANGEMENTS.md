@@ -32,7 +32,7 @@
 | **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | fait | 0014 |
 | **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
 | **1d** — Moteur OHADA : saisie **complète** des états financiers → totaux, SIG, bilan fonctionnel, ratios | fait | 0016 |
-| **1d-bis** — Import d'états financiers en **PDF / image** avec reconnaissance visuelle (pré-remplissage automatique) | à faire | non |
+| **1d-bis** — Import d'états financiers **sans frais** : analyseur qui s'accroche aux **codes OHADA** imprimés + écran de vérification. Entrées : ① copier-coller ② Excel/CSV ③ PDF numérique (pdf.js) ④ image/scan (Tesseract.js, bonus). **Aucune clé API, aucun coût.** | à faire | non |
 | **Correction 1d** — Navigation des exercices : afficher les plus **récents en premier**, pouvoir ajouter une année **antérieure ET postérieure**, retirer une colonne | à faire | non |
 | **Correction 1b-2** — Vue dédiée des **remboursements par prêt** : engagements, historique des paiements, restant dû (aujourd'hui enfoui dans l'échéancier dépliable) | à faire | non |
 
