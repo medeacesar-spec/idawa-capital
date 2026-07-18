@@ -113,6 +113,7 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
 }
 
 function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument; open: boolean; onToggle: () => void }) {
+  const router = useRouter();
   const sched = computeSchedule(instrument);
   if (!sched) {
     return (
@@ -123,19 +124,49 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
   }
   const th: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontSize: 10.5, color: "var(--text-3)", fontWeight: 600, whiteSpace: "nowrap" };
   const td: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontSize: 11.5, color: "var(--ink)", whiteSpace: "nowrap" };
+  const inp: React.CSSProperties = { width: 92, padding: "4px 6px", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11.5, fontFamily: "inherit", textAlign: "right", outline: "none", background: "var(--surface)", color: "var(--ink)" };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const payOf = (n: number) => instrument.payments.find((p) => p.periodNo === n);
+  const totalInvoiced = instrument.payments.reduce((a, p) => a + (p.invoiced ?? 0), 0);
+  const totalPaid = instrument.payments.reduce((a, p) => a + (p.paid ?? 0), 0);
+  const arrears = sched.rows.reduce((a, row) => {
+    if (!row.date || row.date > today) return a;
+    const p = payOf(row.n);
+    const due = p?.invoiced ?? row.payment;
+    return a + Math.max(0, due - (p?.paid ?? 0));
+  }, 0);
+
+  async function savePayment(n: number, dueDate: string | null, field: "amount_invoiced" | "amount_paid" | "paid_date", raw: string) {
+    const supabase = createClient();
+    let value: number | string | null;
+    if (field === "paid_date") value = raw || null;
+    else {
+      const clean = raw.replace(/\s/g, "").replace(",", ".");
+      value = clean === "" ? null : Math.round(Number(clean));
+      if (value !== null && Number.isNaN(value)) return;
+    }
+    await supabase.from("instrument_payments").upsert(
+      { instrument_id: instrument.id, period_no: n, due_date: dueDate, [field]: value },
+      { onConflict: "instrument_id,period_no" }
+    );
+    router.refresh();
+  }
+
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sep)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <button onClick={onToggle} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "var(--camel)" }}>
-          {open ? "− Masquer l'échéancier" : `+ Échéancier (${sched.rows.length} échéances)`}
+          {open ? "− Masquer l'échéancier" : `+ Échéancier & créances (${sched.rows.length} échéances)`}
         </button>
         <span style={{ fontSize: 11, color: "var(--text-2)" }}>Taux retenu <b style={{ color: "var(--ink)" }}>{sched.ratePct} %</b></span>
-        <span style={{ fontSize: 11, color: "var(--text-2)" }}>Total intérêts <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(sched.totalInterest)}</b></span>
         <span style={{ fontSize: 11, color: "var(--text-2)" }}>Total à rembourser <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(sched.totalPaid)}</b></span>
+        <span style={{ fontSize: 11, color: "var(--text-2)" }}>Encaissé <b className="serif tnum" style={{ color: "var(--green-fg)" }}>{fmtM(totalPaid)}</b></span>
+        {arrears > 0.5 && <span className="badge badge-red">Arriérés {fmtM(arrears)}</span>}
       </div>
       {open && (
         <div style={{ overflowX: "auto", marginTop: 10 }}>
-          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 520 }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 900 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 <th style={{ ...th, textAlign: "left" }}>N°</th>
@@ -144,22 +175,44 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                 <th style={th}>Intérêts</th>
                 <th style={th}>Échéance totale</th>
                 <th style={th}>Solde restant dû</th>
+                <th style={{ ...th, borderLeft: "1px solid var(--border)", color: "var(--camel)" }}>Facturé</th>
+                <th style={{ ...th, color: "var(--camel)" }}>Encaissé</th>
+                <th style={{ ...th, color: "var(--camel)" }}>Reste</th>
               </tr>
             </thead>
             <tbody>
-              {sched.rows.map((row) => (
-                <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)" }}>
-                  <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
-                  <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
-                  <td style={td} className="tnum">{fmtN(row.principal)}</td>
-                  <td style={td} className="tnum">{fmtN(row.interest)}</td>
-                  <td style={{ ...td, fontWeight: 600 }} className="tnum">{fmtN(row.payment)}</td>
-                  <td style={{ ...td, color: "var(--text-2)" }} className="tnum">{fmtN(row.balance)}</td>
-                </tr>
-              ))}
+              {sched.rows.map((row) => {
+                const p = payOf(row.n);
+                const due = p?.invoiced ?? row.payment;
+                const rest = due - (p?.paid ?? 0);
+                const late = !!row.date && row.date <= today && rest > 0.5;
+                return (
+                  <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", background: late ? "var(--red-bg)" : undefined }}>
+                    <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
+                    <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
+                    <td style={td} className="tnum">{fmtN(row.principal)}</td>
+                    <td style={td} className="tnum">{fmtN(row.interest)}</td>
+                    <td style={{ ...td, fontWeight: 600 }} className="tnum">{fmtN(row.payment)}</td>
+                    <td style={{ ...td, color: "var(--text-2)" }} className="tnum">{fmtN(row.balance)}</td>
+                    <td style={{ ...td, borderLeft: "1px solid var(--border)" }}>
+                      <input key={`i${row.n}${p?.invoiced ?? ""}`} defaultValue={p?.invoiced ?? ""} placeholder={fmtN(row.payment)}
+                        onBlur={(e) => savePayment(row.n, row.date, "amount_invoiced", e.target.value)} style={inp} inputMode="numeric" />
+                    </td>
+                    <td style={td}>
+                      <input key={`p${row.n}${p?.paid ?? ""}`} defaultValue={p?.paid ?? ""}
+                        onBlur={(e) => savePayment(row.n, row.date, "amount_paid", e.target.value)} style={inp} inputMode="numeric" />
+                    </td>
+                    <td style={{ ...td, fontWeight: 600, color: rest > 0.5 ? (late ? "var(--red-fg)" : "var(--text-2)") : "var(--green-fg)" }} className="tnum">
+                      {rest > 0.5 ? fmtN(rest) : "soldé"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-          <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 6 }}>Montants en FCFA. Prévisionnel calculé (différé = intérêts seuls, puis échéances constantes).</div>
+          <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 6 }}>
+            Montants en FCFA. Colonnes grises = prévisionnel calculé. Colonnes ambre = réel à saisir (« Facturé » vaut l'échéance prévue si laissé vide). Ligne rouge = échéance passée non soldée.
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type InstrumentPayment = {
+  id: string;
+  periodNo: number;
+  dueDate: string | null;
+  invoiced: number | null;
+  paid: number | null;
+  paidDate: string | null;
+  note: string | null;
+};
+
 export type Instrument = {
   id: string;
   type: string;
@@ -19,6 +29,7 @@ export type Instrument = {
   periodicity: string | null;
   firstDueDate: string | null;
   notes: string | null;
+  payments: InstrumentPayment[];
 };
 
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -30,6 +41,22 @@ export async function getInstruments(companyId: string): Promise<Instrument[]> {
     .select("*")
     .eq("company_id", companyId)
     .order("grant_date", { ascending: true });
+
+  const ids = (data ?? []).map((d) => d.id);
+  const { data: pays } = ids.length
+    ? await supabase.from("instrument_payments").select("*").in("instrument_id", ids).order("period_no")
+    : { data: [] as Record<string, unknown>[] };
+  const payOf = (instrumentId: string): InstrumentPayment[] =>
+    (pays ?? []).filter((p) => p.instrument_id === instrumentId).map((p) => ({
+      id: p.id as string,
+      periodNo: p.period_no as number,
+      dueDate: (p.due_date as string) ?? null,
+      invoiced: p.amount_invoiced == null ? null : Number(p.amount_invoiced),
+      paid: p.amount_paid == null ? null : Number(p.amount_paid),
+      paidDate: (p.paid_date as string) ?? null,
+      note: (p.note as string) ?? null,
+    }));
+
   return (data ?? []).map((d) => ({
     id: d.id,
     type: d.type,
@@ -49,5 +76,6 @@ export async function getInstruments(companyId: string): Promise<Instrument[]> {
     periodicity: d.periodicity,
     firstDueDate: d.first_due_date,
     notes: d.notes,
+    payments: payOf(d.id),
   }));
 }

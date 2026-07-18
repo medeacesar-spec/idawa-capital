@@ -28,7 +28,7 @@
 | **1b-1** — Échéancier d'amortissement calculé (différé, annuités, taux plafonné) | fait | non |
 | **Budget & BP** — grille OHADA en colonnes d'années, saisie directe, postes modifiables | fait | non |
 | **Résumé Investissement** séparé par les 3 types d'instruments | fait | non |
-| **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | à faire | oui |
+| **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | fait | 0014 |
 | **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
 | **1d** — Moteur OHADA : saisie des états financiers → SIG, bilan fonctionnel, ratios | à faire | oui |
 
