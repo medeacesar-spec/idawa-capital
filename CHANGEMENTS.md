@@ -47,7 +47,7 @@
 | **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples) | fait | 0018 |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
-| **Échéancier consolidé au niveau du fonds** : agrégation de toutes les échéances à venir et des arriérés, toutes sociétés confondues (planification de trésorerie) | à faire | non |
+| **Échéancier consolidé au niveau du fonds** : arriérés et échéances à venir toutes sociétés confondues, profil mensuel des encaissements (page Performance) | à tester | non |
 | **KPIs financiers sortis de RH & Management** (8 indicateurs sectoriels replacés en Financier) | fait | 0019 |
 | **KPIs alignés sur la norme OHADA** : la bande de familles et les libellés suivent le plan OHADA | à faire | oui |
 | **KPIs financiers alimentés automatiquement** depuis les états financiers **et la grille Budget & BP** (valeurs + cibles), bouton « Alimenter » sur l'onglet KPIs — double saisie supprimée | à tester | non |
