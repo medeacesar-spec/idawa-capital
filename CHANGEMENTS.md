@@ -39,7 +39,7 @@
 | Item | Statut | Migration |
 |---|---|---|
 | Performance trimestrielle : CA / EBE / taux d'EBE vs N-1 **et** vs budget (▲▼▬) | à faire | oui |
-| Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | à faire | oui |
+| Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | fait | 0015 |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
 

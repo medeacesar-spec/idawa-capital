@@ -142,6 +142,19 @@ export const EHS_SECTORS: { group: string; items: string[] }[] = [
   },
 ];
 export const EHS_SECTOR_OTHER = "Autre (préciser)";
+// Scénarios de sortie d'une participation.
+export const EXIT_SCENARIOS = [
+  "Cession à un industriel",
+  "Cession à un fonds",
+  "Rachat par les dirigeants (MBO)",
+  "Put option / rachat par l'entrepreneur",
+  "Cession à un tiers",
+  "Introduction en bourse",
+  "Remboursement du quasi-equity",
+  "Liquidation",
+  "Autre",
+];
+
 // Un PROGRAMME couvre une FAMILLE de secteurs ; chaque SOCIÉTÉ a son secteur précis.
 export const EHS_FAMILIES = EHS_SECTORS.map((g) => g.group);
 // Secteurs de la famille d'un programme (liste complète si aucune famille définie).

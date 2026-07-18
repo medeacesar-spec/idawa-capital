@@ -15,6 +15,17 @@ export type CommitteeDocRef = { id: string; title: string; storagePath: string |
 export type CompanyDecision = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDocRef[] };
 export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
 
+export type Structuration = {
+  ehsSector: string | null;
+  valuationMethodEntry: string | null;
+  valuationMethodCurrent: string | null;
+  exitScenario: string | null;
+  exitStrategy: string | null;
+  exitMultipleTarget: number | null;
+  exitIrrTarget: number | null;
+  exitYear: number | null;
+};
+
 export type CompanyDetail = {
   id: string;
   name: string;
@@ -40,6 +51,7 @@ export type CompanyDetail = {
   finance: CompanyFinance;
   valueCreation: ValueInitiative[];
   instruments: Instrument[];
+  structuration: Structuration;
   kpis: KpiSeries[];
   kpiLibrary: LibraryKpi[];
   users: FundUser[];
@@ -51,7 +63,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id")
+    .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_method_entry, valuation_method_current, exit_scenario, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
@@ -100,6 +112,16 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
     notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation, instruments,
+    structuration: {
+      ehsSector: c.ehs_sector ?? null,
+      valuationMethodEntry: c.valuation_method_entry ?? null,
+      valuationMethodCurrent: c.valuation_method_current ?? null,
+      exitScenario: c.exit_scenario ?? null,
+      exitStrategy: c.exit_strategy ?? null,
+      exitMultipleTarget: c.exit_multiple_target != null ? Number(c.exit_multiple_target) : null,
+      exitIrrTarget: c.exit_irr_target != null ? Number(c.exit_irr_target) : null,
+      exitYear: c.exit_year ?? null,
+    },
     kpis, kpiLibrary, users, contacts: contactRes.data ?? [],
     documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, createdAt: d.created_at ?? null })),
   };
