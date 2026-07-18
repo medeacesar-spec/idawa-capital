@@ -27,6 +27,22 @@ const LEVELS = [
 ];
 const LV = Object.fromEntries(LEVELS.map((l) => [l.v, l]));
 
+// Les huit rôles fournis ont été créés par un seul insert : ils partagent le même
+// horodatage, donc aucun tri par date ne les départage et une ligne modifiée changeait
+// de place sous les yeux de l'utilisateur. On fixe ici un ordre de lecture, du rôle le
+// plus étendu au plus restreint ; les rôles créés ensuite suivent par ordre alphabétique.
+const ROLE_ORDER = [
+  "Administrateur", "Associé / Direction", "Chargé d'investissement", "Analyste",
+  "Responsable ESG", "Responsable Financier", "Auditeur", "Observateur / LP",
+];
+function byRole(a: Role, b: Role) {
+  const ia = ROLE_ORDER.indexOf(a.name), ib = ROLE_ORDER.indexOf(b.name);
+  if (ia !== -1 && ib !== -1) return ia - ib;
+  if (ia !== -1) return -1;
+  if (ib !== -1) return 1;
+  return a.name.localeCompare(b.name, "fr");
+}
+
 export default function AccessMatrix({ roles }: { roles: Role[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -73,7 +89,7 @@ export default function AccessMatrix({ roles }: { roles: Role[] }) {
               </tr>
             </thead>
             <tbody>
-              {roles.map((r, i) => (
+              {[...roles].sort(byRole).map((r, i) => (
                 <tr key={r.id}>
                   <td style={{ padding: "8px 10px", fontSize: 12.5, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", borderTop: i === 0 ? "none" : "1px solid var(--sep)", position: "sticky", left: 0, background: "var(--surface)" }}>{r.name}</td>
                   {DOMAINS.map((d) => {

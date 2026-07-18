@@ -22,7 +22,7 @@ export default async function UtilisateursPage() {
 
   const [profRes, rolesRes] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, role_id, roles(name)").order("created_at"),
-    supabase.from("roles").select("id, name, permissions").order("created_at"),
+    supabase.from("roles").select("id, name, permissions").order("created_at").order("name"),
   ]);
 
   const users = (profRes.data ?? []).map((p) => ({
