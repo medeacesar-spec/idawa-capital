@@ -28,7 +28,6 @@
 | **1b-1** — Échéancier d'amortissement calculé (différé, annuités, taux plafonné) | fait | non |
 | **Budget & BP** — grille OHADA en colonnes d'années, saisie directe, postes modifiables | fait | non |
 | **Résumé Investissement** séparé par les 3 types d'instruments | fait | non |
-| **Secteur EHS** — liste déroulante IFC (Paramètres du fonds → Paramètres ESG) | fait | non |
 | **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | à faire | oui |
 | **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
 | **1d** — Moteur OHADA : saisie des états financiers → SIG, bilan fonctionnel, ratios | à faire | oui |
@@ -58,10 +57,11 @@
 
 ---
 
-## Phase 4 — Impact & reporting
+## Phase 4 — Impact, ESG & reporting
 
 | Item | Statut | Migration |
 |---|---|---|
+| **Secteurs EHS (IFC)** — le **programme** porte une **famille** de secteurs, chaque **entreprise** son **secteur précis** (liste ordonnée selon la famille du programme) | fait | 0013 |
 | Indicateurs d'impact IPDEV2 alignés sur la fiche I&P (emplois, genre, formalisation, producteurs…) | à faire | oui |
 | Contenu qualitatif (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
 | **Export fiche entreprise** (trimestriel, format I&P) | à faire | non |

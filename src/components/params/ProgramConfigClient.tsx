@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { ProgramConfig, ProgramIndicator } from "@/lib/data/params";
-import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_SECTORS, EHS_SECTOR_OTHER } from "@/lib/ui-constants";
+import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES } from "@/lib/ui-constants";
 import { Field, Input, Select } from "@/components/ui/form";
 
 const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 };
@@ -21,8 +21,6 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
   const [esgFw, setEsgFw] = useState(config.esgFramework ?? "");
   const [esgReq, setEsgReq] = useState(config.esgRequired);
   const [ehs, setEhs] = useState(config.ehsSector ?? "");
-  const [ehsOther, setEhsOther] = useState(false);
-  const ehsInList = EHS_SECTORS.some((g) => g.items.includes(ehs));
   const [customName, setCustomName] = useState<Record<string, string>>({});
 
   const showAccomp = nature === "accompagnement" || nature === "mixte";
@@ -143,27 +141,12 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
         <Field label="Référentiel ESG">
           <Input value={esgFw} onChange={(e) => setEsgFw(e.target.value)} onBlur={() => saveGeneral({ esg_framework: esgFw })} />
         </Field>
-        <Field label="Secteur EHS (IFC) par défaut" hint="Directives EHS de l'IFC — choisissez le secteur du programme">
-          <Select
-            value={ehsInList ? ehs : ehs ? EHS_SECTOR_OTHER : ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === EHS_SECTOR_OTHER) { setEhs(""); setEhsOther(true); return; }
-              setEhsOther(false); setEhs(v); saveGeneral({ ehs_sector: v || null });
-            }}>
-            <option value="">— Aucun —</option>
-            {EHS_SECTORS.map((g) => (
-              <optgroup key={g.group} label={g.group}>
-                {g.items.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-            ))}
-            <option value={EHS_SECTOR_OTHER}>{EHS_SECTOR_OTHER}</option>
+        <Field label="Famille de secteurs EHS (IFC)" hint="Le programme couvre une famille ; chaque entreprise précisera ensuite son secteur">
+          <Select value={ehs} onChange={(e) => { const v = e.target.value; setEhs(v); saveGeneral({ ehs_sector: v || null }); }}>
+            <option value="">— Aucune —</option>
+            {EHS_FAMILIES.map((f) => <option key={f} value={f}>{f}</option>)}
+            {!!ehs && !EHS_FAMILIES.includes(ehs) && <option value={ehs}>{ehs} (ancienne valeur)</option>}
           </Select>
-          {(ehsOther || (!!ehs && !ehsInList)) && (
-            <div style={{ marginTop: 8 }}>
-              <Input value={ehs} onChange={(e) => setEhs(e.target.value)} onBlur={() => saveGeneral({ ehs_sector: ehs || null })} placeholder="Précisez le secteur" autoFocus />
-            </div>
-          )}
         </Field>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
           <button onClick={() => { const v = !esgReq; setEsgReq(v); saveGeneral({ esg_required: v }); }}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
+import { EHS_SECTORS, ehsSectorsForFamily } from "@/lib/ui-constants";
 import type { PortfolioCompany, PortfolioProgram, SubSectorOption } from "@/lib/data/portfolio";
 
 const M = 1_000_000;
@@ -25,6 +26,7 @@ export default function CompanyFormModal({
     subSectorId: company?.subSectorId ?? "",
     programId: company?.programId ?? "",
     status: company?.status ?? "Actif",
+    ehsSector: company?.ehsSector ?? "",
     investedDate: company?.investedDate ?? "",
     invested: company ? String(company.invested / M) : "",
     valuation: company ? String(company.valuation / M) : "",
@@ -35,6 +37,7 @@ export default function CompanyFormModal({
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const isEquity = f.trackingType === "equity";
   const isClosed = f.status === "Sorti" || f.status === "Radié";
+  const ehsFamily = programs.find((p) => p.id === f.programId)?.ehsFamily ?? null;
 
   async function submit() {
     if (!f.name.trim()) return;
@@ -47,6 +50,7 @@ export default function CompanyFormModal({
       primary_sub_sector_id: f.subSectorId || null,
       program_id: f.programId || null,
       status: f.status,
+      ehs_sector: f.ehsSector || null,
       invested_date: f.investedDate || null,
       invested_amount: isEquity ? (num(f.invested) ?? 0) * M : 0,
       current_valuation: isEquity ? (num(f.valuation) ?? 0) * M : 0,
@@ -89,6 +93,19 @@ export default function CompanyFormModal({
         <Select value={f.subSectorId} onChange={(e) => set("subSectorId", e.target.value)}>
           <option value="">— Choisir un sous-secteur —</option>
           {subSectors.map((s) => <option key={s.id} value={s.id}>{s.industry} — {s.name}</option>)}
+        </Select>
+      </Field>
+      <Field label="Secteur EHS (IFC)" hint={ehsFamily ? `Famille du programme : ${ehsFamily}` : "Secteur précis de l'entreprise"}>
+        <Select value={f.ehsSector} onChange={(e) => set("ehsSector", e.target.value)}>
+          <option value="">— Non défini —</option>
+          {ehsSectorsForFamily(ehsFamily).map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.items.map((s) => <option key={s} value={s}>{s}</option>)}
+            </optgroup>
+          ))}
+          {!!f.ehsSector && !EHS_SECTORS.some((g) => g.items.includes(f.ehsSector)) && (
+            <option value={f.ehsSector}>{f.ehsSector}</option>
+          )}
         </Select>
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

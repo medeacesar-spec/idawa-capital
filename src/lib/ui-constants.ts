@@ -142,6 +142,13 @@ export const EHS_SECTORS: { group: string; items: string[] }[] = [
   },
 ];
 export const EHS_SECTOR_OTHER = "Autre (préciser)";
+// Un PROGRAMME couvre une FAMILLE de secteurs ; chaque SOCIÉTÉ a son secteur précis.
+export const EHS_FAMILIES = EHS_SECTORS.map((g) => g.group);
+// Secteurs de la famille d'un programme (liste complète si aucune famille définie).
+export function ehsSectorsForFamily(family?: string | null): { group: string; items: string[] }[] {
+  const match = EHS_SECTORS.find((g) => g.group === family);
+  return match ? [match, ...EHS_SECTORS.filter((g) => g.group !== family)] : EHS_SECTORS;
+}
 
 // Grille standard du compte de résultat OHADA / SIG — base modifiable du Budget & BP.
 export const OHADA_PL_LINES = [
