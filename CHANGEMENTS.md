@@ -47,6 +47,7 @@
 | **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples au lieu d'un seul) | à faire | oui |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
+| **Échéancier consolidé au niveau du fonds** : agrégation de toutes les échéances à venir et des arriérés, toutes sociétés confondues (planification de trésorerie) | à faire | non |
 
 ---
 
@@ -71,6 +72,7 @@
 | Contenu qualitatif (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
 | **Export fiche entreprise** (trimestriel, format I&P) | à faire | non |
 | **Export rapport ESG & Impact** (annuel, modèle IPDEV) | à faire | non |
+| **Passerelle Excel bidirectionnelle** : sortir les données vers Excel pour présenter (à un bailleur, un entrepreneur…) **et** réinjecter dans l'outil ce qui a été travaillé sous Excel. Même moteur que l'import des états financiers (analyseur + écran de vérification). Éventuellement un module dédié. | à faire | non |
 
 ---
 
