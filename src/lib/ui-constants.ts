@@ -84,6 +84,22 @@ export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "
 
 // Données financières société
 export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net", "Trésorerie", "Dette nette", "Effectif"];
+
+// Grille standard du compte de résultat OHADA / SIG — base modifiable du Budget & BP.
+export const OHADA_PL_LINES = [
+  "Chiffre d'affaires",
+  "Achats consommés",
+  "Marge brute",
+  "Valeur ajoutée",
+  "Charges de personnel",
+  "Excédent brut d'exploitation (EBE)",
+  "Dotations aux amortissements",
+  "Résultat d'exploitation",
+  "Résultat financier",
+  "Résultat avant impôt",
+  "Impôt sur le résultat",
+  "Résultat net",
+];
 export const FLOW_TYPES = ["Appel de fonds", "Distribution", "Valorisation"];
 export const VALUATION_METHODS = ["Multiple (comparables)", "DCF", "Dernier tour", "Coût / prix d'entrée", "Actif net réévalué", "Autre"];
 export const CAP_HOLDER_TYPES = ["Fondateur", "Idawa Capital", "Co-investisseur", "ESOP / salariés", "Autre"];

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES, VALUATION_METHODS } from "@/lib/ui-constants";
+import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES, VALUATION_METHODS, OHADA_PL_LINES } from "@/lib/ui-constants";
 import { fmtM } from "@/lib/format";
 import type { FinancialRow, FlowRow, CapRow } from "@/lib/data/companyFinance";
 
@@ -36,40 +36,137 @@ function ValoSpark({ valos }: { valos: FlowRow[] }) {
   );
 }
 
-/* ---------- Budget & BP ---------- */
+/* ---------- Budget & BP — grille OHADA (postes × années) ---------- */
 export function BudgetTab({ companyId, rows }: { companyId: string; rows: FinancialRow[] }) {
-  const [modal, setModal] = useState<{ open: boolean; row: FinancialRow | null }>({ open: false, row: null });
-  const del = useDel("company_financials", "cette ligne");
-  const periods = Array.from(new Set(rows.map((r) => r.period)));
+  const router = useRouter();
+  const [extraYears, setExtraYears] = useState<string[]>([]);
+  const [newLines, setNewLines] = useState<string[]>([]);
+
+  const thisYear = new Date().getFullYear();
+  let years = Array.from(new Set([...rows.map((r) => r.period), ...extraYears]));
+  for (let i = 0; years.length < 3; i++) years = Array.from(new Set([...years, String(thisYear + i)]));
+  years.sort();
+
+  const dataLabels = Array.from(new Set(rows.map((r) => r.label)));
+  const customLabels = Array.from(new Set([
+    ...dataLabels.filter((l) => !OHADA_PL_LINES.includes(l)),
+    ...newLines.filter((l) => !OHADA_PL_LINES.includes(l)),
+  ]));
+  const lines = [...OHADA_PL_LINES, ...customLabels];
+  const cellOf = (label: string, period: string) => rows.find((r) => r.label === label && r.period === period);
+
+  async function save(label: string, period: string, field: "budget" | "actual", raw: string) {
+    const v = raw.trim();
+    const value = v === "" ? null : Math.round(Number(v.replace(",", ".")) * 1_000_000);
+    if (value !== null && Number.isNaN(value)) return;
+    const existing = cellOf(label, period);
+    const supabase = createClient();
+    if (existing) {
+      if ((field === "budget" ? existing.budget : existing.actual) === value) return;
+      await supabase.from("company_financials").update({ [field]: value }).eq("id", existing.id);
+    } else {
+      if (value === null) return;
+      await supabase.from("company_financials").insert({ company_id: companyId, period, label, [field]: value });
+    }
+    router.refresh();
+  }
+
+  function addYear() {
+    const max = years.reduce((a, y) => Math.max(a, parseInt(y, 10) || 0), thisYear);
+    setExtraYears((e) => [...e, String(max + 1)]);
+  }
+  function addLine() {
+    const name = prompt("Nom du nouveau poste :");
+    if (name?.trim()) setNewLines((l) => [...l, name.trim()]);
+  }
+  async function renameLine(label: string) {
+    const name = prompt("Renommer le poste :", label);
+    if (!name?.trim() || name.trim() === label) return;
+    await createClient().from("company_financials").update({ label: name.trim() }).eq("company_id", companyId).eq("label", label);
+    setNewLines((l) => l.map((x) => (x === label ? name.trim() : x)));
+    router.refresh();
+  }
+  async function clearLine(label: string) {
+    if (!confirm(`Effacer les données du poste « ${label} » ?`)) return;
+    await createClient().from("company_financials").delete().eq("company_id", companyId).eq("label", label);
+    setNewLines((l) => l.filter((x) => x !== label));
+    router.refresh();
+  }
+
+  const th: React.CSSProperties = { padding: "6px 8px", fontSize: 10.5, color: "var(--text-3)", fontWeight: 600, textAlign: "right", whiteSpace: "nowrap" };
+  const inp: React.CSSProperties = { width: 78, padding: "5px 7px", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, fontFamily: "inherit", textAlign: "right", outline: "none", background: "var(--surface)", color: "var(--ink)" };
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Budget vs réalisé <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— par période et par poste</span></div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter une ligne</button>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Budget & business plan <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— grille OHADA, budget vs réalisé, en M FCFA</span></div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-ghost" onClick={addLine}>{iconAdd} Poste</button>
+          <button className="btn btn-primary" onClick={addYear}>{iconAdd} Année</button>
+        </div>
       </div>
-      {rows.length === 0 ? (
-        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucune donnée budgétaire. Ajoutez chiffre d'affaires, EBITDA, résultat net…</div>
-      ) : periods.map((per) => (
-        <div key={per} style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--camel)", marginBottom: 6 }}>{per}</div>
-          <div className="card" style={{ padding: "4px 18px" }}>
-            {rows.filter((r) => r.period === per).map((r, i) => {
-              const ecart = r.budget != null && r.actual != null ? r.actual - r.budget : null;
+
+      <div className="card" style={{ padding: "6px 14px", overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 300 + years.length * 190 }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, textAlign: "left", minWidth: 210 }}>Poste</th>
+              {years.map((y) => (
+                <th key={y} colSpan={2} style={{ ...th, textAlign: "center", borderLeft: "1px solid var(--sep)", color: "var(--camel)", fontSize: 11.5 }}>{y}</th>
+              ))}
+              <th style={{ ...th, width: 40 }}></th>
+            </tr>
+            <tr>
+              <th style={{ ...th, textAlign: "left" }}></th>
+              {years.map((y) => (
+                <React.Fragment key={y}>
+                  <th style={{ ...th, borderLeft: "1px solid var(--sep)" }}>Budget</th>
+                  <th style={th}>Réalisé</th>
+                </React.Fragment>
+              ))}
+              <th style={th}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((label, i) => {
+              const custom = !OHADA_PL_LINES.includes(label);
               return (
-                <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 110px 110px 90px auto", alignItems: "center", gap: 8, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                  <span style={{ fontSize: 13, color: "var(--ink)" }}>{r.label}</span>
-                  <span className="tnum" style={{ fontSize: 12.5, color: "var(--text-2)", textAlign: "right" }}>{r.budget != null ? fmtM(r.budget) : "—"}</span>
-                  <span className="tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", textAlign: "right" }}>{r.actual != null ? fmtM(r.actual) : "—"}</span>
-                  <span className="tnum" style={{ fontSize: 11.5, textAlign: "right", color: ecart == null ? "var(--text-3)" : ecart >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{ecart != null ? `${ecart >= 0 ? "+" : ""}${fmtM(ecart)}` : ""}</span>
-                  <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
-                </div>
+                <tr key={label} style={{ borderTop: i === 0 ? "1px solid var(--border)" : "1px solid var(--sep)" }}>
+                  <td style={{ padding: "6px 8px", fontSize: 12.5, color: "var(--ink)", whiteSpace: "nowrap" }}>
+                    {label}{custom && <span style={{ fontSize: 10, color: "var(--camel)", marginLeft: 6 }}>perso</span>}
+                  </td>
+                  {years.map((y) => {
+                    const c = cellOf(label, y);
+                    const b = c?.budget != null ? c.budget / 1_000_000 : "";
+                    const a = c?.actual != null ? c.actual / 1_000_000 : "";
+                    const off = c?.budget != null && c?.actual != null && c.actual < c.budget;
+                    return (
+                      <React.Fragment key={y}>
+                        <td style={{ padding: "4px 6px", borderLeft: "1px solid var(--sep)" }}>
+                          <input key={`b${label}${y}${b}`} defaultValue={b} onBlur={(e) => save(label, y, "budget", e.target.value)} style={inp} inputMode="decimal" />
+                        </td>
+                        <td style={{ padding: "4px 6px" }}>
+                          <input key={`a${label}${y}${a}`} defaultValue={a} onBlur={(e) => save(label, y, "actual", e.target.value)}
+                            style={{ ...inp, fontWeight: 600, color: off ? "var(--red-fg)" : "var(--ink)" }} inputMode="decimal" />
+                        </td>
+                      </React.Fragment>
+                    );
+                  })}
+                  <td style={{ padding: "4px 2px" }}>
+                    <span className="row-actions">
+                      <button onClick={() => renameLine(label)} title="Renommer le poste">{iconEdit}</button>
+                      <button onClick={() => clearLine(label)} title="Effacer la ligne">{iconDel}</button>
+                    </span>
+                  </td>
+                </tr>
               );
             })}
-          </div>
-        </div>
-      ))}
-      {rows.length > 0 && <div style={{ fontSize: 10.5, color: "var(--text-3)" }}>Colonnes : budget · réalisé · écart.</div>}
-      {modal.open && <BudgetModal companyId={companyId} row={modal.row} onClose={() => setModal({ open: false, row: null })} />}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>
+        Saisie directe en M FCFA (enregistrée en quittant la case). Grille OHADA standard — ajoutez vos propres postes, renommez-les, effacez une ligne. « + Année » ajoute une colonne.
+      </div>
     </div>
   );
 }
