@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { PipelineData, PipelineDeal } from "@/lib/data/pipeline";
 import { fmtM, fmtInt } from "@/lib/format";
 import DealFormModal from "./DealFormModal";
+import SourceAnalysis from "./SourceAnalysis";
 
 const STAGE_COLOR: Record<string, string> = {
   Sourcing: "#8A7256",
@@ -181,6 +182,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
       {modal.open && (
         <DealFormModal deal={modal.deal} programs={data.programs} subSectors={data.subSectors} members={data.members} onClose={() => setModal({ open: false, deal: null })} />
       )}
+      <SourceAnalysis deals={list} />
     </div>
   );
 }

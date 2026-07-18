@@ -10,7 +10,7 @@ import ConvertDealModal from "./ConvertDealModal";
 import RejectDealModal from "./RejectDealModal";
 import CommitteeDocs from "./CommitteeDocs";
 import { setCommitteeValidation } from "@/app/(app)/pipeline/actions";
-import { DEAL_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
+import { DEAL_COMMITTEE_OUTCOMES, isAdvancedStage } from "@/lib/ui-constants";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
@@ -19,6 +19,7 @@ import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
 import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAccess";
+import DealNextStep from "./DealNextStep";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -32,7 +33,16 @@ const STAGE_BADGE: Record<string, { bg: string; fg: string }> = {
 const DECISION_COLOR: Record<string, string> = { Favorable: "#2F6140", "Favorable sous conditions": "#8A5A18", Ajourné: "#6B5744", Défavorable: "#A6412E" };
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 
-const TABS = ["Présentation", "Suivi", "Due diligence", "Comités", "KPIs", "Création de valeur", "ESG", "Documents", "Contacts"];
+// L'ESG et la création de valeur n'ont pas de sens sur un dossier qu'on vient de sourcer :
+// ils encombrent la fiche et laissent croire à un travail qui n'a pas lieu d'être fait.
+const EARLY_TABS = ["Présentation", "Suivi", "Due diligence", "Comités", "KPIs", "Documents", "Contacts"];
+const ADVANCED_ONLY = ["Création de valeur", "ESG"];
+function tabsFor(stage: string | null): string[] {
+  if (!isAdvancedStage(stage)) return EARLY_TABS;
+  const t = [...EARLY_TABS];
+  t.splice(5, 0, ...ADVANCED_ONLY); // juste après les KPIs, avant les documents
+  return t;
+}
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return <div className="card" style={{ padding: "32px 28px" }}><div className="serif" style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>{title}</div><div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>{desc}</div></div>;
@@ -56,6 +66,9 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   const [convertOpen, setConvertOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [stateBusy, setStateBusy] = useState(false);
+  const tabs = tabsFor(deal.stage);
+  // Un dossier peut reculer d'étape : l'onglet ouvert doit rester atteignable.
+  const currentTab = tabs.includes(tab) ? tab : tabs[0];
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
   const converted = !!deal.convertedCompanyId || deal.status === "investi";
 
@@ -182,23 +195,26 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         </button>
       </div>
 
+      <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem}
+        rejected={deal.dealState === "Écarté"} onOpenSuivi={() => setTab("Suivi")} />
+
       <ReadOnlyNotice what="ce dossier" />
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
-        {TABS.map((t) => {
-          const on = t === tab;
+        {tabs.map((t) => {
+          const on = t === currentTab;
           return <button key={t} onClick={() => setTab(t)} style={{ padding: "9px 12px", border: "none", background: "none", cursor: "pointer", fontSize: 12.5, fontWeight: on ? 600 : 500, color: on ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${on ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{t}</button>;
         })}
       </div>
 
-      {tab === "Présentation" && (
+      {currentTab === "Présentation" && (
         <div className="card" style={{ padding: "18px 20px" }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Thèse d'investissement</div>
           <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.65 }}>{deal.thesis || "Non renseignée. Utilisez « Modifier » pour ajouter la thèse d'investissement."}</div>
         </div>
       )}
 
-      {tab === "Comités" && (
+      {currentTab === "Comités" && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Passages en comité <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— un dossier peut repasser plusieurs fois</span></div>
@@ -260,15 +276,15 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         </div>
       )}
 
-      {tab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} users={deal.users} />}
-      {tab === "Due diligence" && <DueDiligenceTab entityType="deal" entityId={deal.id} items={deal.dueDiligence} users={deal.users} />}
-      {tab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} library={deal.kpiLibrary} />}
-      {tab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} contacts={deal.contacts} users={deal.users} />}
-      {tab === "ESG" && <EsgTab entityType="deal" entityId={deal.id} data={deal.esg} users={deal.users} />}
+      {currentTab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} users={deal.users} />}
+      {currentTab === "Due diligence" && <DueDiligenceTab entityType="deal" entityId={deal.id} items={deal.dueDiligence} users={deal.users} />}
+      {currentTab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} library={deal.kpiLibrary} />}
+      {currentTab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} contacts={deal.contacts} users={deal.users} />}
+      {currentTab === "ESG" && <EsgTab entityType="deal" entityId={deal.id} data={deal.esg} users={deal.users} />}
 
-      {tab === "Documents" && <EntityDocuments entityType="deal" entityId={deal.id} entityName={deal.companyName} docs={deal.documents} />}
+      {currentTab === "Documents" && <EntityDocuments entityType="deal" entityId={deal.id} entityName={deal.companyName} docs={deal.documents} />}
 
-      {tab === "Contacts" && <EntityContacts entityType="deal" entityId={deal.id} contacts={deal.contacts} />}
+      {currentTab === "Contacts" && <EntityContacts entityType="deal" entityId={deal.id} contacts={deal.contacts} />}
 
       {comModal.open && <CommitteeFormModal dealId={deal.id} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}

@@ -77,11 +77,11 @@ des instruments de financement, une valorisation et une cap table sans objet.
 
 | Item | Statut | Migration |
 |---|---|---|
-| Stade « pipeline avancé » | à faire | oui |
-| Bloc « Next step » sur le dossier | à faire | oui |
-| « Post-mortem » (analyse des dossiers écartés) | à faire | oui |
-| Masquer ESG & Création de valeur tant que le dossier n'est pas avancé/converti | à faire | non |
-| Analyses par source d'entrée du deal flow | à faire | non |
+| Stade « pipeline avancé » entre Analyse et Due diligence | à tester | 0027 |
+| « Prochaine étape » en tête de dossier — **déduite** de la tâche ouverte la plus proche, sans champ dédié | à tester | non |
+| « Post-mortem » sur les dossiers écartés | à tester | 0027 |
+| ESG & Création de valeur masqués tant que le dossier n'est pas au stade avancé | à tester | non |
+| Analyses par source d'entrée : volume, montant, aboutis, écartés, taux d'aboutissement | à tester | non |
 | **Outil d'import du pipeline** (Médéa fournira des exemples de fichiers) — réutilise l'analyseur de l'import des états financiers | à faire | non |
 | À l'import : **portefeuille / programme non assigné au départ**, assignable ensuite | à faire | non |
 

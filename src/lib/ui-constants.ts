@@ -1,8 +1,18 @@
 // Constantes utilisables côté client (aucune dépendance serveur).
 
-export const DEAL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing", "Investi", "Perdu"];
+export const DEAL_STAGES = ["Sourcing", "Analyse", "Pipeline avancé", "Due Diligence", "Négociation", "Closing", "Investi", "Perdu"];
 // Étapes de l'entonnoir (progression d'un dossier actif) — sans les issues terminales.
-export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Due Diligence", "Négociation", "Closing"];
+export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Pipeline avancé", "Due Diligence", "Négociation", "Closing"];
+
+// À partir de « Pipeline avancé », le dossier est réellement engagé : c'est là que l'ESG et
+// la création de valeur deviennent pertinents. Avant, ils encombrent la fiche sans servir.
+export const DEAL_ADVANCED_FROM = "Pipeline avancé";
+export function isAdvancedStage(stage: string | null | undefined): boolean {
+  const i = DEAL_FUNNEL_STAGES.indexOf(stage ?? "");
+  // Un dossier hors entonnoir (Investi, Perdu) est par définition allé au bout.
+  if (i === -1) return stage === "Investi" || stage === "Perdu";
+  return i >= DEAL_FUNNEL_STAGES.indexOf(DEAL_ADVANCED_FROM);
+}
 // États d'un dossier (situation), distincts de l'étape.
 export const DEAL_STATES = ["Actif", "En veille", "Écarté"];
 // Instruments de financement d'une participation.
