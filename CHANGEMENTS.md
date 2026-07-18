@@ -48,6 +48,10 @@
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
 | **Échéancier consolidé au niveau du fonds** : agrégation de toutes les échéances à venir et des arriérés, toutes sociétés confondues (planification de trésorerie) | à faire | non |
+| **KPIs financiers sortis de RH & Management** (8 indicateurs sectoriels replacés en Financier) | fait | 0019 |
+| **KPIs alignés sur la norme OHADA** : la bande de familles et les libellés suivent le plan OHADA | à faire | oui |
+| **KPIs financiers alimentés automatiquement** depuis les états financiers et la grille Budget & BP — supprimer la double saisie | à faire | possible |
+| **Une société peut appartenir à plusieurs portefeuilles / programmes** simultanément (aujourd'hui un seul, avec historique daté) | à faire | oui |
 
 ---
 
@@ -60,6 +64,8 @@
 | « Post-mortem » (analyse des dossiers écartés) | à faire | oui |
 | Masquer ESG & Création de valeur tant que le dossier n'est pas avancé/converti | à faire | non |
 | Analyses par source d'entrée du deal flow | à faire | non |
+| **Outil d'import du pipeline** (Médéa fournira des exemples de fichiers) — réutilise l'analyseur de l'import des états financiers | à faire | non |
+| À l'import : **portefeuille / programme non assigné au départ**, assignable ensuite | à faire | non |
 
 ---
 
