@@ -14,14 +14,25 @@ const mult = (v: number | null) => (v == null ? "—" : `${v.toFixed(2)}×`);
 export default function FinancialStatementsTab({ companyId, values }: { companyId: string; values: StatementValues }) {
   const router = useRouter();
   const [section, setSection] = useState<OhadaSection>("resultat");
-  const [extraYears, setExtraYears] = useState<number[]>([]);
+  const saved = Object.keys(values).map(Number);
+  // Le remplissage initial (pour toujours proposer au moins YEAR_WINDOW colonnes) est calculé
+  // UNE SEULE FOIS et rangé dans extraYears. Sinon il se recalculait à chaque rendu et un
+  // exercice ajouté à la main faisait disparaître un exercice de remplissage.
+  const [extraYears, setExtraYears] = useState<number[]>(() => {
+    const pad: number[] = [];
+    let y = saved.length ? Math.max(...saved) : new Date().getFullYear();
+    while (saved.length + pad.length < YEAR_WINDOW) {
+      if (!saved.includes(y)) pad.push(y);
+      y--;
+    }
+    return pad;
+  });
   const [hiddenYears, setHiddenYears] = useState<number[]>([]);
 
-  const thisYear = new Date().getFullYear();
-  let allYears = Array.from(new Set([...Object.keys(values).map(Number), ...extraYears]));
-  for (let i = 1; allYears.length < YEAR_WINDOW; i++) allYears = Array.from(new Set([...allYears, thisYear - i]));
   // Les exercices les plus récents s'affichent en premier.
-  allYears = allYears.filter((y) => !hiddenYears.includes(y)).sort((a, b) => b - a);
+  const allYears = Array.from(new Set([...saved, ...extraYears]))
+    .filter((y) => !hiddenYears.includes(y))
+    .sort((a, b) => b - a);
 
   // Toutes les années sont conservées ; la fenêtre en montre quelques-unes à la fois.
   const win = useYearWindow(allYears, "start");

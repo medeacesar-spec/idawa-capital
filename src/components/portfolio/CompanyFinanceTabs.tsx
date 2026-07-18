@@ -40,13 +40,22 @@ function ValoSpark({ valos }: { valos: FlowRow[] }) {
 /* ---------- Budget & BP — grille OHADA (postes × années) ---------- */
 export function BudgetTab({ companyId, rows }: { companyId: string; rows: FinancialRow[] }) {
   const router = useRouter();
-  const [extraYears, setExtraYears] = useState<string[]>([]);
+  const thisYear = new Date().getFullYear();
+  const saved = Array.from(new Set(rows.map((r) => r.period)));
+  // Remplissage initial calculé UNE SEULE FOIS (voir FinancialStatementsTab) : recalculé à
+  // chaque rendu, il faisait disparaître une année dès qu'on en ajoutait une à la main.
+  const [extraYears, setExtraYears] = useState<string[]>(() => {
+    const pad: string[] = [];
+    let y = saved.length ? Math.max(...saved.map((p) => parseInt(p, 10) || thisYear)) : thisYear;
+    while (saved.length + pad.length < YEAR_WINDOW) {
+      if (!saved.includes(String(y))) pad.push(String(y));
+      y++;
+    }
+    return pad;
+  });
   const [newLines, setNewLines] = useState<string[]>([]);
 
-  const thisYear = new Date().getFullYear();
-  let allYears = Array.from(new Set([...rows.map((r) => r.period), ...extraYears]));
-  for (let i = 0; allYears.length < YEAR_WINDOW; i++) allYears = Array.from(new Set([...allYears, String(thisYear + i)]));
-  allYears.sort();
+  const allYears = Array.from(new Set([...saved, ...extraYears])).sort();
 
   // Grille en ordre chronologique : la fenêtre s'ouvre par défaut sur les exercices les plus récents.
   const win = useYearWindow(allYears, "end");
