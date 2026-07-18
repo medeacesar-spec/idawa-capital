@@ -24,8 +24,8 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
 
   const committed = instruments.reduce((a, i) => a + (i.amountCommitted ?? 0), 0);
   const disbursed = instruments.reduce((a, i) => a + (i.amountDisbursed ?? 0), 0);
-  const equityCommitted = instruments.filter((i) => kindOf(i.type) === "equity").reduce((a, i) => a + (i.amountCommitted ?? 0), 0);
-  const debtCommitted = committed - equityCommitted;
+  const byType = (t: string) => instruments.filter((i) => i.type === t).reduce((a, i) => a + (i.amountCommitted ?? 0), 0);
+  const countType = (t: string) => instruments.filter((i) => i.type === t).length;
 
   async function remove(i: Instrument) {
     if (!confirm(`Supprimer l'instrument « ${i.label ?? typeLabel(i.type)} » ?`)) return;
@@ -33,20 +33,23 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
     router.refresh();
   }
 
-  const facts: [string, string][] = [
-    ["Total engagé", fmtM(committed)],
-    ["Total décaissé", fmtM(disbursed)],
-    ["Dont capital", fmtM(equityCommitted)],
-    ["Dont dette", fmtM(debtCommitted)],
+  const nb = (n: number) => (n === 0 ? "—" : `${n} instrument${n > 1 ? "s" : ""}`);
+  const facts: [string, string, string][] = [
+    ["Total engagé", fmtM(committed), nb(instruments.length)],
+    ["Total décaissé", fmtM(disbursed), ""],
+    ["Capital (equity)", fmtM(byType("equity")), nb(countType("equity"))],
+    ["Quasi-equity", fmtM(byType("quasi-equity")), nb(countType("quasi-equity"))],
+    ["Prêt de campagne", fmtM(byType("pret-campagne")), nb(countType("pret-campagne"))],
   ];
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 14 }}>
-        {facts.map(([k, v]) => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 14 }}>
+        {facts.map(([k, v, sub]) => (
           <div key={k} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
             <div style={{ fontSize: 11, color: "var(--text-2)" }}>{k}</div>
             <div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>{v}</div>
+            {sub && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 2 }}>{sub}</div>}
           </div>
         ))}
       </div>
