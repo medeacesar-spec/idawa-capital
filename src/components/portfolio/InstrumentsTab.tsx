@@ -185,11 +185,25 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                 const p = payOf(row.n);
                 const due = p?.invoiced ?? row.payment;
                 const rest = due - (p?.paid ?? 0);
-                const late = !!row.date && row.date <= today && rest > 0.5;
+                const late = !row.settled && !!row.date && row.date <= today && rest > 0.5;
+                if (row.settled) {
+                  return (
+                    <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", opacity: 0.55 }}>
+                      <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
+                      <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
+                      <td colSpan={7} style={{ ...td, textAlign: "left", color: "var(--green-fg)", fontStyle: "italic" }}>
+                        prêt soldé — plus d'échéance due
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)", background: late ? "var(--red-bg)" : undefined }}>
                     <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
-                    <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
+                    <td style={{ ...td, textAlign: "left" }}>
+                      {frDay(row.date)}
+                      {row.actual && <span style={{ marginLeft: 6, fontSize: 9.5, color: "var(--green-fg)", fontWeight: 700 }}>réel</span>}
+                    </td>
                     <td style={td} className="tnum">{fmtN(row.principal)}</td>
                     <td style={td} className="tnum">{fmtN(row.interest)}</td>
                     <td style={{ ...td, fontWeight: 600 }} className="tnum">{fmtN(row.payment)}</td>
@@ -211,7 +225,9 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
             </tbody>
           </table>
           <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 6 }}>
-            Montants en FCFA. Colonnes grises = prévisionnel calculé. Colonnes ambre = réel à saisir (« Facturé » vaut l'échéance prévue si laissé vide). Ligne rouge = échéance passée non soldée.
+            Montants en FCFA. Colonnes grises = prévisionnel, colonnes ambre = réel à saisir (« Facturé » vaut l'échéance prévue si laissé vide). Ligne rouge = échéance passée non soldée.
+            <br />
+            <b>Remboursement anticipé pris en compte</b> : tout encaissement supérieur aux intérêts amortit le capital, et les échéances suivantes sont <b>recalculées sur le solde restant</b>. Si le prêt est soldé avant terme, les échéances restantes s'annulent.
           </div>
         </div>
       )}

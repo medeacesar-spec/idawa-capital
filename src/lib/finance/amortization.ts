@@ -10,6 +10,8 @@ export type ScheduleRow = {
   principal: number;     // amortissement de la période
   interest: number;      // intérêts de la période
   payment: number;       // échéance totale (amortissement + intérêts)
+  actual: boolean;       // true si la ligne reflète un encaissement réel
+  settled: boolean;      // true si le prêt est déjà soldé à cette échéance
 };
 
 export type Schedule = {
@@ -41,31 +43,51 @@ export function computeSchedule(i: Instrument): Schedule | null {
 
   const total = Math.max(1, Math.round(i.durationMonths / mpp));
   const grace = Math.min(total, Math.max(0, Math.round((i.graceMonths ?? 0) / mpp)));
-  const amortPeriods = Math.max(1, total - grace);
-
-  // Annuité constante sur la phase d'amortissement.
-  const annuity = r === 0 ? principal / amortPeriods : (principal * r) / (1 - Math.pow(1 + r, -amortPeriods));
 
   const rows: ScheduleRow[] = [];
   let balance = principal;
   let totalInterest = 0;
   let totalPaid = 0;
+
   for (let n = 1; n <= total; n++) {
+    const date = addMonths(i.firstDueDate, (n - 1) * mpp);
+
+    // Prêt déjà soldé (remboursement anticipé) : plus rien à payer.
+    if (balance <= 0.5) {
+      rows.push({ n, date, balance: 0, principal: 0, interest: 0, payment: 0, actual: false, settled: true });
+      continue;
+    }
+
     const interest = balance * r;
+    const real = i.payments?.find((p) => p.periodNo === n && p.paid != null);
     let principalPart = 0;
     let payment = 0;
-    if (n <= grace) {
+    let actual = false;
+
+    if (real) {
+      // Encaissement réel : tout ce qui dépasse les intérêts amortit le capital.
+      // Un paiement supérieur à l'échéance réduit donc le solde par anticipation.
+      actual = true;
+      payment = real.paid as number;
+      principalPart = Math.min(Math.max(0, payment - interest), balance);
+      balance -= principalPart;
+    } else if (n <= grace) {
       payment = interest; // différé : intérêts seuls
     } else {
-      principalPart = annuity - interest;
-      if (n === total || principalPart > balance) principalPart = balance; // solde final
+      // Échéance prévisionnelle recalculée sur le solde RESTANT et les périodes
+      // restantes : après un remboursement anticipé, les échéances futures baissent.
+      const remaining = total - n + 1;
+      const annuity = r === 0 ? balance / remaining : (balance * r) / (1 - Math.pow(1 + r, -remaining));
+      principalPart = Math.min(annuity - interest, balance);
+      if (n === total) principalPart = balance; // solde final
       payment = principalPart + interest;
       balance -= principalPart;
     }
+
     if (balance < 0.5) balance = 0;
     totalInterest += interest;
     totalPaid += payment;
-    rows.push({ n, date: addMonths(i.firstDueDate, (n - 1) * mpp), balance, principal: principalPart, interest, payment });
+    rows.push({ n, date, balance, principal: principalPart, interest, payment, actual, settled: false });
   }
   return { rows, totalInterest, totalPaid, ratePct, periodsPerYear };
 }
