@@ -44,7 +44,7 @@
 |---|---|---|
 | Performance trimestrielle : CA / EBE / taux d'EBE vs N-1 **et** vs budget (▲▼▬) | à faire | oui |
 | Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | fait | 0015 |
-| **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples au lieu d'un seul) | à faire | oui |
+| **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples) | fait | 0018 |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
 | Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
 | **Échéancier consolidé au niveau du fonds** : agrégation de toutes les échéances à venir et des arriérés, toutes sociétés confondues (planification de trésorerie) | à faire | non |

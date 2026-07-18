@@ -18,9 +18,9 @@ export type OriginNote = { id: string; type: string | null; noteDate: string | n
 
 export type Structuration = {
   ehsSector: string | null;
-  valuationMethodEntry: string | null;
-  valuationMethodCurrent: string | null;
-  exitScenario: string | null;
+  valuationMethodsEntry: string[];
+  valuationMethodsCurrent: string[];
+  exitScenarios: string[];
   exitStrategy: string | null;
   exitMultipleTarget: number | null;
   exitIrrTarget: number | null;
@@ -65,7 +65,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_method_entry, valuation_method_current, exit_scenario, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
+    .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
@@ -116,9 +116,9 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation, instruments, statements,
     structuration: {
       ehsSector: c.ehs_sector ?? null,
-      valuationMethodEntry: c.valuation_method_entry ?? null,
-      valuationMethodCurrent: c.valuation_method_current ?? null,
-      exitScenario: c.exit_scenario ?? null,
+      valuationMethodsEntry: (c.valuation_methods_entry as string[] | null) ?? [],
+      valuationMethodsCurrent: (c.valuation_methods_current as string[] | null) ?? [],
+      exitScenarios: (c.exit_scenarios as string[] | null) ?? [],
       exitStrategy: c.exit_strategy ?? null,
       exitMultipleTarget: c.exit_multiple_target != null ? Number(c.exit_multiple_target) : null,
       exitIrrTarget: c.exit_irr_target != null ? Number(c.exit_irr_target) : null,

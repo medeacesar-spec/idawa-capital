@@ -12,11 +12,11 @@ const h3: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, margin: "0 0 
 
 export default function StructurationTab({ companyId, data }: { companyId: string; data: Structuration }) {
   const router = useRouter();
+  const [vEntry, setVEntry] = useState<string[]>(data.valuationMethodsEntry ?? []);
+  const [vCurrent, setVCurrent] = useState<string[]>(data.valuationMethodsCurrent ?? []);
+  const [exits, setExits] = useState<string[]>(data.exitScenarios ?? []);
   const [f, setF] = useState({
     ehsSector: data.ehsSector ?? "",
-    valuationMethodEntry: data.valuationMethodEntry ?? "",
-    valuationMethodCurrent: data.valuationMethodCurrent ?? "",
-    exitScenario: data.exitScenario ?? "",
     exitStrategy: data.exitStrategy ?? "",
     exitMultipleTarget: data.exitMultipleTarget != null ? String(data.exitMultipleTarget) : "",
     exitIrrTarget: data.exitIrrTarget != null ? String(data.exitIrrTarget) : "",
@@ -37,36 +37,26 @@ export default function StructurationTab({ companyId, data }: { companyId: strin
         <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 12 }}>
           Les valorisations sont établies une fois par an et validées par le comité d'audit — elles ne sont pas suivies en continu.
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Méthode de valorisation à l'acquisition">
-            <Select value={f.valuationMethodEntry} onChange={(e) => { set("valuationMethodEntry", e.target.value); save({ valuation_method_entry: e.target.value || null }); }}>
-              <option value="">— Non définie —</option>
-              {VALUATION_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </Select>
-          </Field>
-          <Field label="Méthode de valorisation à date">
-            <Select value={f.valuationMethodCurrent} onChange={(e) => { set("valuationMethodCurrent", e.target.value); save({ valuation_method_current: e.target.value || null }); }}>
-              <option value="">— Non définie —</option>
-              {VALUATION_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </Select>
-          </Field>
-        </div>
+        <Field label="Méthodes de valorisation à l'acquisition" hint="Plusieurs méthodes possibles">
+          <Chips options={VALUATION_METHODS} selected={vEntry}
+            onToggle={(next) => { setVEntry(next); save({ valuation_methods_entry: next.length ? next : null }); }} />
+        </Field>
+        <Field label="Méthodes de valorisation à date" hint="Plusieurs méthodes possibles">
+          <Chips options={VALUATION_METHODS} selected={vCurrent}
+            onToggle={(next) => { setVCurrent(next); save({ valuation_methods_current: next.length ? next : null }); }} />
+        </Field>
       </div>
 
       <div style={panel}>
         <h3 style={h3}>Piste de sortie</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Scénario de sortie">
-            <Select value={f.exitScenario} onChange={(e) => { set("exitScenario", e.target.value); save({ exit_scenario: e.target.value || null }); }}>
-              <option value="">— Non défini —</option>
-              {EXIT_SCENARIOS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </Select>
-          </Field>
-          <Field label="Année de sortie attendue">
-            <Input type="number" value={f.exitYear} onChange={(e) => set("exitYear", e.target.value)}
-              onBlur={() => save({ exit_year: num(f.exitYear) })} placeholder="Ex : 2029" />
-          </Field>
-        </div>
+        <Field label="Scénarios de sortie envisagés" hint="Plusieurs pistes possibles — cochez toutes celles étudiées">
+          <Chips options={EXIT_SCENARIOS} selected={exits}
+            onToggle={(next) => { setExits(next); save({ exit_scenarios: next.length ? next : null }); }} />
+        </Field>
+        <Field label="Année de sortie attendue">
+          <Input type="number" value={f.exitYear} onChange={(e) => set("exitYear", e.target.value)}
+            onBlur={() => save({ exit_year: num(f.exitYear) })} placeholder="Ex : 2029" />
+        </Field>
         <Field label="Modalités de sortie" hint="Put option ? Avec quelle formule de prix ? Cession à un tiers identifié ? Clauses du pacte…">
           <Textarea rows={4} value={f.exitStrategy} onChange={(e) => set("exitStrategy", e.target.value)}
             onBlur={() => save({ exit_strategy: f.exitStrategy.trim() || null })}
@@ -98,6 +88,28 @@ export default function StructurationTab({ companyId, data }: { companyId: strin
           </Select>
         </Field>
       </div>
+    </div>
+  );
+}
+
+/** Sélection multiple sous forme de puces cochables. */
+function Chips({ options, selected, onToggle }: { options: string[]; selected: string[]; onToggle: (next: string[]) => void }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      {options.map((o) => {
+        const on = selected.includes(o);
+        return (
+          <button key={o} type="button"
+            onClick={() => onToggle(on ? selected.filter((x) => x !== o) : [...selected, o])}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 11.5, fontWeight: on ? 600 : 400,
+              background: on ? "var(--accent-soft)" : "var(--surface)", color: on ? "var(--espresso)" : "var(--text-2)",
+              border: `1px solid ${on ? "var(--camel)" : "var(--border-strong)"}` }}>
+            {on && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+            {o}
+          </button>
+        );
+      })}
     </div>
   );
 }
