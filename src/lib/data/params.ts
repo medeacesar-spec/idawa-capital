@@ -8,7 +8,14 @@ export type ProgramRow = {
   status: string;
 };
 
-export type ProgramIndicator = { id: string; category: string; name: string; unit: string | null; target: number | null };
+export type IndicatorValue = { period: string; value: number | null };
+
+export type ProgramIndicator = {
+  id: string; category: string; name: string; unit: string | null; target: number | null;
+  /** « programme » : saisi tel quel ici. « entreprise » : somme des saisies par société. */
+  scope: string;
+  values: IndicatorValue[];
+};
 export type ProgramConfig = {
   id: string;
   name: string;
@@ -25,7 +32,7 @@ export async function getProgramConfig(id: string): Promise<ProgramConfig | null
   const supabase = await createClient();
   const [pRes, iRes] = await Promise.all([
     supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_families").eq("id", id).single(),
-    supabase.from("program_indicators").select("id, category, name, unit, target").eq("program_id", id).order("position"),
+    supabase.from("program_indicators").select("id, category, name, unit, target, scope, program_indicator_values(period, value)").eq("program_id", id).order("position"),
   ]);
   const p = pRes.data;
   if (!p) return null;
@@ -38,7 +45,13 @@ export async function getProgramConfig(id: string): Promise<ProgramConfig | null
     esgFramework: p.esg_framework,
     esgRequired: p.esg_required ?? true,
     ehsFamilies: (p.ehs_families as string[] | null) ?? [],
-    indicators: (iRes.data ?? []).map((x) => ({ id: x.id, category: x.category, name: x.name, unit: x.unit, target: x.target != null ? Number(x.target) : null })),
+    indicators: (iRes.data ?? []).map((x) => ({
+      id: x.id, category: x.category, name: x.name, unit: x.unit,
+      target: x.target != null ? Number(x.target) : null,
+      scope: (x.scope as string) ?? "entreprise",
+      values: ((x.program_indicator_values ?? []) as { period: string; value: number }[])
+        .map((v) => ({ period: v.period, value: v.value != null ? Number(v.value) : null })),
+    })),
   };
 }
 

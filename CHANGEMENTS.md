@@ -50,8 +50,8 @@ des instruments de financement, une valorisation et une cap table sans objet.
 | Portée des indicateurs : « entreprise » (additionnable) ou « programme » (budget, pourcentages) | à tester | 0024 |
 | Décisions de comité propres à l'accélération : admission, prolongation, sortie, exclusion | à tester | 0025 |
 | Classification E&S déplacée de Structuration vers ESG : elle vaut pour tous les types | à tester | non |
-| **Saisie des indicateurs au niveau programme** (budget, taux d'exécution, pourcentages) | à faire | non |
-| **Agrégation des valeurs entreprise dans le tableau de bord** du programme | à faire | non |
+| Saisie des indicateurs au niveau programme (budget, taux d'exécution, pourcentages) | à tester | non |
+| Agrégation des valeurs entreprise dans le tableau de bord du programme | à tester | non |
 
 ---
 

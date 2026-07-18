@@ -44,11 +44,12 @@ export type DashboardData = {
 export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createClient();
 
-  const [progRes, compRes, dealRes, indRes] = await Promise.all([
+  const [progRes, compRes, dealRes, indRes, civRes] = await Promise.all([
     supabase.from("programs").select("id, name, color, nature, position, status").order("position"),
-    supabase.from("portfolio_companies").select("invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type, origin_deal_id"),
+    supabase.from("portfolio_companies").select("id, invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type, origin_deal_id"),
     supabase.from("deals").select("id, amount, stage, program_id, deal_state"),
-    supabase.from("program_indicators").select("program_id, name, program_indicator_values(period, value)"),
+    supabase.from("program_indicators").select("id, program_id, name, scope, program_indicator_values(period, value)"),
+    supabase.from("company_indicator_values").select("company_id, program_indicator_id, period, value"),
   ]);
 
   // Programmes actifs uniquement (les clos restent consultables au Portefeuille)
@@ -64,13 +65,35 @@ export async function getDashboardData(): Promise<DashboardData> {
   const isActiveDeal = (d: { id: string; stage: string; deal_state?: string | null }) =>
     ACTIVE_STAGES.includes(d.stage) && (d.deal_state ?? "Actif") === "Actif" && !convertedDealIds.has(d.id);
 
-  // Carte : programme -> { nom indicateur : valeur (T2 2026) }
+  // Deux sources selon la portée de l'indicateur :
+  //  · « programme » — la valeur est saisie telle quelle (budget, taux d'exécution, %) ;
+  //  · « entreprise » — elle est la SOMME de ce qui a été saisi sur chaque entreprise
+  //    du programme, ce qui évite de ressaisir un total et de le voir diverger.
+  const companyValues = civRes.data ?? [];
+  const programOfCompany = new Map(allCompanies.map((c) => [c.id as string, c.program_id as string | null]));
+
+  // CHAQUE indicateur suit sa PROPRE dernière période renseignée. Une période unique pour
+  // tous serait piégeuse : une seule saisie dans un trimestre plus récent suffirait à faire
+  // passer tous les autres indicateurs à « — », comme s'ils n'étaient pas renseignés.
   const indMap: Record<string, Record<string, number>> = {};
   for (const pi of indicators) {
-    const vals = (pi.program_indicator_values ?? []) as { period: string; value: number }[];
-    const v = vals.find((x) => x.period === "2026-T2");
-    if (!indMap[pi.program_id]) indMap[pi.program_id] = {};
-    if (v) indMap[pi.program_id][pi.name] = num(v.value);
+    const progId = pi.program_id as string;
+    if (!indMap[progId]) indMap[progId] = {};
+
+    if ((pi.scope as string) === "entreprise") {
+      const mine = companyValues.filter(
+        (v) => v.program_indicator_id === pi.id && programOfCompany.get(v.company_id as string) === progId
+      );
+      if (mine.length === 0) continue;
+      const last = mine.map((v) => v.period as string).sort((a, b) => b.localeCompare(a))[0];
+      const total = mine.filter((v) => v.period === last).reduce((a, v) => a + num(v.value), 0);
+      indMap[progId][pi.name as string] = total;
+    } else {
+      const vals = (pi.program_indicator_values ?? []) as { period: string; value: number }[];
+      if (vals.length === 0) continue;
+      const last = [...vals].sort((a, b) => b.period.localeCompare(a.period))[0];
+      indMap[progId][pi.name as string] = num(last.value);
+    }
   }
 
   const progMetrics: ProgramMetrics[] = programs.map((p) => {

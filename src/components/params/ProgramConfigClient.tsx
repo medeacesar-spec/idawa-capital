@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ProgramConfig, ProgramIndicator } from "@/lib/data/params";
 import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES } from "@/lib/ui-constants";
 import { Field, Input, Select } from "@/components/ui/form";
+import ProgramIndicatorValues from "./ProgramIndicatorValues";
 
 const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 };
 const h3: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, margin: "0 0 4px", color: "var(--ink)" };
@@ -33,8 +34,8 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
   async function addIndicator(category: string, indName: string, unit: string) {
     const { data } = await supabase.from("program_indicators")
       .insert({ program_id: config.id, category, name: indName, unit, position: inds.length })
-      .select("id, category, name, unit, target").single();
-    if (data) setInds((x) => [...x, { id: data.id, category: data.category, name: data.name, unit: data.unit, target: null }]);
+      .select("id, category, name, unit, target, scope").single();
+    if (data) setInds((x) => [...x, { id: data.id, category: data.category, name: data.name, unit: data.unit, target: null, scope: data.scope ?? "entreprise", values: [] }]);
   }
   async function removeIndicator(id: string) {
     await supabase.from("program_indicators").delete().eq("id", id);
@@ -74,6 +75,13 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
           </Field>
         </div>
       </div>
+
+      {/* Saisie des valeurs : distincte du choix des indicateurs, plus haut. */}
+      {showAccomp && inds.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <ProgramIndicatorValues indicators={inds} />
+        </div>
+      )}
 
       {/* Indicateurs d'accompagnement */}
       {showAccomp && (
