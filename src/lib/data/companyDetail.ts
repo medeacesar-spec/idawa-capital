@@ -43,6 +43,11 @@ export type CompanyDetail = {
   investedDate: string | null;
   programName: string | null;
   programColor: string | null;
+  /** Programmes de la société : le principal en tête, puis les rattachements simultanés. */
+  programs: { id: string; name: string; color: string | null; principal: boolean }[];
+  /** Programmes ouverts, pour proposer un rattachement supplémentaire. */
+  programOptions: { id: string; name: string; color: string | null }[];
+  programId: string | null;
   originDealId: string | null;
   originDealName: string | null;
   originCommittees: OriginCommittee[];
@@ -104,6 +109,22 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   }));
 
   const prog = progRes.data as { name?: string; color?: string } | null;
+
+  // Rattachements en cours, principal compris : une société peut relever de plusieurs
+  // programmes à la fois, et les afficher tous évite de croire qu'elle n'en a qu'un.
+  const [{ data: memRows }, { data: allProgs }] = await Promise.all([
+    supabase.from("program_memberships").select("program_id").eq("entity_type", "company").eq("entity_id", id).is("date_end", null),
+    supabase.from("programs").select("id, name, color, status, position").order("position"),
+  ]);
+  const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
+  const ids = Array.from(new Set([
+    ...(c.program_id ? [c.program_id as string] : []),
+    ...(memRows ?? []).map((m) => m.program_id as string).filter(Boolean),
+  ]));
+  const programs = ids.map((pid) => {
+    const p = progById.get(pid);
+    return { id: pid, name: (p?.name as string) ?? "—", color: (p?.color as string) ?? null, principal: pid === c.program_id };
+  });
   return {
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
     status: c.status, trackingType: c.tracking_type ?? "equity",
@@ -111,6 +132,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     tvpi: computeTvpi(Number(c.invested_amount ?? 0), Number(c.current_valuation ?? 0), 0, c.tvpi != null ? Number(c.tvpi) : null), tri: c.tri != null ? Number(c.tri) : null,
     ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
     investedDate: c.invested_date, programName: prog?.name ?? null, programColor: prog?.color ?? null,
+    programs,
+    programOptions: (allProgs ?? [])
+      .filter((p) => (p as { status?: string }).status !== "Clos")
+      .map((p) => ({ id: p.id as string, name: p.name as string, color: (p.color as string) ?? null })),
+    programId: c.program_id ?? null,
     originDealId: c.origin_deal_id ?? null,
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),

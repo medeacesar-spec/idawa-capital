@@ -112,7 +112,7 @@ export default function PortfolioClient({ data, canEdit = true }: { data: Portfo
 
   const active = data.programs.filter((p) => p.status !== "Clos");
   const closed = data.programs.filter((p) => p.status === "Clos");
-  const byProgram = scope === "all" ? data.companies.filter((c) => c.programStatus !== "Clos") : data.companies.filter((c) => c.programId === scope);
+  const byProgram = scope === "all" ? data.companies.filter((c) => c.programStatus !== "Clos") : data.companies.filter((c) => (c.programIds?.length ? c.programIds.includes(scope) : c.programId === scope));
   const closedCount = byProgram.filter(isClosedCompany).length;
   const list = byProgram.filter((c) =>
     status === "toutes" ? true : status === "closes" ? isClosedCompany(c) : !isClosedCompany(c)

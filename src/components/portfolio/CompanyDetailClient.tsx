@@ -22,6 +22,7 @@ import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
 import SupportTab from "./SupportTab";
+import ProgramMemberships from "./ProgramMemberships";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
@@ -136,7 +137,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       {/* Tags */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {company.sector && <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: "var(--espresso)", color: "#fff" }}>{company.sector}</span>}
-        {company.programName && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: "var(--surface)", color: "var(--text-2)", border: "1px solid var(--border-strong)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: company.programColor ?? "var(--text-3)" }} />{company.programName}</span>}
+        <ProgramMemberships companyId={company.id} programs={company.programs} options={company.programOptions} />
       </div>
 
       {/* Facts */}

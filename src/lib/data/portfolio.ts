@@ -15,6 +15,8 @@ export type PortfolioCompany = {
   investedDate: string | null;
   subSectorId: string | null;
   programId: string | null;
+  /** Tous les programmes dont la société relève actuellement, principal compris. */
+  programIds: string[];
   programName: string | null;
   programColor: string | null;
   programStatus: string | null;
@@ -33,7 +35,7 @@ export type PortfolioData = {
 export async function getPortfolioData(): Promise<PortfolioData> {
   const supabase = await createClient();
 
-  const [compRes, progRes, subRes, indRes] = await Promise.all([
+  const [compRes, progRes, subRes, indRes, memRes] = await Promise.all([
     supabase
       .from("portfolio_companies")
       .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, program_id, primary_sub_sector_id, invested_date, ehs_sector")
@@ -41,9 +43,18 @@ export async function getPortfolioData(): Promise<PortfolioData> {
     supabase.from("programs").select("id, name, color, status, position, ehs_families").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
     supabase.from("industries").select("id, name"),
+    // Adhésions en cours : une société peut relever de plusieurs programmes à la fois.
+    supabase.from("program_memberships").select("entity_id, program_id").eq("entity_type", "company").is("date_end", null),
   ]);
 
   const programs = progRes.data ?? [];
+  // Programmes de chaque société : le principal (program_id) plus toute adhésion ouverte.
+  const memberships = new Map<string, string[]>();
+  for (const m of memRes.data ?? []) {
+    const list = memberships.get(m.entity_id as string) ?? [];
+    if (m.program_id && !list.includes(m.program_id as string)) list.push(m.program_id as string);
+    memberships.set(m.entity_id as string, list);
+  }
   const progMap = new Map(programs.map((p) => [p.id, p]));
   const subMap = new Map((subRes.data ?? []).map((s) => [s.id, s.name]));
   const indMap = new Map((indRes.data ?? []).map((i) => [i.id, i.name]));
@@ -65,6 +76,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
       investedDate: c.invested_date,
       subSectorId: c.primary_sub_sector_id,
       programId: c.program_id,
+      programIds: Array.from(new Set([...(c.program_id ? [c.program_id] : []), ...(memberships.get(c.id) ?? [])])),
       programName: prog?.name ?? null,
       programColor: prog?.color ?? null,
       programStatus: prog?.status ?? null,
