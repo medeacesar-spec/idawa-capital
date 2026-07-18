@@ -85,6 +85,64 @@ export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "
 // Données financières société
 export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net", "Trésorerie", "Dette nette", "Effectif"];
 
+// Secteurs EHS (directives IFC), adaptés aux PME d'Afrique de l'Ouest.
+export const EHS_SECTORS: { group: string; items: string[] }[] = [
+  {
+    group: "Agriculture & production alimentaire",
+    items: [
+      "Cultures annuelles", "Cultures pérennes", "Maraîchage & horticulture",
+      "Coton & égrenage", "Café & cacao", "Anacarde & fruits secs", "Palmier à huile",
+      "Élevage & volailles", "Produits laitiers", "Abattoirs & viande",
+      "Aquaculture & pêche", "Transformation du poisson",
+      "Transformation agroalimentaire", "Huileries & corps gras", "Meunerie & céréales",
+      "Sucrerie", "Brasserie & boissons", "Stockage, séchage & conditionnement",
+    ],
+  },
+  {
+    group: "Industrie manufacturière",
+    items: [
+      "Fabrication générale", "Textile & habillement", "Cuir & tannerie",
+      "Travail des métaux & métallurgie", "Matériaux de construction (ciment, briques)",
+      "Verre & céramique", "Plastiques & emballages", "Bois & menuiserie",
+      "Papier, imprimerie & carton", "Chimie & produits chimiques",
+      "Savonnerie & détergents", "Peintures & vernis", "Pharmacie & cosmétiques",
+      "Recyclage & valorisation des matières",
+    ],
+  },
+  {
+    group: "Énergie",
+    items: [
+      "Solaire photovoltaïque", "Mini-réseaux & hors-réseau", "Biomasse & biogaz",
+      "Bioéthanol & biocarburants", "Hydroélectricité", "Éolien",
+      "Production thermique", "Transport & distribution d'électricité",
+      "Stockage & batteries",
+    ],
+  },
+  {
+    group: "Infrastructures & transport",
+    items: [
+      "Eau & assainissement", "Gestion des déchets", "Construction & BTP",
+      "Immobilier", "Routes & ouvrages", "Ports & aéroports",
+      "Transport & logistique", "Télécommunications", "Centres de données",
+    ],
+  },
+  {
+    group: "Services",
+    items: [
+      "Santé (établissements de soins)", "Laboratoires d'analyses", "Éducation & formation",
+      "Tourisme & hôtellerie", "Restauration", "Commerce & distribution",
+      "Services financiers & microfinance", "Assurance",
+      "Services numériques & technologies", "Médias & communication",
+      "Blanchisserie & pressing", "Services aux entreprises",
+    ],
+  },
+  {
+    group: "Industries extractives",
+    items: ["Mines & carrières", "Sable & granulats", "Orpaillage & or artisanal", "Pétrole & gaz"],
+  },
+];
+export const EHS_SECTOR_OTHER = "Autre (préciser)";
+
 // Grille standard du compte de résultat OHADA / SIG — base modifiable du Budget & BP.
 export const OHADA_PL_LINES = [
   "Chiffre d'affaires",

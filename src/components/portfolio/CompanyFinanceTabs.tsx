@@ -94,7 +94,11 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
   }
 
   const th: React.CSSProperties = { padding: "6px 8px", fontSize: 10.5, color: "var(--text-3)", fontWeight: 600, textAlign: "right", whiteSpace: "nowrap" };
-  const inp: React.CSSProperties = { width: 78, padding: "5px 7px", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, fontFamily: "inherit", textAlign: "right", outline: "none", background: "var(--surface)", color: "var(--ink)" };
+  // en-tête de sous-colonne : le padding droit compense celui de la cellule + celui du champ,
+  // pour que « Budget » / « Réalisé » tombent pile au-dessus des chiffres.
+  const thSub: React.CSSProperties = { ...th, padding: "6px 13px 6px 6px", width: 104 };
+  const tdCell: React.CSSProperties = { padding: "4px 6px", width: 104 };
+  const inp: React.CSSProperties = { width: "100%", padding: "5px 7px", border: "1px solid var(--border)", borderRadius: 7, fontSize: 12, fontFamily: "inherit", textAlign: "right", outline: "none", background: "var(--surface)", color: "var(--ink)" };
 
   return (
     <div>
@@ -120,8 +124,8 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
               <th style={{ ...th, textAlign: "left" }}></th>
               {years.map((y) => (
                 <React.Fragment key={y}>
-                  <th style={{ ...th, borderLeft: "1px solid var(--sep)" }}>Budget</th>
-                  <th style={th}>Réalisé</th>
+                  <th style={{ ...thSub, borderLeft: "1px solid var(--sep)" }}>Budget</th>
+                  <th style={thSub}>Réalisé</th>
                 </React.Fragment>
               ))}
               <th style={th}></th>
@@ -142,10 +146,10 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
                     const off = c?.budget != null && c?.actual != null && c.actual < c.budget;
                     return (
                       <React.Fragment key={y}>
-                        <td style={{ padding: "4px 6px", borderLeft: "1px solid var(--sep)" }}>
+                        <td style={{ ...tdCell, borderLeft: "1px solid var(--sep)" }}>
                           <input key={`b${label}${y}${b}`} defaultValue={b} onBlur={(e) => save(label, y, "budget", e.target.value)} style={inp} inputMode="decimal" />
                         </td>
-                        <td style={{ padding: "4px 6px" }}>
+                        <td style={tdCell}>
                           <input key={`a${label}${y}${a}`} defaultValue={a} onBlur={(e) => save(label, y, "actual", e.target.value)}
                             style={{ ...inp, fontWeight: 600, color: off ? "var(--red-fg)" : "var(--ink)" }} inputMode="decimal" />
                         </td>

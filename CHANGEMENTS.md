@@ -1,49 +1,95 @@
-# Changements à faire — Idawa Capital
+# Plan de déploiement — Idawa Capital
 
-Objectif-nord : **coller au système opérationnel I&P/IPDEV** et **sortir les rapports en un clic** aux formats des modèles partagés (fiche entreprise trimestrielle, rapport ESG & Impact annuel).
+**Objectif-nord** : coller au système opérationnel **I&P / IPDEV** et sortir les rapports **en un clic** aux formats des modèles partagés (fiche entreprise trimestrielle, rapport ESG & Impact annuel).
 
-**Priorités** : `P1` = à faire maintenant · `P2` = ensuite · `P3` = plus tard
+> **Règle de gestion des demandes** : toute nouvelle demande est **rattachée à la phase qui lui correspond**. Si elle n'entre dans aucune des phases existantes, on **ouvre une phase suivante** (Phase 5, 6…). On ne tient pas de liste à plat en parallèle.
+
 **Statuts** : `à faire` · `en cours` · `à tester` · `fait`
 
 ---
 
-## À faire
+## Phase 0 — Quick wins ✅ *terminée*
 
-| # | Changement | Priorité | Statut | Migration ? |
-|---|---|---|---|---|
-| C1 | **Secteur EHS** (Paramètres du fonds → Paramètres ESG) : remplacer le texte libre par une **liste déroulante** IFC | P1 | à faire | non |
-| C2 | **1b-2 — Suivi des créances réelles** : facturation, encaissements, arriérés par échéance (comparé au prévisionnel) | P1 | à faire | oui |
-| C3 | **Décisions portefeuille étendues** : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | P2 | à faire | oui |
-| C4 | **1c — Réorganisation fiche société** : séparer Investissement / Valorisation / Performance / Structuration | P2 | à faire | possible |
-| C5 | **1d — Moteur OHADA** : saisie des états financiers → SIG, bilan fonctionnel, ratios automatiques | P2 | à faire | oui |
-| C6 | **Performance trimestrielle** : CA / EBE / taux EBE comparés vs N-1 **et** vs budget (▲▼▬) | P2 | à faire | oui |
-| C7 | **Structuration & sortie** : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | P2 | à faire | oui |
-| C8 | **Pipeline avancé** : stade « pipeline avancé », Next step, Post-mortem, masquer ESG/Création de valeur en amont | P3 | à faire | oui |
-| C9 | **Impact IPDEV2** : indicateurs alignés sur la feuille Impact de la fiche I&P | P3 | à faire | oui |
-| C10 | **Exports 1 clic** : fiche entreprise (trimestrielle) + rapport ESG & Impact (annuel) | P3 | à faire | non |
+| Item | Statut |
+|---|---|
+| Terminologie « valeur » → « valorisation » | fait |
+| Documents triés (Récents / A→Z) + dates, à chaque niveau | fait |
+| Source d'entrée du dossier (+ précision/nom) | fait |
+| Valo pré-money & date de closing masquées (champs avancés) | fait |
+| Une date sur chaque événement (tâches, DD, création de valeur, ESG) | fait |
+
+---
+
+## Phase 1 — Socle : instruments & données financières
+
+| Item | Statut | Migration |
+|---|---|---|
+| **1a** — Modèle instruments (capital / quasi-equity / prêt de campagne) + onglet Investissement | fait | 0012 |
+| **1b-1** — Échéancier d'amortissement calculé (différé, annuités, taux plafonné) | fait | non |
+| **Budget & BP** — grille OHADA en colonnes d'années, saisie directe, postes modifiables | fait | non |
+| **Résumé Investissement** séparé par les 3 types d'instruments | fait | non |
+| **Secteur EHS** — liste déroulante IFC (Paramètres du fonds → Paramètres ESG) | fait | non |
+| **1b-2** — Suivi des créances réelles : facturation, encaissements, arriérés vs prévisionnel | à faire | oui |
+| **1c** — Réorganisation fiche société : Investissement / Valorisation / Performance / Structuration | à faire | possible |
+| **1d** — Moteur OHADA : saisie des états financiers → SIG, bilan fonctionnel, ratios | à faire | oui |
+
+---
+
+## Phase 2 — Performance & structuration
+
+| Item | Statut | Migration |
+|---|---|---|
+| Performance trimestrielle : CA / EBE / taux d'EBE vs N-1 **et** vs budget (▲▼▬) | à faire | oui |
+| Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | à faire | oui |
+| Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète (+ dépréciation, restructuration, conversion, distribution) | à faire | oui |
+| Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
+
+---
+
+## Phase 3 — Pipeline avancé
+
+| Item | Statut | Migration |
+|---|---|---|
+| Stade « pipeline avancé » | à faire | oui |
+| Bloc « Next step » sur le dossier | à faire | oui |
+| « Post-mortem » (analyse des dossiers écartés) | à faire | oui |
+| Masquer ESG & Création de valeur tant que le dossier n'est pas avancé/converti | à faire | non |
+| Analyses par source d'entrée du deal flow | à faire | non |
+
+---
+
+## Phase 4 — Impact & reporting
+
+| Item | Statut | Migration |
+|---|---|---|
+| Indicateurs d'impact IPDEV2 alignés sur la fiche I&P (emplois, genre, formalisation, producteurs…) | à faire | oui |
+| Contenu qualitatif (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
+| **Export fiche entreprise** (trimestriel, format I&P) | à faire | non |
+| **Export rapport ESG & Impact** (annuel, modèle IPDEV) | à faire | non |
 
 ---
 
 ## Ordre de test après chaque déploiement
 
-À dérouler dans cet ordre — c'est le chemin critique de l'application :
+Le chemin critique de l'application, à dérouler dans cet ordre :
 
-1. **Connexion** → tableau de bord s'affiche.
-2. **Pipeline** → la liste des dossiers apparaît (onglets En cours / En veille / Clôturés).
+1. **Connexion** → le tableau de bord s'affiche.
+2. **Pipeline** → la liste des dossiers apparaît (En cours / En veille / Clôturés).
 3. **Ouvrir un dossier** → les onglets se chargent (Comités, Suivi, KPIs…).
 4. **Portefeuille** → la liste des sociétés apparaît (En portefeuille / Sorties & radiées).
 5. **Ouvrir une société** → onglet **Investissement** (instruments + échéancier), puis **Budget & BP** (grille OHADA).
 6. **Créer / modifier** un élément (dossier, instrument, ligne budgétaire) → l'enregistrement fonctionne.
 7. **Paramètres du fonds** → la configuration d'un programme s'ouvre.
 
-> ⚠️ Règle apprise : **toute migration doit être appliquée en base AVANT de pousser le code** qui lit la nouvelle colonne, sinon la page concernée se vide (incident du 13/07 sur le pipeline).
+> ⚠️ **Règle apprise** : toute migration doit être **appliquée en base avant** de pousser le code qui lit la nouvelle colonne — sinon la page concernée se vide (incident du 13/07 sur le pipeline).
 
 ---
 
-## Fait récemment
+## Jeux de données de test
 
-- Phase 0 : terminologie « valorisation », documents triés & datés, source d'entrée (+ précision), champs avancés masqués, date sur chaque événement.
-- Phase 1a : modèle **instruments** (capital / quasi-equity / prêt de campagne) + onglet Investissement.
-- Phase 1b-1 : **échéancier d'amortissement** calculé (différé, annuités, taux plafonné).
-- **Budget & BP** : grille OHADA en colonnes d'années, saisie directe, postes personnalisables.
-- Jeux de test rejouables : `scripts/seed_test_instruments.mjs`, `scripts/seed_test_financials.mjs`.
+Rejouables et idempotents, à lancer depuis la racine du projet :
+
+```
+node scripts/seed_test_instruments.mjs   # 3 sociétés, 7 instruments variés
+node scripts/seed_test_financials.mjs    # 3 sociétés × 3 années × 12 postes OHADA
+```
