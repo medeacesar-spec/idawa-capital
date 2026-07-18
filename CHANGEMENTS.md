@@ -50,7 +50,7 @@
 | **Échéancier consolidé au niveau du fonds** : agrégation de toutes les échéances à venir et des arriérés, toutes sociétés confondues (planification de trésorerie) | à faire | non |
 | **KPIs financiers sortis de RH & Management** (8 indicateurs sectoriels replacés en Financier) | fait | 0019 |
 | **KPIs alignés sur la norme OHADA** : la bande de familles et les libellés suivent le plan OHADA | à faire | oui |
-| **KPIs financiers alimentés automatiquement** depuis les états financiers et la grille Budget & BP — supprimer la double saisie | à faire | possible |
+| **KPIs financiers alimentés automatiquement** depuis les états financiers (bouton « Alimenter » sur l'onglet KPIs) — supprimer la double saisie. *Reste : reprise depuis la grille Budget & BP* | à tester | non |
 | **Une société peut appartenir à plusieurs portefeuilles / programmes** simultanément (aujourd'hui un seul, avec historique daté) | à faire | oui |
 
 ---
