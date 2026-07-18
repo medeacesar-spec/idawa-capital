@@ -54,8 +54,11 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
     return pad;
   });
   const [newLines, setNewLines] = useState<string[]>([]);
+  const [hiddenYears, setHiddenYears] = useState<string[]>([]);
 
-  const allYears = Array.from(new Set([...saved, ...extraYears])).sort();
+  const allYears = Array.from(new Set([...saved, ...extraYears]))
+    .filter((y) => !hiddenYears.includes(y))
+    .sort();
 
   // Grille en ordre chronologique : la fenêtre s'ouvre par défaut sur les exercices les plus récents.
   const win = useYearWindow(allYears, "end");
@@ -85,12 +88,18 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
     router.refresh();
   }
 
-  function addYear() {
-    const max = allYears.reduce((a, y) => Math.max(a, parseInt(y, 10) || 0), thisYear);
-    const next = String(max + 1);
+  // Retirer une colonne ne supprime rien en base : l'année disparaît seulement de l'écran.
+  function hideYear(y: string) {
+    setHiddenYears((h) => [...h, y]);
+    setExtraYears((e) => e.filter((x) => x !== y));
+  }
+  function addYear(delta: 1 | -1) {
+    const nums = allYears.map((y) => parseInt(y, 10) || thisYear);
+    const next = String((delta === 1 ? Math.max(...nums) : Math.min(...nums)) + delta);
     const updated = Array.from(new Set([...allYears, next])).sort();
-    setExtraYears((e) => [...e, next]);
-    win.reveal(updated.indexOf(next), updated.length); // faire défiler jusqu'au nouvel exercice
+    setHiddenYears((h) => h.filter((x) => x !== next));
+    setExtraYears((e) => (e.includes(next) ? e : [...e, next]));
+    win.reveal(updated.indexOf(next), updated.length); // faire défiler jusqu'à la nouvelle année
   }
   function addLine() {
     const name = prompt("Nom du nouveau poste :");
@@ -124,7 +133,8 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <YearNav win={win} label="années" />
           <button className="btn btn-ghost" onClick={addLine}>{iconAdd} Poste</button>
-          <button className="btn btn-primary" onClick={addYear}>{iconAdd} Année</button>
+          <button className="btn" onClick={() => addYear(-1)}>{iconAdd} Année antérieure</button>
+          <button className="btn btn-primary" onClick={() => addYear(1)}>{iconAdd} Année postérieure</button>
         </div>
       </div>
 
@@ -134,7 +144,17 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
             <tr>
               <th style={{ ...th, textAlign: "left", minWidth: 210 }}>Poste</th>
               {years.map((y) => (
-                <th key={y} colSpan={2} style={{ ...th, textAlign: "center", borderLeft: "1px solid var(--sep)", color: "var(--camel)", fontSize: 11.5 }}>{y}</th>
+                <th key={y} colSpan={2} style={{ ...th, textAlign: "center", borderLeft: "1px solid var(--sep)", color: "var(--camel)", fontSize: 11.5 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    {y}
+                    {allYears.length > 1 && (
+                      <button onClick={() => hideYear(y)} title={`Retirer l'année ${y} de l'affichage`} aria-label={`Retirer l'année ${y}`}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--text-3)", padding: 0, lineHeight: 1, display: "flex" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                      </button>
+                    )}
+                  </span>
+                </th>
               ))}
               <th style={{ ...th, width: 40 }}></th>
             </tr>
@@ -187,7 +207,7 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
         </table>
       </div>
       <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>
-        Saisie directe en M FCFA (enregistrée en quittant la case). Grille OHADA standard — ajoutez vos propres postes, renommez-les, effacez une ligne. « + Année » ajoute une colonne ; les flèches font défiler les exercices, aucune année n&apos;est perdue.
+        Saisie directe en M FCFA (enregistrée en quittant la case). Grille OHADA standard — ajoutez vos propres postes, renommez-les, effacez une ligne. Ajoutez une année <b>antérieure</b> ou <b>postérieure</b>, retirez une colonne avec la croix (l&apos;affichage seul, rien n&apos;est effacé) ; les flèches font défiler, aucune année n&apos;est perdue.
       </div>
     </div>
   );

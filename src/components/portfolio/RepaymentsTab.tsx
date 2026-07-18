@@ -178,7 +178,9 @@ export default function RepaymentsTab({ instruments }: { instruments: Instrument
           const i = x.instrument;
           const progress = x.totalDue > 0 ? Math.min(1, x.collected / x.totalDue) : 0;
           const history = i.payments
-            .filter((p) => (p.paid ?? 0) > 0)
+            // Un encaissement saisi à 0 est un IMPAYÉ CONSTATÉ : il fait partie de
+            // l'historique au même titre qu'un versement. Seul le champ vide est ignoré.
+            .filter((p) => p.paid != null)
             .sort((a, b) => (b.paidDate ?? b.dueDate ?? "").localeCompare(a.paidDate ?? a.dueDate ?? ""));
           const open = openHistory === i.id;
           return (
@@ -261,7 +263,9 @@ export default function RepaymentsTab({ instruments }: { instruments: Instrument
                             <td style={{ padding: "5px 8px", fontSize: 11.5, color: "var(--ink)" }}>{frDay(p.dueDate)}</td>
                             <td style={{ padding: "5px 8px", fontSize: 11.5, color: "var(--ink)" }}>{frDay(p.paidDate)}</td>
                             <td className="tnum" style={{ padding: "5px 8px", fontSize: 11.5, textAlign: "right", color: "var(--text-2)" }}>{p.invoiced != null ? fmtM(p.invoiced) : "—"}</td>
-                            <td className="tnum" style={{ padding: "5px 8px", fontSize: 11.5, textAlign: "right", fontWeight: 600, color: "var(--green-fg)" }}>{fmtM(p.paid ?? 0)}</td>
+                            <td className="tnum" style={{ padding: "5px 8px", fontSize: 11.5, textAlign: "right", fontWeight: 600, color: (p.paid ?? 0) > 0 ? "var(--green-fg)" : "var(--red-fg)" }}>
+                              {(p.paid ?? 0) > 0 ? fmtM(p.paid ?? 0) : "impayé"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

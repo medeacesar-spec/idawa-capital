@@ -223,7 +223,8 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                         onBlur={(e) => savePayment(row.n, row.date, "amount_invoiced", e.target.value)} style={inp} inputMode="numeric" />
                     </td>
                     <td style={td}>
-                      <input key={`p${row.n}${p?.paid ?? ""}`} defaultValue={p?.paid ?? ""}
+                      <input key={`p${row.n}${p?.paid ?? ""}`} defaultValue={p?.paid ?? ""} placeholder="—"
+                        title="Laisser vide = non renseigné. Saisir 0 = impayé constaté."
                         onBlur={(e) => savePayment(row.n, row.date, "amount_paid", e.target.value)} style={inp} inputMode="numeric" />
                     </td>
                     <td style={{ ...td, textAlign: "left" }}>
@@ -247,7 +248,7 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
             <br />
             <b>Le réel commande le prévisionnel.</b> Payé <b>plus</b> que dû : l&apos;échéance est soldée, le surplus amortit le capital et les échéances suivantes <b>baissent</b> — jusqu&apos;à solder le prêt avant terme. Payé <b>moins</b> que dû : l&apos;échéance passe en <b>partielle</b>, le manque reste dû et les échéances suivantes <b>remontent</b>. Rien encaissé : échéance <b>manquée</b>, le capital ne s&apos;amortit pas.
             <br />
-            « Non saisie » = échéance passée dont on ignore le sort : ce n&apos;est pas un impayé, c&apos;est une ligne à renseigner. La <b>date de paiement</b> alimente le retard moyen et donc le comportement de paiement.
+            <b>Champ vide ≠ 0.</b> « Encaissé » laissé vide = échéance <b>non renseignée</b>, simplement à documenter, et l&apos;amortissement prévu est projeté. Saisir <b>0</b> = <b>impayé constaté</b> : l&apos;échéance passe en « manquée », le capital ne s&apos;amortit pas et les échéances suivantes remontent. La <b>date de paiement</b> alimente le retard moyen, donc le comportement de paiement.
           </div>
         </div>
       )}
