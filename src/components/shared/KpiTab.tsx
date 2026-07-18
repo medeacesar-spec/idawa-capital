@@ -7,7 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { KPI_DIMENSIONS, KPI_DIM_LABEL, KPI_DIM_COLOR, KPI_DIRECTIONS } from "@/lib/ui-constants";
 import type { KpiSeries, LibraryKpi } from "@/lib/data/kpis";
-import { derive } from "@/lib/finance/kpiSources";
+import { derive, budgetTarget, type BudgetRow } from "@/lib/finance/kpiSources";
 import KpiAutoFillModal from "./KpiAutoFillModal";
 
 function shortPeriod(p: string) { const m = p.match(/(\d{4})-?T?(\d)?/); return m && m[2] ? `T${m[2]}-${m[1].slice(2)}` : p; }
@@ -32,7 +32,7 @@ function Chart({ k }: { k: KpiSeries }) {
   );
 }
 
-export default function KpiTab({ entityType, entityId, kpis, library, statements }: {
+export default function KpiTab({ entityType, entityId, kpis, library, statements, budget }: {
   entityType: "deal" | "company";
   entityId: string;
   kpis: KpiSeries[];
@@ -40,6 +40,8 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
   /** États financiers OHADA de la société, quand ils existent : ils permettent de reprendre
    *  les KPIs financiers sans les ressaisir. Absents sur un dossier. */
   statements?: Record<number, Record<string, number>>;
+  /** Grille Budget & BP : complète les exercices sans états financiers et fournit les cibles. */
+  budget?: BudgetRow[];
 }) {
   const router = useRouter();
   const present = Array.from(new Set(kpis.map((k) => k.category)));
@@ -53,7 +55,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
   const inCat = kpis.filter((k) => k.category === cat);
   // Nombre de KPIs suivis dont la valeur est déjà contenue dans les états financiers.
   const derivable = statements
-    ? kpis.filter((k) => derive(k.name, statements).length > 0).length
+    ? kpis.filter((k) => derive(k.name, statements, budget ?? []).length > 0 || budgetTarget(k.name, budget ?? []) != null).length
     : 0;
 
   async function delKpi(id: string) {
@@ -76,9 +78,9 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {derivable > 0 && (
             <button className="btn" onClick={() => setAutoFill(true)}
-              title="Reprendre les KPIs financiers depuis les états financiers déjà saisis">
+              title="Reprendre les KPIs financiers depuis les états financiers et la grille Budget &amp; BP">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></svg>
-              Alimenter depuis les états financiers ({derivable})
+              Alimenter depuis les chiffres saisis ({derivable})
             </button>
           )}
           <button className="btn btn-primary" onClick={() => setKpiModal({ open: true, kpi: null })}>
@@ -127,7 +129,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
 
       {kpiModal.open && <KpiModal entityType={entityType} entityId={entityId} defaultCat={cat} kpi={kpiModal.kpi} library={library} trackedNames={new Set(kpis.map((k) => k.name))} onClose={() => setKpiModal({ open: false, kpi: null })} />}
 
-      {autoFill && statements && <KpiAutoFillModal kpis={kpis} statements={statements} onClose={() => setAutoFill(false)} />}
+      {autoFill && statements && <KpiAutoFillModal kpis={kpis} statements={statements} budget={budget ?? []} onClose={() => setAutoFill(false)} />}
       {valModal?.open && <ValueModal kpi={valModal.kpi} onClose={() => setValModal(null)} />}
     </div>
   );

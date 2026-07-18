@@ -7,6 +7,9 @@
 
 import { computeOhada, bilanFonctionnel, ratios } from "./ohada";
 
+/** Lecture d'un poste de la grille Budget & BP pour un exercice donné. */
+export type BudgetLookup = (label: string) => number | null;
+
 export type KpiSource = {
   /** Reconnaissance du KPI suivi par son nom, quelle que soit sa rédaction. */
   match: RegExp;
@@ -14,7 +17,12 @@ export type KpiSource = {
   origin: string;
   unit: "FCFA" | "%" | "x";
   compute: (v: Record<string, number>) => number | null;
+  /** Même indicateur, lu dans la grille Budget & BP quand les états financiers manquent. */
+  fromBudget?: (line: BudgetLookup) => number | null;
 };
+
+const ratio = (num: number | null, den: number | null) =>
+  num == null || den == null || den === 0 ? null : (num / den) * 100;
 
 const pct = (r: number | null) => (r == null ? null : r * 100);
 
@@ -22,9 +30,11 @@ const pct = (r: number | null) => (r == null ? null : r * 100);
 // spécifiques doivent précéder les plus généraux (« taux d'EBE » avant « EBE »).
 export const KPI_SOURCES: KpiSource[] = [
   { match: /taux\s*d.?\s*ebe|marge\s*d.?\s*ebe|marge\s*ebe/i, origin: "EBE / Chiffre d'affaires (XD ÷ XB)", unit: "%",
-    compute: (v) => pct(ratios(v).margeEbe) },
+    compute: (v) => pct(ratios(v).margeEbe),
+    fromBudget: (l) => ratio(l("Excédent brut d'exploitation (EBE)"), l("Chiffre d'affaires")) },
   { match: /marge\s*nette/i, origin: "Résultat net / Chiffre d'affaires (XI ÷ XB)", unit: "%",
-    compute: (v) => pct(ratios(v).margeNette) },
+    compute: (v) => pct(ratios(v).margeNette),
+    fromBudget: (l) => ratio(l("Résultat net"), l("Chiffre d'affaires")) },
   { match: /marge\s*commerciale/i, origin: "Marge commerciale (XA)", unit: "FCFA",
     compute: (v) => v.XA ?? null },
   { match: /rentabilit.\s*des\s*capitaux|\broe\b/i, origin: "Résultat net / Capitaux propres (XI ÷ CP)", unit: "%",
@@ -37,17 +47,17 @@ export const KPI_SOURCES: KpiSource[] = [
     compute: (v) => ratios(v).endettement },
 
   { match: /chiffre\s*d.?\s*affaires|\bca\b/i, origin: "Chiffre d'affaires (XB)", unit: "FCFA",
-    compute: (v) => v.XB ?? null },
+    compute: (v) => v.XB ?? null, fromBudget: (l) => l("Chiffre d'affaires") },
   { match: /valeur\s*ajout/i, origin: "Valeur ajoutée (XC)", unit: "FCFA",
-    compute: (v) => v.XC ?? null },
+    compute: (v) => v.XC ?? null, fromBudget: (l) => l("Valeur ajoutée") },
   // EBITDA est l'appellation anglo-saxonne du même solde : la traiter à part créerait
   // deux chiffres pour une seule réalité.
   { match: /exc.dent\s*brut|\bebe\b|\bebitda\b/i, origin: "Excédent brut d'exploitation (XD)", unit: "FCFA",
-    compute: (v) => v.XD ?? null },
+    compute: (v) => v.XD ?? null, fromBudget: (l) => l("Excédent brut d'exploitation (EBE)") },
   { match: /r.sultat\s*d.?\s*exploitation/i, origin: "Résultat d'exploitation (XE)", unit: "FCFA",
-    compute: (v) => v.XE ?? null },
+    compute: (v) => v.XE ?? null, fromBudget: (l) => l("Résultat d'exploitation") },
   { match: /r.sultat\s*net|b.n.fice\s*net/i, origin: "Résultat net (XI)", unit: "FCFA",
-    compute: (v) => v.XI ?? null },
+    compute: (v) => v.XI ?? null, fromBudget: (l) => l("Résultat net") },
 
   { match: /besoin\s*en\s*fonds\s*de\s*roulement|\bbfr\b/i, origin: "Actif circulant − Passif circulant", unit: "FCFA",
     compute: (v) => bilanFonctionnel(v).bfr },
@@ -63,23 +73,71 @@ export function sourceFor(kpiName: string): KpiSource | null {
   return KPI_SOURCES.find((s) => s.match.test(kpiName)) ?? null;
 }
 
-export type DerivedValue = { year: number; value: number; origin: string; unit: string };
+export type ValueSource = "États financiers" | "Budget & BP — réalisé";
+export type DerivedValue = { year: number; value: number; origin: string; unit: string; source: ValueSource };
 
-/** Valeurs dérivables pour un KPI donné, exercice par exercice. */
-export function derive(kpiName: string, statements: Record<number, Record<string, number>>): DerivedValue[] {
+/** Ligne de la grille Budget & BP, telle que stockée. */
+export type BudgetRow = { period: string; label: string; budget: number | null; actual: number | null };
+
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+// Un état financier incomplet produit des zéros qui n'ont rien de comptable : le poste
+// n'est simplement pas renseigné. Écrire ce 0 dans l'historique du KPI le rendrait faux
+// et donnerait une courbe mensongère. Un exercice réellement nul se saisit à la main.
+const usable = (v: number | null): v is number => v != null && Number.isFinite(v) && v !== 0;
+
+function lookup(rows: BudgetRow[], year: number, field: "budget" | "actual"): BudgetLookup {
+  return (label) => {
+    const r = rows.find((x) => x.period === String(year) && x.label === label);
+    const v = r ? r[field] : null;
+    return v == null ? null : Number(v);
+  };
+}
+
+/**
+ * Valeurs dérivables pour un KPI, exercice par exercice.
+ * Les états financiers font foi ; la grille Budget & BP ne comble que les exercices
+ * qu'ils ne couvrent pas, pour ne jamais opposer deux chiffres sur un même exercice.
+ */
+export function derive(
+  kpiName: string,
+  statements: Record<number, Record<string, number>>,
+  budget: BudgetRow[] = []
+): DerivedValue[] {
   const src = sourceFor(kpiName);
   if (!src) return [];
-  const out: DerivedValue[] = [];
-  for (const year of Object.keys(statements).map(Number).sort((a, b) => a - b)) {
-    const computed = computeOhada(statements[year] ?? {});
-    const value = src.compute(computed);
-    if (value == null || !Number.isFinite(value)) continue;
-    // Un état financier incomplet produit des zéros qui n'ont rien de comptable : le poste
-    // n'est simplement pas renseigné. Écrire ce 0 dans l'historique du KPI le rendrait faux
-    // et donnerait une courbe mensongère. On préfère ne rien proposer : un exercice
-    // réellement nul se saisit à la main, c'est assez rare pour le justifier.
-    if (value === 0) continue;
-    out.push({ year, value: Math.round(value * 100) / 100, origin: src.origin, unit: src.unit });
+  const byYear = new Map<number, DerivedValue>();
+
+  for (const year of Object.keys(statements).map(Number)) {
+    const value = src.compute(computeOhada(statements[year] ?? {}));
+    if (!usable(value)) continue;
+    byYear.set(year, { year, value: round2(value), origin: src.origin, unit: src.unit, source: "États financiers" });
   }
-  return out;
+
+  if (src.fromBudget) {
+    const years = Array.from(new Set(budget.map((r) => Number(r.period)))).filter(Number.isFinite);
+    for (const year of years) {
+      if (byYear.has(year)) continue; // les états financiers priment
+      const value = src.fromBudget(lookup(budget, year, "actual"));
+      if (!usable(value)) continue;
+      byYear.set(year, { year, value: round2(value), origin: "Grille Budget & BP, colonne Réalisé", unit: src.unit, source: "Budget & BP — réalisé" });
+    }
+  }
+
+  return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
+}
+
+/**
+ * Cible du KPI lue dans la colonne Budget de l'exercice le plus récent qui en porte une.
+ * Le budget EST l'objectif : le ressaisir comme « cible » serait une troisième saisie.
+ */
+export function budgetTarget(kpiName: string, budget: BudgetRow[]): { year: number; value: number } | null {
+  const src = sourceFor(kpiName);
+  if (!src?.fromBudget || budget.length === 0) return null;
+  const years = Array.from(new Set(budget.map((r) => Number(r.period)))).filter(Number.isFinite).sort((a, b) => b - a);
+  for (const year of years) {
+    const value = src.fromBudget(lookup(budget, year, "budget"));
+    if (usable(value)) return { year, value: round2(value) };
+  }
+  return null;
 }
