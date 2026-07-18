@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { EHS_SECTORS, ehsSectorsForFamily } from "@/lib/ui-constants";
+import { EHS_SECTORS, ehsSectorsForFamilies } from "@/lib/ui-constants";
 import type { PortfolioCompany, PortfolioProgram, SubSectorOption } from "@/lib/data/portfolio";
 
 const M = 1_000_000;
@@ -37,7 +37,7 @@ export default function CompanyFormModal({
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const isEquity = f.trackingType === "equity";
   const isClosed = f.status === "Sorti" || f.status === "Radié";
-  const ehsFamily = programs.find((p) => p.id === f.programId)?.ehsFamily ?? null;
+  const ehsFamilies = programs.find((p) => p.id === f.programId)?.ehsFamilies ?? [];
 
   async function submit() {
     if (!f.name.trim()) return;
@@ -95,10 +95,13 @@ export default function CompanyFormModal({
           {subSectors.map((s) => <option key={s.id} value={s.id}>{s.industry} — {s.name}</option>)}
         </Select>
       </Field>
-      <Field label="Secteur EHS (IFC)" hint={ehsFamily ? `Famille du programme : ${ehsFamily}` : "Secteur précis de l'entreprise"}>
+      <Field label="Secteur EHS (IFC)"
+        hint={ehsFamilies.length
+          ? `Familles du programme : ${ehsFamilies.join(" · ")} — l'entreprise peut relever d'une autre famille`
+          : "Secteur précis de l'entreprise"}>
         <Select value={f.ehsSector} onChange={(e) => set("ehsSector", e.target.value)}>
           <option value="">— Non défini —</option>
-          {ehsSectorsForFamily(ehsFamily).map((g) => (
+          {ehsSectorsForFamilies(ehsFamilies).map((g) => (
             <optgroup key={g.group} label={g.group}>
               {g.items.map((s) => <option key={s} value={s}>{s}</option>)}
             </optgroup>

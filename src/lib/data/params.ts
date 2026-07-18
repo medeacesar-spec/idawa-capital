@@ -17,14 +17,14 @@ export type ProgramConfig = {
   status: string;
   esgFramework: string | null;
   esgRequired: boolean;
-  ehsSector: string | null;
+  ehsFamilies: string[];
   indicators: ProgramIndicator[];
 };
 
 export async function getProgramConfig(id: string): Promise<ProgramConfig | null> {
   const supabase = await createClient();
   const [pRes, iRes] = await Promise.all([
-    supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_sector").eq("id", id).single(),
+    supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_families").eq("id", id).single(),
     supabase.from("program_indicators").select("id, category, name, unit, target").eq("program_id", id).order("position"),
   ]);
   const p = pRes.data;
@@ -37,7 +37,7 @@ export async function getProgramConfig(id: string): Promise<ProgramConfig | null
     status: p.status ?? "Actif",
     esgFramework: p.esg_framework,
     esgRequired: p.esg_required ?? true,
-    ehsSector: p.ehs_sector,
+    ehsFamilies: (p.ehs_families as string[] | null) ?? [],
     indicators: (iRes.data ?? []).map((x) => ({ id: x.id, category: x.category, name: x.name, unit: x.unit, target: x.target != null ? Number(x.target) : null })),
   };
 }

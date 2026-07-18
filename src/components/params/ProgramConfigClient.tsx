@@ -20,7 +20,7 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
   const [inds, setInds] = useState<ProgramIndicator[]>(config.indicators);
   const [esgFw, setEsgFw] = useState(config.esgFramework ?? "");
   const [esgReq, setEsgReq] = useState(config.esgRequired);
-  const [ehs, setEhs] = useState(config.ehsSector ?? "");
+  const [ehsFams, setEhsFams] = useState<string[]>(config.ehsFamilies ?? []);
   const [customName, setCustomName] = useState<Record<string, string>>({});
 
   const showAccomp = nature === "accompagnement" || nature === "mixte";
@@ -141,12 +141,29 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
         <Field label="Référentiel ESG">
           <Input value={esgFw} onChange={(e) => setEsgFw(e.target.value)} onBlur={() => saveGeneral({ esg_framework: esgFw })} />
         </Field>
-        <Field label="Famille de secteurs EHS (IFC)" hint="Le programme couvre une famille ; chaque entreprise précisera ensuite son secteur">
-          <Select value={ehs} onChange={(e) => { const v = e.target.value; setEhs(v); saveGeneral({ ehs_sector: v || null }); }}>
-            <option value="">— Aucune —</option>
-            {EHS_FAMILIES.map((f) => <option key={f} value={f}>{f}</option>)}
-            {!!ehs && !EHS_FAMILIES.includes(ehs) && <option value={ehs}>{ehs} (ancienne valeur)</option>}
-          </Select>
+        <Field label="Familles de secteurs EHS (IFC)" hint="Familles couvertes par le programme — simple défaut : une entreprise peut relever d'une autre famille">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 6 }}>
+            {EHS_FAMILIES.map((fam) => {
+              const on = ehsFams.includes(fam);
+              return (
+                <button key={fam} type="button"
+                  onClick={() => {
+                    const next = on ? ehsFams.filter((x) => x !== fam) : [...ehsFams, fam];
+                    setEhsFams(next);
+                    saveGeneral({ ehs_families: next.length ? next : null });
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 11px", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", fontSize: 12, textAlign: "left",
+                    background: on ? "var(--accent-soft)" : "var(--surface)", color: on ? "var(--espresso)" : "var(--text-2)",
+                    border: `1px solid ${on ? "var(--camel)" : "var(--border)"}`, fontWeight: on ? 600 : 400 }}>
+                  <span style={{ width: 15, height: 15, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    background: on ? "var(--espresso)" : "transparent", border: `1px solid ${on ? "var(--espresso)" : "var(--border-strong)"}` }}>
+                    {on && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                  </span>
+                  {fam}
+                </button>
+              );
+            })}
+          </div>
         </Field>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
           <button onClick={() => { const v = !esgReq; setEsgReq(v); saveGeneral({ esg_required: v }); }}

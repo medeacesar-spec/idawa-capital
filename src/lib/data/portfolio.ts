@@ -20,7 +20,7 @@ export type PortfolioCompany = {
   ehsSector: string | null;
 };
 
-export type PortfolioProgram = { id: string; name: string; color: string; status: string; ehsFamily: string | null };
+export type PortfolioProgram = { id: string; name: string; color: string; status: string; ehsFamilies: string[] };
 export type SubSectorOption = { id: string; name: string; industry: string };
 
 export type PortfolioData = {
@@ -37,7 +37,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
       .from("portfolio_companies")
       .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, program_id, primary_sub_sector_id, invested_date, ehs_sector")
       .order("invested_date", { ascending: true }),
-    supabase.from("programs").select("id, name, color, status, position, ehs_sector").order("position"),
+    supabase.from("programs").select("id, name, color, status, position, ehs_families").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
     supabase.from("industries").select("id, name"),
   ]);
@@ -73,7 +73,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
 
   return {
     companies,
-    programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color, status: p.status, ehsFamily: p.ehs_sector ?? null })),
+    programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color, status: p.status, ehsFamilies: (p.ehs_families as string[] | null) ?? [] })),
     subSectors,
   };
 }

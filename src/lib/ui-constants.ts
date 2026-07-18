@@ -155,12 +155,14 @@ export const EXIT_SCENARIOS = [
   "Autre",
 ];
 
-// Un PROGRAMME couvre une FAMILLE de secteurs ; chaque SOCIÉTÉ a son secteur précis.
+// Un PROGRAMME peut couvrir PLUSIEURS familles de secteurs ; chaque SOCIÉTÉ a son
+// secteur précis, et reste libre de relever d'une famille différente du programme.
 export const EHS_FAMILIES = EHS_SECTORS.map((g) => g.group);
-// Secteurs de la famille d'un programme (liste complète si aucune famille définie).
-export function ehsSectorsForFamily(family?: string | null): { group: string; items: string[] }[] {
-  const match = EHS_SECTORS.find((g) => g.group === family);
-  return match ? [match, ...EHS_SECTORS.filter((g) => g.group !== family)] : EHS_SECTORS;
+// Toutes les familles restent proposées ; celles du programme sont remontées en tête.
+export function ehsSectorsForFamilies(families?: string[] | null): { group: string; items: string[] }[] {
+  const set = new Set((families ?? []).filter(Boolean));
+  if (!set.size) return EHS_SECTORS;
+  return [...EHS_SECTORS.filter((g) => set.has(g.group)), ...EHS_SECTORS.filter((g) => !set.has(g.group))];
 }
 
 // Grille standard du compte de résultat OHADA / SIG — base modifiable du Budget & BP.
