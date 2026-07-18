@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import DocumentUploadModal from "@/components/documents/DocumentUploadModal";
 import SortToggle, { type DocSort } from "@/components/documents/SortToggle";
+import { useCanEdit } from "./WriteAccess";
 
 type Doc = { id: string; title: string; category: string | null; storagePath: string | null; createdAt?: string | null };
 
@@ -12,6 +13,7 @@ const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "aoû
 function frDate(d?: string | null) { if (!d) return ""; const dt = d.slice(0, 10); return `${parseInt(dt.slice(8, 10), 10)} ${MONTHS[parseInt(dt.slice(5, 7), 10) - 1] ?? ""} ${dt.slice(0, 4)}`; }
 
 export default function EntityDocuments({ entityType, entityId, entityName, docs }: { entityType: "deal" | "company"; entityId: string; entityName: string; docs: Doc[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [modal, setModal] = useState(false);
   const [sort, setSort] = useState<DocSort>("recent");
@@ -41,10 +43,10 @@ export default function EntityDocuments({ entityType, entityId, entityName, docs
         <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Documents rattachés</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {docs.length > 1 && <SortToggle sort={sort} setSort={setSort} />}
-          <button className="btn btn-primary" onClick={() => setModal(true)}>
+          {canEdit && (<button className="btn btn-primary" onClick={() => setModal(true)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Déposer un document
-          </button>
+          </button>)}
         </div>
       </div>
       {docs.length === 0 ? (
@@ -58,7 +60,7 @@ export default function EntityDocuments({ entityType, entityId, entityName, docs
                 <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: d.storagePath ? "var(--espresso)" : "var(--ink)" }}>{d.title}{d.createdAt ? <span style={{ color: "var(--text-3)", fontWeight: 400 }}> · {frDate(d.createdAt)}</span> : null}{!d.storagePath ? " · aucun fichier" : ""}</span>
               </div>
               {d.category && <span className="badge badge-neutral">{d.category}</span>}
-              <div className="row-actions">
+              <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                 {d.storagePath && <button onClick={() => open(d)} aria-label="Ouvrir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 4 5-4" /><path d="M5 21h14" /></svg></button>}
                 <button onClick={() => remove(d)} aria-label="Supprimer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
               </div>

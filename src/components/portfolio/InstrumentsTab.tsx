@@ -8,6 +8,7 @@ import { INSTRUMENT_TYPES } from "@/lib/ui-constants";
 import type { Instrument } from "@/lib/data/instruments";
 import { computeSchedule, paymentBehaviour, type PaymentStatus } from "@/lib/finance/amortization";
 import InstrumentFormModal from "./InstrumentFormModal";
+import { useCanEdit } from "@/components/shared/WriteAccess";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -34,6 +35,7 @@ export function StatusBadge({ status, daysLate }: { status: PaymentStatus; daysL
 }
 
 export default function InstrumentsTab({ companyId, instruments }: { companyId: string; instruments: Instrument[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; instrument: Instrument | null }>({ open: false, instrument: null });
   const [openSchedule, setOpenSchedule] = useState<string | null>(null);
@@ -72,10 +74,10 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Instruments de financement <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— capital, quasi-equity, prêt de campagne</span></div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, instrument: null })}>
+        {canEdit && (<button className="btn btn-primary" onClick={() => setModal({ open: true, instrument: null })}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Ajouter un instrument
-        </button>
+        </button>)}
       </div>
 
       {instruments.length === 0 ? (
@@ -90,7 +92,7 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
                   <span className={`badge ${TYPE_BADGE[i.type] ?? "badge-neutral"}`}>{typeLabel(i.type)}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{i.label ?? "—"}</span>
                   <span style={{ fontSize: 11, color: "var(--text-3)" }}>octroi {frDate(i.grantDate)}</span>
-                  <span className="row-actions" style={{ marginLeft: "auto" }}>
+                  <span className="row-actions" style={{ marginLeft: "auto", display: canEdit ? undefined : "none" }}>
                     <button onClick={() => setModal({ open: true, instrument: i })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     <button onClick={() => remove(i)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                   </span>
@@ -130,6 +132,7 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
 
 function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument; open: boolean; onToggle: () => void }) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const sched = computeSchedule(instrument);
   if (!sched) {
     return (
@@ -220,17 +223,17 @@ function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument;
                     <td style={{ ...td, color: "var(--text-2)" }} className="tnum">{fmtN(row.balance)}</td>
                     <td style={{ ...td, borderLeft: "1px solid var(--border)" }}>
                       <input key={`i${row.n}${p?.invoiced ?? ""}`} defaultValue={p?.invoiced ?? ""} placeholder={fmtN(row.payment)}
-                        onBlur={(e) => savePayment(row.n, row.date, "amount_invoiced", e.target.value)} style={inp} inputMode="numeric" />
+                        onBlur={(e) => savePayment(row.n, row.date, "amount_invoiced", e.target.value)} style={inp} inputMode="numeric" readOnly={!canEdit} disabled={!canEdit} />
                     </td>
                     <td style={td}>
                       <input key={`p${row.n}${p?.paid ?? ""}`} defaultValue={p?.paid ?? ""} placeholder="—"
                         title="Laisser vide = non renseigné. Saisir 0 = impayé constaté."
-                        onBlur={(e) => savePayment(row.n, row.date, "amount_paid", e.target.value)} style={inp} inputMode="numeric" />
+                        onBlur={(e) => savePayment(row.n, row.date, "amount_paid", e.target.value)} style={inp} inputMode="numeric" readOnly={!canEdit} disabled={!canEdit} />
                     </td>
                     <td style={{ ...td, textAlign: "left" }}>
                       <input key={`d${row.n}${p?.paidDate ?? ""}`} defaultValue={p?.paidDate ?? ""} type="date"
                         onBlur={(e) => savePayment(row.n, row.date, "paid_date", e.target.value)}
-                        style={{ ...inp, width: 130, textAlign: "left" }} />
+                        style={{ ...inp, width: 130, textAlign: "left" }} readOnly={!canEdit} disabled={!canEdit} />
                     </td>
                     <td style={{ ...td, fontWeight: 600, color: row.shortfall > 0.5 ? "var(--red-fg)" : row.surplus > 0.5 ? "var(--green-fg)" : "var(--text-2)" }} className="tnum">
                       {row.shortfall > 0.5 ? fmtN(row.shortfall) : row.surplus > 0.5 ? `+${fmtN(row.surplus)}` : "—"}

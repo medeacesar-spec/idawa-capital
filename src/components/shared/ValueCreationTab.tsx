@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { VALUE_LEVERS, VALUE_STATUS } from "@/lib/ui-constants";
 import type { ValueInitiative } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
+import { useCanEdit } from "./WriteAccess";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return null; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -16,6 +17,7 @@ const STATUS_BADGE: Record<string, string> = { "Planifiée": "badge-neutral", "E
 type ContactOpt = { id: string; name: string };
 
 export default function ValueCreationTab({ entityType, entityId, items, contacts, users }: { entityType: "deal" | "company"; entityId: string; items: ValueInitiative[]; contacts: ContactOpt[]; users: FundUser[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; item: ValueInitiative | null }>({ open: false, item: null });
   const done = items.filter((i) => i.status === "Réalisée").length;
@@ -30,10 +32,10 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Plan de création de valeur — <b style={{ color: "var(--ink)" }}>{done}/{items.length}</b> réalisées</div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, item: null })}>
+        {canEdit && (<button className="btn btn-primary" onClick={() => setModal({ open: true, item: null })}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Ajouter une initiative
-        </button>
+        </button>)}
       </div>
 
       {items.length === 0 ? (
@@ -52,7 +54,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
                 </div>
                 {it.impact && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 4, lineHeight: 1.5 }}>Impact visé : {it.impact}</div>}
               </div>
-              <div className="row-actions">
+              <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                 <button onClick={() => setModal({ open: true, item: it })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                 <button onClick={() => del(it.id)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
               </div>

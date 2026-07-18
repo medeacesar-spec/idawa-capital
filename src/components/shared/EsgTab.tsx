@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
 import type { FundUser } from "@/lib/data/users";
+import { useCanEdit } from "./WriteAccess";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -17,6 +18,7 @@ const CAT_COLOR: Record<string, string> = { E: "#3B6D11", S: "#185FA5", G: "#8A5
 function isOverdue(a: EsgAction) { return a.status !== "Réalisée" && !!a.dateEndPlan && a.dateEndPlan < new Date().toISOString().slice(0, 10); }
 
 export default function EsgTab({ entityType, entityId, data, users }: { entityType: "deal" | "company"; entityId: string; data: EsgData; users: FundUser[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [diagOpen, setDiagOpen] = useState(false);
   const [actModal, setActModal] = useState<{ open: boolean; action: EsgAction | null }>({ open: false, action: null });
@@ -35,7 +37,7 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
       <section className="card" style={{ padding: "16px 20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: a ? 12 : 0, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Diagnostic E&S <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— méthodologie I&P / IPDEV 2, normes IFC</span></div>
-          <button className="btn btn-ghost" onClick={() => setDiagOpen(true)}>{a ? "Modifier le diagnostic" : "Renseigner le diagnostic"}</button>
+          {canEdit && (<button className="btn btn-ghost" onClick={() => setDiagOpen(true)}>{a ? "Modifier le diagnostic" : "Renseigner le diagnostic"}</button>)}
         </div>
         {a && (
           <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
@@ -50,10 +52,10 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Plan d'action E&S (ESAP) <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— responsable, échéance, statut</span></div>
-          <button className="btn btn-primary" onClick={() => setActModal({ open: true, action: null })}>
+          {canEdit && (<button className="btn btn-primary" onClick={() => setActModal({ open: true, action: null })}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Ajouter une action
-          </button>
+          </button>)}
         </div>
         {data.actions.length === 0 ? (
           <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucune action ESG. Renseignez le plan d'action E&S de la société.</div>
@@ -67,7 +69,7 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
                   <div style={{ fontSize: 11, color: isOverdue(ac) ? "var(--red-fg)" : "var(--text-3)" }}>{ac.responsibleCode ? ac.responsibleCode : "Non assignée"}{ac.dateEndPlan ? ` · échéance ${frDate(ac.dateEndPlan)}` : ac.createdAt ? ` · ajoutée le ${frDate(ac.createdAt)}` : ""}{isOverdue(ac) ? " · en retard" : ""}</div>
                 </div>
                 {ac.status && <span className={`badge ${STATUS_COLOR[ac.status] ?? "badge-neutral"}`}>{ac.status}</span>}
-                <div className="row-actions">
+                <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                   <button onClick={() => setActModal({ open: true, action: ac })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                   <button onClick={() => delAction(ac.id)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                 </div>
@@ -81,10 +83,10 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Rating d'impact <span style={{ fontWeight: 400, color: "var(--text-3)" }}>(IPDEV 2){impactMax > 0 ? ` — ${impactScore} / ${impactMax}` : ""}</span></div>
-          <button className="btn btn-ghost" onClick={() => setImpModal({ open: true, impact: null })}>
+          {canEdit && (<button className="btn btn-ghost" onClick={() => setImpModal({ open: true, impact: null })}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Ajouter une dimension
-          </button>
+          </button>)}
         </div>
         {data.impacts.length === 0 ? (
           <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun indicateur d'impact. Ajoutez les dimensions notées (entrepreneurs, clients, employés…).</div>
@@ -101,7 +103,7 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
                     </div>
                     <div style={{ height: 5, background: "var(--cream)", borderRadius: 3 }}><div style={{ width: `${pct}%`, height: "100%", background: "#3B6D11", borderRadius: 3 }} /></div>
                   </div>
-                  <div className="row-actions">
+                  <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                     <button onClick={() => setImpModal({ open: true, impact: im })} aria-label="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     <button onClick={() => delImpact(im.id)} aria-label="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                   </div>

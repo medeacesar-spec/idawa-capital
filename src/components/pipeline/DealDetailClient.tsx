@@ -18,6 +18,7 @@ import DueDiligenceTab from "@/components/shared/DueDiligenceTab";
 import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
+import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAccess";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -37,7 +38,7 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return <div className="card" style={{ padding: "32px 28px" }}><div className="serif" style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>{title}</div><div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>{desc}</div></div>;
 }
 
-export default function DealDetailClient({ deal, canEditComites = true, canValidateComites = false }: { deal: DealDetail; canEditComites?: boolean; canValidateComites?: boolean }) {
+export default function DealDetailClient({ deal, canEditComites = true, canValidateComites = false, canEdit = true }: { deal: DealDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -100,6 +101,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   ];
 
   return (
+    <WriteAccessProvider canEdit={canEdit}>
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <button onClick={() => router.push("/pipeline")} aria-label="Retour" style={{ width: 34, height: 34, borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -131,11 +133,11 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               Saisir un reporting
             </button>
-            <button className="btn btn-primary" onClick={onConvertClick} title={hasValidatedInvestment ? "" : "Nécessite une décision d'investissement validée en comité"} style={{ opacity: hasValidatedInvestment ? 1 : 0.55 }}>
+            {canEdit && (<button className="btn btn-primary" onClick={onConvertClick} title={hasValidatedInvestment ? "" : "Nécessite une décision d'investissement validée en comité"} style={{ opacity: hasValidatedInvestment ? 1 : 0.55 }}>
               {!hasValidatedInvestment && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>}
               {hasValidatedInvestment && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
               Convertir en participation
-            </button>
+            </button>)}
           </div>
         )}
       </div>
@@ -150,7 +152,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           ) : (
             <span className="badge badge-green">Actif</span>
           )}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ marginLeft: "auto", display: canEdit ? "flex" : "none", gap: 6, flexWrap: "wrap" }}>
             {deal.dealState === "Actif" && (
               <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("En veille")}>Mettre en veille</button>
             )}
@@ -179,6 +181,8 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           {showAdvanced ? "− Masquer les champs avancés" : "+ Champs avancés (valo pré-money, closing)"}
         </button>
       </div>
+
+      <ReadOnlyNotice what="ce dossier" />
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
         {TABS.map((t) => {
@@ -270,5 +274,6 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
       {rejectOpen && <RejectDealModal dealId={deal.id} onClose={() => setRejectOpen(false)} />}
     </div>
+    </WriteAccessProvider>
   );
 }

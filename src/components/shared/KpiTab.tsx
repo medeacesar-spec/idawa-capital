@@ -9,6 +9,7 @@ import { KPI_DIMENSIONS, KPI_DIM_LABEL, KPI_DIM_COLOR, KPI_DIRECTIONS } from "@/
 import type { KpiSeries, LibraryKpi } from "@/lib/data/kpis";
 import { derive, budgetTarget, type BudgetRow } from "@/lib/finance/kpiSources";
 import KpiAutoFillModal from "./KpiAutoFillModal";
+import { useCanEdit } from "./WriteAccess";
 
 function shortPeriod(p: string) { const m = p.match(/(\d{4})-?T?(\d)?/); return m && m[2] ? `T${m[2]}-${m[1].slice(2)}` : p; }
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n * 100) / 100); }
@@ -44,6 +45,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
   budget?: BudgetRow[];
 }) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const present = Array.from(new Set(kpis.map((k) => k.category)));
   const dims = [...KPI_DIMENSIONS, ...present.filter((p) => !KPI_DIMENSIONS.includes(p))];
   const firstWithData = dims.find((d) => kpis.some((k) => k.category === d)) ?? dims[0];
@@ -76,17 +78,17 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
           })}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {derivable > 0 && (
+          {canEdit && derivable > 0 && (
             <button className="btn" onClick={() => setAutoFill(true)}
               title="Reprendre les KPIs financiers depuis les états financiers et la grille Budget &amp; BP">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></svg>
               Alimenter depuis les chiffres saisis ({derivable})
             </button>
           )}
-          <button className="btn btn-primary" onClick={() => setKpiModal({ open: true, kpi: null })}>
+          {canEdit && (<button className="btn btn-primary" onClick={() => setKpiModal({ open: true, kpi: null })}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Ajouter un KPI
-          </button>
+          </button>)}
         </div>
       </div>
 
@@ -105,7 +107,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{k.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     {good != null && <span className={`badge ${good ? "badge-green" : "badge-amber"}`}>{good ? "Sur objectif" : "En retard"}</span>}
-                    <span className="row-actions">
+                    <span className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                       <button onClick={() => setKpiModal({ open: true, kpi: k })} aria-label="Modifier le KPI"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                       <button onClick={() => delKpi(k.id)} aria-label="Supprimer le KPI"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                     </span>
@@ -120,7 +122,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
                   <span>{k.series.length ? shortPeriod(k.series[0].period) : ""}{k.series.length > 1 ? ` → ${shortPeriod(k.series[k.series.length - 1].period)}` : ""}</span>
                   {k.target != null && <span style={{ color: "var(--camel)", fontWeight: 600 }}>cible {nf(k.target)}{k.unit ? ` ${k.unit}` : ""}</span>}
                 </div>
-                <button onClick={() => setValModal({ open: true, kpi: k })} className="btn btn-ghost" style={{ width: "100%", marginTop: 10, padding: "6px", fontSize: 11.5 }}>+ Saisir une valeur</button>
+                {canEdit && <button onClick={() => setValModal({ open: true, kpi: k })} className="btn btn-ghost" style={{ width: "100%", marginTop: 10, padding: "6px", fontSize: 11.5 }}>+ Saisir une valeur</button>}
               </div>
             );
           })}

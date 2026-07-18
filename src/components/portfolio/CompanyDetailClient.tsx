@@ -14,6 +14,7 @@ import KpiTab from "@/components/shared/KpiTab";
 import ValueCreationTab from "@/components/shared/ValueCreationTab";
 import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
+import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAccess";
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 import InstrumentsTab from "./InstrumentsTab";
 import RepaymentsTab from "./RepaymentsTab";
@@ -37,7 +38,7 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean }) {
+export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false, canEdit = true }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState("KPIs");
   const [decModal, setDecModal] = useState<{ open: boolean; passage: CompanyDecision | null }>({ open: false, passage: null });
@@ -66,6 +67,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
     : [["Type", "Accélération"], ["Statut", company.status], ["Programme", company.programName ?? "—"], ["Suivie depuis", frMonth(company.investedDate)]];
 
   return (
+    <WriteAccessProvider canEdit={canEdit}>
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <button onClick={() => router.push("/portefeuille")} aria-label="Retour" style={{ width: 34, height: 34, borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -100,6 +102,8 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
           </div>
         ))}
       </div>
+
+      <ReadOnlyNotice what="cette société" />
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
@@ -252,5 +256,6 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
         />
       )}
     </div>
+    </WriteAccessProvider>
   );
 }

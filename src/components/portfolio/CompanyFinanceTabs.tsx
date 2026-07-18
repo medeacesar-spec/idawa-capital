@@ -9,6 +9,7 @@ import { FINANCIAL_LABELS, FLOW_TYPES, CAP_HOLDER_TYPES, VALUATION_METHODS, OHAD
 import { fmtM } from "@/lib/format";
 import type { FinancialRow, FlowRow, CapRow } from "@/lib/data/companyFinance";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
+import { useCanEdit } from "@/components/shared/WriteAccess";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -40,6 +41,7 @@ function ValoSpark({ valos }: { valos: FlowRow[] }) {
 /* ---------- Budget & BP — grille OHADA (postes × années) ---------- */
 export function BudgetTab({ companyId, rows }: { companyId: string; rows: FinancialRow[] }) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const thisYear = new Date().getFullYear();
   const saved = Array.from(new Set(rows.map((r) => r.period)));
   // Remplissage initial calculé UNE SEULE FOIS (voir FinancialStatementsTab) : recalculé à
@@ -132,7 +134,7 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Budget & business plan <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— grille OHADA, budget vs réalisé, en M FCFA</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <YearNav win={win} label="années" />
-          <button className="btn btn-ghost" onClick={addLine}>{iconAdd} Poste</button>
+          {canEdit && <button className="btn btn-ghost" onClick={addLine}>{iconAdd} Poste</button>}
           <button className="btn" onClick={() => addYear(-1)}>{iconAdd} Année antérieure</button>
           <button className="btn btn-primary" onClick={() => addYear(1)}>{iconAdd} Année postérieure</button>
         </div>
@@ -185,17 +187,17 @@ export function BudgetTab({ companyId, rows }: { companyId: string; rows: Financ
                     return (
                       <React.Fragment key={y}>
                         <td style={{ ...tdCell, borderLeft: "1px solid var(--sep)" }}>
-                          <input key={`b${label}${y}${b}`} defaultValue={b} onBlur={(e) => save(label, y, "budget", e.target.value)} style={inp} inputMode="decimal" />
+                          <input key={`b${label}${y}${b}`} defaultValue={b} onBlur={(e) => save(label, y, "budget", e.target.value)} style={inp} inputMode="decimal" readOnly={!canEdit} disabled={!canEdit} />
                         </td>
                         <td style={tdCell}>
                           <input key={`a${label}${y}${a}`} defaultValue={a} onBlur={(e) => save(label, y, "actual", e.target.value)}
-                            style={{ ...inp, fontWeight: 600, color: off ? "var(--red-fg)" : "var(--ink)" }} inputMode="decimal" />
+                            style={{ ...inp, fontWeight: 600, color: off ? "var(--red-fg)" : "var(--ink)" }} inputMode="decimal" readOnly={!canEdit} disabled={!canEdit} />
                         </td>
                       </React.Fragment>
                     );
                   })}
                   <td style={{ padding: "4px 2px" }}>
-                    <span className="row-actions">
+                    <span className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                       <button onClick={() => renameLine(label)} title="Renommer le poste">{iconEdit}</button>
                       <button onClick={() => clearLine(label)} title="Effacer la ligne">{iconDel}</button>
                     </span>
@@ -244,6 +246,7 @@ function BudgetModal({ companyId, row, onClose }: { companyId: string; row: Fina
 
 /* ---------- Flux & Valorisation ---------- */
 export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow[] }) {
+  const canEdit = useCanEdit();
   const [modal, setModal] = useState<{ open: boolean; row: FlowRow | null }>({ open: false, row: null });
   const del = useDel("company_flows", "ce flux");
   const calls = rows.filter((r) => r.type === "Appel de fonds").reduce((s, r) => s + (r.amount ?? 0), 0);
@@ -277,7 +280,7 @@ export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Historique des flux</div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un flux</button>
+        {canEdit && <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un flux</button>}
       </div>
       {rows.length === 0 ? (
         <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun flux. Enregistrez appels de fonds, distributions et valorisations.</div>
@@ -289,7 +292,7 @@ export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow
               {r.type && <span className={`badge ${TYPE_COLOR[r.type] ?? "badge-neutral"}`}>{r.type}</span>}
               <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.type === "Valorisation" && r.method ? r.method : r.note}</span>
               <span className="tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.amount != null ? fmtM(r.amount) : "—"}</span>
-              <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
+              <span className="row-actions" style={{ display: canEdit ? undefined : "none" }}><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
             </div>
           ))}
         </div>
@@ -301,6 +304,7 @@ export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow
 
 function FlowModal({ companyId, row, onClose }: { companyId: string; row: FlowRow | null; onClose: () => void }) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [busy, setBusy] = useState(false);
   const [type, setType] = useState(row?.type ?? FLOW_TYPES[0]);
   const [date, setDate] = useState(row?.flowDate ?? "");
@@ -333,6 +337,7 @@ function FlowModal({ companyId, row, onClose }: { companyId: string; row: FlowRo
 
 /* ---------- Cap table ---------- */
 export function CapTableTab({ companyId, rows }: { companyId: string; rows: CapRow[] }) {
+  const canEdit = useCanEdit();
   const [modal, setModal] = useState<{ open: boolean; row: CapRow | null }>({ open: false, row: null });
   const del = useDel("company_captable", "cette ligne");
   const totalPct = rows.reduce((s, r) => s + (r.pct ?? 0), 0);
@@ -355,7 +360,7 @@ export function CapTableTab({ companyId, rows }: { companyId: string; rows: CapR
               <span style={{ width: 10, height: 10, borderRadius: 3, background: TYPE_COLOR[r.holderType ?? "Autre"] ?? "#6B5744", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.holder}</div>{r.holderType && <div style={{ fontSize: 11, color: "var(--text-3)" }}>{r.holderType}</div>}</div>
               <span className="tnum" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{r.pct != null ? `${r.pct}%` : "—"}</span>
-              <span className="row-actions"><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
+              <span className="row-actions" style={{ display: canEdit ? undefined : "none" }}><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
             </div>
           ))}
         </div>
@@ -367,6 +372,7 @@ export function CapTableTab({ companyId, rows }: { companyId: string; rows: CapR
 
 function CapModal({ companyId, row, onClose }: { companyId: string; row: CapRow | null; onClose: () => void }) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [busy, setBusy] = useState(false);
   const [holder, setHolder] = useState(row?.holder ?? "");
   const [type, setType] = useState(row?.holderType ?? CAP_HOLDER_TYPES[0]);

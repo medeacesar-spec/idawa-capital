@@ -28,7 +28,8 @@ function initials(name: string): string {
   return caps.length >= 2 ? caps.slice(0, 2) : name.slice(0, 2).toUpperCase();
 }
 
-function Actions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function Actions({ onEdit, onDelete, canEdit }: { onEdit: () => void; onDelete: () => void; canEdit: boolean }) {
+  if (!canEdit) return null;
   const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
   return (
     <div style={{ display: "flex", gap: 2 }}>
@@ -53,7 +54,7 @@ function ProgramTag({ c }: { c: PortfolioCompany }) {
   );
 }
 
-function EquityCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void }) {
+function EquityCard({ c, onEdit, onDelete, onOpen, canEdit }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void; canEdit: boolean }) {
   const badge = STATUS_BADGE[c.status] ?? STATUS_BADGE["Actif"];
   const multColor = (c.tvpi ?? 0) >= 1 ? "var(--green-fg)" : "var(--red-fg)";
   return (
@@ -65,7 +66,7 @@ function EquityCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
           <div style={{ fontSize: 11, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.sector ?? "—"}</div>
         </div>
         <span className="badge" style={{ background: badge.bg, color: badge.fg }}>{c.status}</span>
-        <Actions onEdit={onEdit} onDelete={onDelete} />
+        <Actions onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, textAlign: "center" }}>
         <div><div style={{ fontSize: 10, color: "var(--text-3)" }}>Investi</div><div className="serif tnum" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(c.invested)}</div></div>
@@ -81,7 +82,7 @@ function EquityCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
   );
 }
 
-function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void }) {
+function AccompCard({ c, onEdit, onDelete, onOpen, canEdit }: { c: PortfolioCompany; onEdit: () => void; onDelete: () => void; onOpen: () => void; canEdit: boolean }) {
   const badge = STATUS_BADGE[c.status] ?? STATUS_BADGE["Actif"];
   return (
     <div className="card card-clickable" onClick={onOpen} style={{ padding: 14, cursor: "pointer" }}>
@@ -92,7 +93,7 @@ function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
           <div style={{ fontSize: 11, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.sector ?? "—"}</div>
         </div>
         <span className="badge" style={{ background: badge.bg, color: badge.fg }}>{c.status}</span>
-        <Actions onEdit={onEdit} onDelete={onDelete} />
+        <Actions onEdit={onEdit} onDelete={onDelete} canEdit={canEdit} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-cream)", borderRadius: 9, padding: "9px 11px" }}>
         <span className="badge badge-amber">Accélération</span>
@@ -103,7 +104,7 @@ function AccompCard({ c, onEdit, onDelete, onOpen }: { c: PortfolioCompany; onEd
   );
 }
 
-export default function PortfolioClient({ data }: { data: PortfolioData }) {
+export default function PortfolioClient({ data, canEdit = true }: { data: PortfolioData; canEdit?: boolean }) {
   const router = useRouter();
   const [scope, setScope] = useState<string>("all");
   const [status, setStatus] = useState<StatusFilter>("actives");
@@ -156,10 +157,12 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Saisir un reporting
           </button>
-          <button className="btn btn-primary" onClick={() => setModal({ open: true, company: null })}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            Nouvelle entreprise
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setModal({ open: true, company: null })}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              Nouvelle entreprise
+            </button>
+          )}
         </div>
       </div>
 
@@ -199,8 +202,8 @@ export default function PortfolioClient({ data }: { data: PortfolioData }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
           {list.map((c) =>
             c.trackingType === "equity"
-              ? <EquityCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} />
-              : <AccompCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} />
+              ? <EquityCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} canEdit={canEdit} />
+              : <AccompCard key={c.id} c={c} onEdit={() => setModal({ open: true, company: c })} onDelete={() => remove(c)} onOpen={() => router.push(`/portefeuille/${c.id}`)} canEdit={canEdit} />
           )}
         </div>
       )}

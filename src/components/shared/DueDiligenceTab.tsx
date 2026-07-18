@@ -8,12 +8,14 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { DD_DOMAINS, DD_STATUS } from "@/lib/ui-constants";
 import type { DdItem } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
+import { useCanEdit } from "./WriteAccess";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Terminé": "badge-green", "Point d'attention": "badge-red" };
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return ""; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
 
 export default function DueDiligenceTab({ entityType, entityId, items, users }: { entityType: "deal" | "company"; entityId: string; items: DdItem[]; users: FundUser[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; item: DdItem | null; domain?: string }>({ open: false, item: null });
 
@@ -34,10 +36,10 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
           <b style={{ color: "var(--ink)" }}>{done}/{items.length}</b> terminés
           {flags > 0 && <span style={{ color: "var(--red-fg)", marginLeft: 10 }}>· {flags} point{flags > 1 ? "s" : ""} d'attention</span>}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, item: null })}>
+        {canEdit && (<button className="btn btn-primary" onClick={() => setModal({ open: true, item: null })}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Ajouter un point
-        </button>
+        </button>)}
       </div>
 
       {items.length === 0 ? (
@@ -56,7 +58,7 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
                     <div style={{ fontSize: 13, color: "var(--ink)" }}>{it.item}{it.createdAt ? <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 400 }}> · ajouté le {frDate(it.createdAt)}</span> : null}</div>
                     {it.note && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 2, lineHeight: 1.5 }}>{it.note}</div>}
                   </div>
-                  <div className="row-actions">
+                  <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                     <button onClick={() => setModal({ open: true, item: it })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
                     <button onClick={() => del(it.id)} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                   </div>

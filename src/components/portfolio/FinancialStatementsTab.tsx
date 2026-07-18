@@ -7,6 +7,7 @@ import { OHADA_SECTIONS, computeOhada, bilanFonctionnel, ratios, type OhadaSecti
 import type { StatementValues } from "@/lib/data/financialStatements";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
 import OhadaImportModal from "./OhadaImportModal";
+import { useCanEdit } from "@/components/shared/WriteAccess";
 
 const fmt = (v: number | null | undefined) => (v == null ? "—" : Math.round(v).toLocaleString("fr-FR"));
 const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)} %`);
@@ -29,6 +30,7 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
     return pad;
   });
   const [hiddenYears, setHiddenYears] = useState<number[]>([]);
+  const canEdit = useCanEdit();
   const [importOpen, setImportOpen] = useState(false);
 
   // Les exercices les plus récents s'affichent en premier.
@@ -90,10 +92,10 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <YearNav win={win} />
-          <button className="btn" onClick={() => setImportOpen(true)}>
+          {canEdit && (<button className="btn" onClick={() => setImportOpen(true)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 4 5-4" /><path d="M5 21h14" /></svg>
             Importer
-          </button>
+          </button>)}
           <button className="btn" onClick={() => addYear(1)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Exercice postérieur
@@ -142,7 +144,8 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
                         </div>
                       ) : (
                         <input key={`${line.code}${y}${values[y]?.[line.code] ?? ""}`} defaultValue={values[y]?.[line.code] ?? ""}
-                          onBlur={(e) => save(y, line.code, e.target.value)} style={inp} inputMode="numeric" />
+                          onBlur={(e) => save(y, line.code, e.target.value)} style={inp} inputMode="numeric"
+                          readOnly={!canEdit} disabled={!canEdit} />
                       )}
                     </td>
                   ))}

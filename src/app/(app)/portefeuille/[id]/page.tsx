@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCompanyDetail } from "@/lib/data/companyDetail";
 import CompanyDetailClient from "@/components/portfolio/CompanyDetailClient";
-import { getMyPermissions } from "@/lib/auth/permissions";
+import { getMyPermissions, can } from "@/lib/auth/permissions";
 
 export default async function CompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +13,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
       company={company}
       canEditComites={comites === "E" || comites === "V"}
       canValidateComites={comites === "V"}
+      canEdit={can(perms, "portefeuille", "E")}
     />
   );
 }

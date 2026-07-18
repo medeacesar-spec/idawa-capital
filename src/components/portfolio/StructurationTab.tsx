@@ -6,11 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { VALUATION_METHODS, EXIT_SCENARIOS, EHS_SECTORS } from "@/lib/ui-constants";
 import type { Structuration } from "@/lib/data/companyDetail";
+import { useCanEdit } from "@/components/shared/WriteAccess";
 
 const panel: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px", marginBottom: 14 };
 const h3: React.CSSProperties = { fontSize: 14.5, fontWeight: 600, margin: "0 0 10px", color: "var(--ink)" };
 
 export default function StructurationTab({ companyId, data }: { companyId: string; data: Structuration }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const [vEntry, setVEntry] = useState<string[]>(data.valuationMethodsEntry ?? []);
   const [vCurrent, setVCurrent] = useState<string[]>(data.valuationMethodsCurrent ?? []);
