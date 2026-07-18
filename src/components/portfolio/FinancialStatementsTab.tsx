@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { OHADA_SECTIONS, computeOhada, bilanFonctionnel, ratios, type OhadaSection } from "@/lib/finance/ohada";
 import type { StatementValues } from "@/lib/data/financialStatements";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
+import OhadaImportModal from "./OhadaImportModal";
 
 const fmt = (v: number | null | undefined) => (v == null ? "—" : Math.round(v).toLocaleString("fr-FR"));
 const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)} %`);
@@ -28,6 +29,7 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
     return pad;
   });
   const [hiddenYears, setHiddenYears] = useState<number[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Les exercices les plus récents s'affichent en premier.
   const allYears = Array.from(new Set([...saved, ...extraYears]))
@@ -88,6 +90,10 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <YearNav win={win} />
+          <button className="btn" onClick={() => setImportOpen(true)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 4 5-4" /><path d="M5 21h14" /></svg>
+            Importer
+          </button>
           <button className="btn" onClick={() => addYear(1)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Exercice postérieur
@@ -197,6 +203,8 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
         <br />
         Les exercices s&apos;affichent {YEAR_WINDOW} à la fois, du plus récent au plus ancien : les flèches font défiler, la croix retire une colonne de l&apos;écran. <b>Aucun exercice n&apos;est perdu</b> — ajoutez-en autant que nécessaire.
       </div>
+
+      {importOpen && <OhadaImportModal companyId={companyId} years={allYears} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }

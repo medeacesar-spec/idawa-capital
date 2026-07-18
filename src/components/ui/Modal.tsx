@@ -7,11 +7,14 @@ export default function Modal({
   onClose,
   children,
   footer,
+  maxWidth = 480,
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Élargir la fenêtre pour les contenus tabulaires (écran de vérification d'import). */
+  maxWidth?: number;
 }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -31,7 +34,7 @@ export default function Modal({
       <div
         className="card"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", padding: 0 }}
+        style={{ width: "100%", maxWidth, maxHeight: "90vh", overflowY: "auto", padding: 0 }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px 20px", borderBottom: "1px solid var(--sep)", position: "sticky", top: 0, background: "var(--surface)", borderRadius: "14px 14px 0 0" }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{title}</h3>
