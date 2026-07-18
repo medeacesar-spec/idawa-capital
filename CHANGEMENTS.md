@@ -38,6 +38,23 @@
 
 ---
 
+## Phase 2 bis — Accélération : des écrans qui lui correspondent
+
+Le portefeuille avait été pensé pour les participations. Une entreprise accélérée y voyait
+des instruments de financement, une valorisation et une cap table sans objet.
+
+| Item | Statut | Migration |
+|---|---|---|
+| Fiche adaptée au type de suivi : les familles dépendent de ce qui s'applique, pas d'une case cochée | à tester | non |
+| Suivi de l'accompagnement **par entreprise**, agrégé au programme (jours d'appui, formations, emplois) | à tester | 0024 |
+| Portée des indicateurs : « entreprise » (additionnable) ou « programme » (budget, pourcentages) | à tester | 0024 |
+| Décisions de comité propres à l'accélération : admission, prolongation, sortie, exclusion | à tester | 0025 |
+| Classification E&S déplacée de Structuration vers ESG : elle vaut pour tous les types | à tester | non |
+| **Saisie des indicateurs au niveau programme** (budget, taux d'exécution, pourcentages) | à faire | non |
+| **Agrégation des valeurs entreprise dans le tableau de bord** du programme | à faire | non |
+
+---
+
 ## Phase 2 — Performance & structuration
 
 | Item | Statut | Migration |

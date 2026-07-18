@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { computeTvpi } from "@/lib/format";
+import { getCompanySupport, type CompanySupport } from "@/lib/data/companySupport";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
 import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
@@ -51,6 +52,7 @@ export type CompanyDetail = {
   tasks: SuiviTask[];
   esg: EsgData;
   finance: CompanyFinance;
+  support: CompanySupport;
   valueCreation: ValueInitiative[];
   instruments: Instrument[];
   statements: StatementValues;
@@ -83,7 +85,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
   ]);
 
-  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, users] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements(id), getFundUsers()]);
+  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, users, support] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements(id), getFundUsers(), getCompanySupport(id)]);
 
   // Décisions de comité prises sur la société (post-investissement : sortie / radiation).
   const { data: decRows } = await supabase.from("committee_passages")
@@ -114,7 +116,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
     decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
-    notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation, instruments, statements,
+    notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation, instruments, statements, support,
     structuration: {
       ehsSector: c.ehs_sector ?? null,
       valuationMethodsEntry: (c.valuation_methods_entry as string[] | null) ?? [],

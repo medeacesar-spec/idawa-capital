@@ -75,11 +75,20 @@ export const COMPANY_COMMITTEE_OUTCOMES = [
   "Dépréciation", "Restructuration", "Conversion", "Distribution", "Mise sous surveillance",
 ];
 
+// Une entreprise accélérée ne se vend ni ne se déprécie : ce qui se décide pour elle,
+// c'est son entrée dans un programme, la prolongation de l'appui, ou sa sortie.
+export const SUPPORT_COMMITTEE_OUTCOMES = [
+  "Admission au programme", "Prolongation de l'accompagnement",
+  "Sortie du programme", "Exclusion du programme",
+];
+
 /** Décisions qui font basculer le statut de la société une fois validées. */
 export const COMPANY_OUTCOME_STATUS: Record<string, string> = {
   "Sortie complète": "Sorti",
   "Radiation": "Radié",
   "Mise sous surveillance": "En difficulté",
+  "Sortie du programme": "Sorti",
+  "Exclusion du programme": "Radié",
 };
 
 export const NOTE_TYPES = ["Réunion", "Appel", "Email", "Note"];

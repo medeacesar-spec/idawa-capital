@@ -7,7 +7,7 @@ import { fmtM, fmtMult, fmtPct } from "@/lib/format";
 import CommitteeFormModal from "@/components/pipeline/CommitteeFormModal";
 import CommitteeDocs from "@/components/pipeline/CommitteeDocs";
 import { setCompanyDecisionValidation } from "@/app/(app)/portefeuille/actions";
-import { COMPANY_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
+import { COMPANY_COMMITTEE_OUTCOMES, SUPPORT_COMMITTEE_OUTCOMES } from "@/lib/ui-constants";
 import SuiviTab from "@/components/shared/SuiviTab";
 import EsgTab from "@/components/shared/EsgTab";
 import KpiTab from "@/components/shared/KpiTab";
@@ -21,6 +21,7 @@ import RepaymentsTab from "./RepaymentsTab";
 import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
+import SupportTab from "./SupportTab";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
@@ -39,6 +40,16 @@ const FAMILIES: { key: string; label: string; hint: string; tabs: string[] }[] =
   { key: "suivi", label: "Suivi & gouvernance", hint: "la vie du dossier",
     tabs: ["Suivi", "Décisions", "ESG", "Création de valeur", "Documents", "Contacts"] },
 ];
+// La famille « Accompagnement » ne dépend PAS du type de suivi mais de ce qui s'applique :
+// dans un programme mixte, le fonds investit ET accompagne la même entreprise. On l'affiche
+// donc dès que le programme porte des indicateurs d'accompagnement au niveau entreprise.
+const SUPPORT_FAMILY = {
+  key: "accomp", label: "Accompagnement", hint: "ce que le fonds a fait pour cette entreprise",
+  tabs: ["Accompagnement"],
+};
+
+// Les familles réservées aux participations : sans détention, elles n'ont pas d'objet.
+const EQUITY_ONLY = ["invest", "valo"];
 const BASE_TABS = FAMILIES.flatMap((f) => f.tabs);
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
 // Rouge = la participation se termine ; ambre = signal de vigilance ; vert = engagement accru.
@@ -46,6 +57,8 @@ const OUTCOME_BADGE: Record<string, string> = {
   "Réinvestissement": "badge-green", "Sortie partielle": "badge-neutral", "Sortie complète": "badge-neutral",
   "Radiation": "badge-red", "Dépréciation": "badge-amber", "Restructuration": "badge-amber",
   "Conversion": "badge-neutral", "Distribution": "badge-green", "Mise sous surveillance": "badge-amber",
+  "Admission au programme": "badge-green", "Prolongation de l'accompagnement": "badge-green",
+  "Sortie du programme": "badge-neutral", "Exclusion du programme": "badge-red",
 };
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
@@ -59,13 +72,23 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 
 export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false, canEdit = true }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
   const router = useRouter();
-  const [tab, setTab] = useState("KPIs");
+  const [tab, setTab] = useState(company.trackingType === "equity" ? "KPIs" : company.support.indicators.length > 0 ? "Accompagnement" : "KPIs");
   const [decModal, setDecModal] = useState<{ open: boolean; passage: CompanyDecision | null }>({ open: false, passage: null });
   const [decBusy, setDecBusy] = useState<string | null>(null);
   const equity = company.trackingType === "equity";
+  // Ce que le fonds détient ouvre Investissement et Valorisation ; ce que le programme
+  // accompagne ouvre Accompagnement. Une entreprise d'un programme mixte a les deux.
+  const accompanied = company.support.indicators.length > 0;
+  const base = [
+    ...FAMILIES.filter((f) => equity || !EQUITY_ONLY.includes(f.key)),
+    ...(accompanied ? [SUPPORT_FAMILY] : []),
+  ].sort((a, b) => {
+    const order = ["invest", "valo", "accomp", "perf", "suivi"];
+    return order.indexOf(a.key) - order.indexOf(b.key);
+  });
   const families = company.originDealId
-    ? FAMILIES.map((f) => (f.key === "suivi" ? { ...f, tabs: [...f.tabs, "Origine / instruction"] } : f))
-    : FAMILIES;
+    ? base.map((f) => (f.key === "suivi" ? { ...f, tabs: [...f.tabs, "Origine / instruction"] } : f))
+    : base;
   const familyOf = (t: string) => families.find((f) => f.tabs.includes(t)) ?? families[0];
   const family = familyOf(tab);
   const isClosed = company.status === "Sorti" || company.status === "Radié";
@@ -227,9 +250,11 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
         </div>
       )}
 
-      {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} users={company.users} />}
+      {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} users={company.users} ehsSector={company.structuration.ehsSector} companyId={company.id} />}
       {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
       {tab === "Création de valeur" && <ValueCreationTab entityType="company" entityId={company.id} items={company.valueCreation} contacts={company.contacts} users={company.users} />}
+      {tab === "Accompagnement" && <SupportTab companyId={company.id} data={company.support} />}
+
       {tab === "Valorisation" && <ValuationTab companyId={company.id} rows={company.finance.flows} canValidate={canValidateComites} />}
       {tab === "Flux financiers" && <FlowsTab companyId={company.id} rows={company.finance.flows} />}
       {tab === "Cap table" && <CapTableTab companyId={company.id} rows={company.finance.capTable} />}
@@ -287,7 +312,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       {decModal.open && (
         <CommitteeFormModal
           companyId={company.id}
-          outcomes={COMPANY_COMMITTEE_OUTCOMES}
+          outcomes={equity ? COMPANY_COMMITTEE_OUTCOMES : SUPPORT_COMMITTEE_OUTCOMES}
           defaultType="Comité d'investissement"
           passage={decModal.passage}
           onClose={() => setDecModal({ open: false, passage: null })}

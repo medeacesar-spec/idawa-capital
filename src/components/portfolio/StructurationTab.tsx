@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { VALUATION_METHODS, EXIT_SCENARIOS, EHS_SECTORS } from "@/lib/ui-constants";
+import { VALUATION_METHODS, EXIT_SCENARIOS } from "@/lib/ui-constants";
 import type { Structuration } from "@/lib/data/companyDetail";
 import { useCanEdit } from "@/components/shared/WriteAccess";
 
@@ -76,20 +76,6 @@ export default function StructurationTab({ companyId, data }: { companyId: strin
         </div>
       </div>
 
-      <div style={panel}>
-        <h3 style={h3}>Classification E&S</h3>
-        <Field label="Secteur EHS (IFC)" hint="Secteur précis de l'entreprise — sert au diagnostic E&S">
-          <Select disabled={!canEdit} value={f.ehsSector} onChange={(e) => { set("ehsSector", e.target.value); save({ ehs_sector: e.target.value || null }); }}>
-            <option value="">— Non défini —</option>
-            {EHS_SECTORS.map((g) => (
-              <optgroup key={g.group} label={g.group}>
-                {g.items.map((s) => <option key={s} value={s}>{s}</option>)}
-              </optgroup>
-            ))}
-            {!!f.ehsSector && !EHS_SECTORS.some((g) => g.items.includes(f.ehsSector)) && <option value={f.ehsSector}>{f.ehsSector}</option>}
-          </Select>
-        </Field>
-      </div>
     </div>
   );
 }

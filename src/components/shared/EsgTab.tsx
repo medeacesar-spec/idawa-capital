@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
+import { EHS_SECTORS, ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
@@ -17,7 +17,12 @@ const STATUS_COLOR: Record<string, string> = { "Réalisée": "badge-green", "En 
 const CAT_COLOR: Record<string, string> = { E: "#3B6D11", S: "#185FA5", G: "#8A5A18" };
 function isOverdue(a: EsgAction) { return a.status !== "Réalisée" && !!a.dateEndPlan && a.dateEndPlan < new Date().toISOString().slice(0, 10); }
 
-export default function EsgTab({ entityType, entityId, data, users }: { entityType: "deal" | "company"; entityId: string; data: EsgData; users: FundUser[] }) {
+export default function EsgTab({ entityType, entityId, data, users, ehsSector, companyId }: {
+  entityType: "deal" | "company"; entityId: string; data: EsgData; users: FundUser[];
+  /** Secteur EHS de la société : le diagnostic E&S s'appuie dessus. Absent sur un dossier. */
+  ehsSector?: string | null;
+  companyId?: string;
+}) {
   const canEdit = useCanEdit();
   const router = useRouter();
   const [diagOpen, setDiagOpen] = useState(false);
@@ -31,8 +36,34 @@ export default function EsgTab({ entityType, entityId, data, users }: { entityTy
   async function delAction(id: string) { if (!confirm("Supprimer cette action ESG ?")) return; await createClient().from("esg_actions").delete().eq("id", id); router.refresh(); }
   async function delImpact(id: string) { if (!confirm("Supprimer cet indicateur d'impact ?")) return; await createClient().from("esg_impact_ratings").delete().eq("id", id); router.refresh(); }
 
+  async function saveEhs(value: string) {
+    if (!companyId) return;
+    await createClient().from("portfolio_companies").update({ ehs_sector: value || null }).eq("id", companyId);
+    router.refresh();
+  }
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
+      {companyId && (
+        <section className="card" style={{ padding: "16px 20px" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+            Classification E&S <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— secteur IFC, socle du diagnostic</span>
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 10 }}>
+            Le secteur précis détermine les normes de performance applicables et les risques à examiner.
+          </div>
+          <Select disabled={!canEdit} defaultValue={ehsSector ?? ""} onChange={(e) => saveEhs(e.target.value)}>
+            <option value="">— Non défini —</option>
+            {EHS_SECTORS.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.items.map((x) => <option key={x} value={x}>{x}</option>)}
+              </optgroup>
+            ))}
+            {!!ehsSector && !EHS_SECTORS.some((g) => g.items.includes(ehsSector)) && <option value={ehsSector}>{ehsSector}</option>}
+          </Select>
+        </section>
+      )}
+
       {/* Diagnostic */}
       <section className="card" style={{ padding: "16px 20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: a ? 12 : 0, flexWrap: "wrap", gap: 8 }}>
