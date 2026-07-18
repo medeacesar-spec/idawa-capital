@@ -46,7 +46,7 @@
 | Structuration & sortie : piste de sortie (put option, formule, cession tiers), méthode de valo, multiple & TRI attendus | fait | 0015 |
 | **Correction** — **Plusieurs méthodes de valorisation** et **plusieurs pistes de sortie** possibles (choix multiples) | fait | 0018 |
 | Décisions portefeuille étendues : réinvestissement, sortie partielle, sortie complète, radiation, dépréciation, restructuration, conversion, distribution, mise sous surveillance | à tester | 0020 |
-| Séparation valorisation (annuelle, comité d'audit) / performance (trimestrielle) | à faire | non |
+| Séparation valorisation / performance : onglet **Valorisation** dédié, cadence annuelle, arrêté par le comité d'audit, un seul arrêté par exercice | à tester | 0022-0023 |
 | **Échéancier consolidé au niveau du fonds** : arriérés et échéances à venir toutes sociétés confondues, profil mensuel des encaissements (page Performance) | à tester | non |
 | **KPIs financiers sortis de RH & Management** (8 indicateurs sectoriels replacés en Financier) | fait | 0019 |
 | **KPIs alignés sur la norme OHADA** : la bande de familles et les libellés suivent le plan OHADA | à faire | oui |

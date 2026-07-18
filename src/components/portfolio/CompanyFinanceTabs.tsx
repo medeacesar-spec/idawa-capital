@@ -244,53 +244,42 @@ function BudgetModal({ companyId, row, onClose }: { companyId: string; row: Fina
   );
 }
 
-/* ---------- Flux & Valorisation ---------- */
+/* ---------- Flux financiers (appels de fonds, distributions) ---------- */
+const FLOW_BADGE: Record<string, string> = { "Appel de fonds": "badge-amber", "Distribution": "badge-green" };
 export function FlowsTab({ companyId, rows }: { companyId: string; rows: FlowRow[] }) {
   const canEdit = useCanEdit();
   const [modal, setModal] = useState<{ open: boolean; row: FlowRow | null }>({ open: false, row: null });
   const del = useDel("company_flows", "ce flux");
-  const calls = rows.filter((r) => r.type === "Appel de fonds").reduce((s, r) => s + (r.amount ?? 0), 0);
-  const dists = rows.filter((r) => r.type === "Distribution").reduce((s, r) => s + (r.amount ?? 0), 0);
-  const valos = rows.filter((r) => r.type === "Valorisation" && r.amount != null).sort((a, b) => (a.flowDate ?? "").localeCompare(b.flowDate ?? ""));
-  const lastVal = valos[valos.length - 1];
-  const TYPE_COLOR: Record<string, string> = { "Appel de fonds": "badge-amber", "Distribution": "badge-green", "Valorisation": "badge-neutral" };
+  // Les valorisations vivent sur leur propre onglet : elles suivent une cadence annuelle
+  // et un circuit de validation, alors qu'un flux est un mouvement daté sans validation.
+  const flows = rows.filter((r) => r.type !== "Valorisation");
+  const calls = flows.filter((r) => r.type === "Appel de fonds").reduce((s, r) => s + (r.amount ?? 0), 0);
+  const dists = flows.filter((r) => r.type === "Distribution").reduce((s, r) => s + (r.amount ?? 0), 0);
+
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14 }}>
-        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Appels de fonds</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(calls)}</div></div>
-        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Distributions</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{fmtM(dists)}</div></div>
-        <div className="card" style={{ padding: "12px 14px" }}><div style={{ fontSize: 11, color: "var(--text-2)" }}>Dernière valorisation</div><div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 3 }}>{lastVal?.amount != null ? fmtM(lastVal.amount) : "—"}</div>{lastVal?.method && <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 2 }}>{lastVal.method}</div>}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
+        {([["Capital appelé", fmtM(calls)], ["Distribué", fmtM(dists)], ["Net", fmtM(dists - calls)]] as [string, string][]).map(([k, v]) => (
+          <div key={k} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11, color: "var(--text-2)" }}>{k}</div>
+            <div className="serif tnum" style={{ fontSize: 16, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>{v}</div>
+          </div>
+        ))}
       </div>
 
-      {valos.length >= 1 && (
-        <div className="card" style={{ padding: "14px 18px", marginBottom: 14 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Historique de valorisation <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— daté, avec méthode</span></div>
-          {valos.length >= 2 && <ValoSpark valos={valos} />}
-          <div style={{ display: "grid", gap: 8, marginTop: valos.length >= 2 ? 12 : 0 }}>
-            {[...valos].reverse().map((v) => (
-              <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11.5, color: "var(--text-3)", minWidth: 92 }}>{frDate(v.flowDate)}</span>
-                <span className="tnum serif" style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", minWidth: 90 }}>{fmtM(v.amount ?? 0)}</span>
-                {v.method && <span className="badge badge-neutral">{v.method}</span>}
-                {v.note && <span style={{ fontSize: 11, color: "var(--text-3)" }}>{v.note}</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Historique des flux</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Historique des flux <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— appels de fonds et distributions ; la valorisation a son propre onglet</span></div>
         {canEdit && <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un flux</button>}
       </div>
-      {rows.length === 0 ? (
-        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun flux. Enregistrez appels de fonds, distributions et valorisations.</div>
+      {flows.length === 0 ? (
+        <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun flux. Enregistrez les appels de fonds et les distributions.</div>
       ) : (
         <div className="card" style={{ padding: "4px 18px" }}>
-          {rows.map((r, i) => (
+          {flows.map((r, i) => (
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
               <span style={{ fontSize: 11.5, color: "var(--text-3)", minWidth: 92 }}>{frDate(r.flowDate)}</span>
-              {r.type && <span className={`badge ${TYPE_COLOR[r.type] ?? "badge-neutral"}`}>{r.type}</span>}
-              <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.type === "Valorisation" && r.method ? r.method : r.note}</span>
+              {r.type && <span className={`badge ${FLOW_BADGE[r.type] ?? "badge-neutral"}`}>{r.type}</span>}
+              <span style={{ flex: 1, fontSize: 12, color: "var(--text-2)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.note}</span>
               <span className="tnum" style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{r.amount != null ? fmtM(r.amount) : "—"}</span>
               <span className="row-actions" style={{ display: canEdit ? undefined : "none" }}><button onClick={() => setModal({ open: true, row: r })}>{iconEdit}</button><button onClick={() => del(r.id)}>{iconDel}</button></span>
             </div>

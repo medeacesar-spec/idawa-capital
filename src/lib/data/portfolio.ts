@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeTvpi } from "@/lib/format";
 
 export type PortfolioCompany = {
   id: string;
@@ -58,7 +59,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
       trackingType: (c.tracking_type as "equity" | "accompagnement") ?? "equity",
       invested: Number(c.invested_amount ?? 0),
       valuation: Number(c.current_valuation ?? 0),
-      tvpi: c.tvpi != null ? Number(c.tvpi) : null,
+      tvpi: computeTvpi(Number(c.invested_amount ?? 0), Number(c.current_valuation ?? 0), 0, c.tvpi != null ? Number(c.tvpi) : null),
       tri: c.tri != null ? Number(c.tri) : null,
       ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
       investedDate: c.invested_date,

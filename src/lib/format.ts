@@ -23,3 +23,14 @@ export function fmtMult(n: number | null): string {
 export function fmtPct(n: number | null): string {
   return n == null ? "—" : Math.round(n) + " %";
 }
+
+/**
+ * Multiple d'une participation : (valorisation + distributions) / capital investi.
+ * Calculé et non stocké — une colonne `tvpi` figée à côté de `current_valuation`
+ * finit toujours par diverger, et la fiche affichait 4,00x sous une valorisation
+ * qui donnait 5,83x. Le repli sur la valeur stockée ne sert que si rien n'est investi.
+ */
+export function computeTvpi(invested: number, valuation: number, distributed = 0, stored: number | null = null): number | null {
+  if (!invested || invested <= 0) return stored;
+  return (valuation + distributed) / invested;
+}

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { computeTvpi } from "@/lib/format";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
 import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
@@ -105,7 +106,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
     status: c.status, trackingType: c.tracking_type ?? "equity",
     invested: Number(c.invested_amount ?? 0), valuation: Number(c.current_valuation ?? 0),
-    tvpi: c.tvpi != null ? Number(c.tvpi) : null, tri: c.tri != null ? Number(c.tri) : null,
+    tvpi: computeTvpi(Number(c.invested_amount ?? 0), Number(c.current_valuation ?? 0), 0, c.tvpi != null ? Number(c.tvpi) : null), tri: c.tri != null ? Number(c.tri) : null,
     ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
     investedDate: c.invested_date, programName: prog?.name ?? null, programColor: prog?.color ?? null,
     originDealId: c.origin_deal_id ?? null,

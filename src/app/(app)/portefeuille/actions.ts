@@ -52,3 +52,48 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
   revalidatePath("/portefeuille");
   return { ok: true };
 }
+
+// Arrête (ou rouvre) la valorisation d'un exercice.
+// C'est l'équivalent du comité d'audit : tant qu'elle n'est pas arrêtée, une valorisation
+// reste une proposition et ne doit pas circuler comme un chiffre ferme.
+// Même exigence que les décisions de comité : niveau « Validation ».
+export async function setValuationValidation(flowId: string, validate: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Non authentifié." };
+  const { perms } = await getMyPermissions();
+  if (perms.comites !== "V") return { error: "Seul un rôle « Validation » (Direction / Administrateur) peut arrêter une valorisation." };
+
+  const { data: flow } = await supabase
+    .from("company_flows")
+    .select("id, company_id, type, fiscal_year, amount")
+    .eq("id", flowId).single();
+  if (!flow) return { error: "Valorisation introuvable." };
+  if (flow.type !== "Valorisation") return { error: "Cette ligne n'est pas une valorisation." };
+
+  const { error } = await supabase.from("company_flows").update(
+    validate
+      ? { status: "Validée", validated_by: user.id, validated_at: new Date().toISOString() }
+      : { status: "Proposée", validated_by: null, validated_at: null }
+  ).eq("id", flowId);
+  // L'index unique refuse un second arrêté sur le même exercice : le dire clairement.
+  if (error) {
+    return { error: error.code === "23505"
+      ? `L'exercice ${flow.fiscal_year} a déjà une valorisation arrêtée. Annulez-la d'abord.`
+      : error.message };
+  }
+
+  // La valorisation arrêtée la plus récente devient la référence de la société.
+  const { data: latest } = await supabase
+    .from("company_flows")
+    .select("amount")
+    .eq("company_id", flow.company_id).eq("type", "Valorisation").eq("status", "Validée")
+    .order("fiscal_year", { ascending: false }).limit(1).maybeSingle();
+  await supabase.from("portfolio_companies")
+    .update({ current_valuation: latest?.amount ?? null })
+    .eq("id", flow.company_id);
+
+  revalidatePath(`/portefeuille/${flow.company_id}`);
+  revalidatePath("/portefeuille");
+  return { ok: true };
+}
