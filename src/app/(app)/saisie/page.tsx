@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getMyPermissions, can } from "@/lib/auth/permissions";
+import { redirect } from "next/navigation";
 import SaisieClient from "@/components/saisie/SaisieClient";
 
 export default async function SaisiePage({ searchParams }: { searchParams: Promise<{ scope?: string; entity?: string; company?: string }> }) {
@@ -6,6 +8,10 @@ export default async function SaisiePage({ searchParams }: { searchParams: Promi
   const preselect = entity ?? company ?? null;
   const isPipeline = scope === "pipeline";
   const supabase = await createClient();
+  // Saisir un reporting écrit des valeurs de KPI : réservé à qui peut modifier l'entité.
+  const { perms } = await getMyPermissions();
+  const domain = isPipeline ? "pipeline" : "portefeuille";
+  if (!can(perms, domain, "E")) redirect(isPipeline ? "/pipeline" : "/portefeuille");
 
   if (isPipeline) {
     const { data } = await supabase.from("deals").select("id, company_name, primary_sub_sector_id").eq("status", "actif").order("company_name");

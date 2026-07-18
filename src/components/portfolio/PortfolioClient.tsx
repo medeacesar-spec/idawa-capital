@@ -153,10 +153,10 @@ export default function PortfolioClient({ data, canEdit = true }: { data: Portfo
           {closed.map((p) => <Pill key={p.id} id={p.id} name={p.name} color={p.color} isClosed />)}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=portefeuille")}>
+          {canEdit && (<button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=portefeuille")}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Saisir un reporting
-          </button>
+          </button>)}
           {canEdit && (
             <button className="btn btn-primary" onClick={() => setModal({ open: true, company: null })}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>

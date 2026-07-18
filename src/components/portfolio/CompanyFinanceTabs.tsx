@@ -346,7 +346,7 @@ export function CapTableTab({ companyId, rows }: { companyId: string; rows: CapR
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Table de capitalisation <span style={{ fontWeight: 400, color: totalPct === 100 ? "var(--green-fg)" : "var(--text-3)" }}>— total {totalPct}%{totalPct !== 100 ? " (≠ 100)" : ""}</span></div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un actionnaire</button>
+        {canEdit && <button className="btn btn-primary" onClick={() => setModal({ open: true, row: null })}>{iconAdd} Ajouter un actionnaire</button>}
       </div>
       {rows.length === 0 ? (
         <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucune ligne. Renseignez fondateurs, Idawa, co-investisseurs, pool ESOP…</div>

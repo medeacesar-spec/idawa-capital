@@ -86,10 +86,10 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
             {company.originDealName && ` · issue du deal ${company.originDealName}`}
           </div>
         </div>
-        <button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=portefeuille&entity=${company.id}`)} style={{ flexShrink: 0 }}>
+        {canEdit && (<button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=portefeuille&entity=${company.id}`)} style={{ flexShrink: 0 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Saisir un reporting
-        </button>
+        </button>)}
       </div>
 
       {/* Tags */}

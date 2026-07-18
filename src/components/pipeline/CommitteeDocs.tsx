@@ -4,8 +4,10 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CommitteeDoc } from "@/lib/data/dealDetail";
+import { useCanEdit } from "@/components/shared/WriteAccess";
 
 export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: { dealId?: string; companyId?: string; committeeId: string; docs: CommitteeDoc[] }) {
+  const canEdit = useCanEdit();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -46,13 +48,13 @@ export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: 
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h9l5 5v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /></svg>
             {d.title}
           </button>
-          <button onClick={() => remove(d)} title="Supprimer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, display: "flex" }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+          {canEdit && <button onClick={() => remove(d)} title="Supprimer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, display: "flex" }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
         </span>
       ))}
-      <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "var(--surface)", color: "var(--camel)", border: "1px dashed var(--border-strong)", fontFamily: "inherit" }}>
+      {canEdit && <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "var(--surface)", color: "var(--camel)", border: "1px dashed var(--border-strong)", fontFamily: "inherit" }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M8 8l4-4 4 4" /><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
         {busy ? "Envoi…" : "Joindre le CR"}
-      </button>
+      </button>}
       <input ref={fileRef} type="file" onChange={onFile} style={{ display: "none" }} />
     </div>
   );

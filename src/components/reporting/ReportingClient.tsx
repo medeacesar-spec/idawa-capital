@@ -21,7 +21,7 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data }: { data: ReportingData }) {
+export default function ReportingClient({ data, canEdit = true }: { data: ReportingData; canEdit?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState<"collecte" | "extraction">("collecte");
   const [period, setPeriod] = useState(data.periods[0] ?? "2026-T2");
@@ -61,7 +61,7 @@ export default function ReportingClient({ data }: { data: ReportingData }) {
                 const st = statusFor(c.id);
                 return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                    <button onClick={() => cycle(c.id)} title="Changer le statut" style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+                    <button onClick={() => canEdit && cycle(c.id)} disabled={!canEdit} title={canEdit ? "Changer le statut" : "Lecture seule"} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
                       <span className={`badge ${STATUS_BADGE[st]}`} style={{ cursor: "pointer", minWidth: 66, textAlign: "center" }}>{st}</span>
                     </button>
                     <div style={{ flex: 1, minWidth: 0 }}>

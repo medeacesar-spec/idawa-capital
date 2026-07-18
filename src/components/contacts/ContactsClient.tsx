@@ -12,7 +12,7 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-function ContactRow({ c, onEdit, onDelete }: { c: Contact; onEdit: () => void; onDelete: () => void }) {
+function ContactRow({ c, onEdit, onDelete, canEdit = true }: { c: Contact; onEdit: () => void; onDelete: () => void; canEdit?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 0" }}>
       <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--accent-soft)", color: "var(--espresso)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{initials(c.name)}</div>
@@ -21,7 +21,7 @@ function ContactRow({ c, onEdit, onDelete }: { c: Contact; onEdit: () => void; o
         <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>{c.function ?? "—"}{c.email ? ` · ${c.email}` : ""}</div>
       </div>
       <ChannelIcons c={c} />
-      <div className="row-actions">
+      <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
         <button onClick={onEdit} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
         <button onClick={onDelete} aria-label="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
       </div>
@@ -29,7 +29,7 @@ function ContactRow({ c, onEdit, onDelete }: { c: Contact; onEdit: () => void; o
   );
 }
 
-export default function ContactsClient({ data }: { data: ContactsData }) {
+export default function ContactsClient({ data, canEdit = true }: { data: ContactsData; canEdit?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [filter, setFilter] = useState<string>("all");
@@ -70,10 +70,10 @@ export default function ContactsClient({ data }: { data: ContactsData }) {
             );
           })}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal({ open: true, contact: null })}>
+        {canEdit && (<button className="btn btn-primary" onClick={() => setModal({ open: true, contact: null })}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Nouveau contact
-        </button>
+        </button>)}
       </div>
       <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 14 }}>
         <b className="tnum" style={{ color: "var(--ink)" }}>{data.total}</b> contacts · {groups.length} organisations
@@ -86,7 +86,7 @@ export default function ContactsClient({ data }: { data: ContactsData }) {
               <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{g.organization}</span>
               {g.orgType && <span className="badge badge-neutral" style={{ fontSize: 10 }}>{g.orgType}</span>}
             </div>
-            {g.contacts.map((c) => <ContactRow key={c.id} c={c} onEdit={() => setModal({ open: true, contact: c })} onDelete={() => remove(c)} />)}
+            {g.contacts.map((c) => <ContactRow canEdit={canEdit} key={c.id} c={c} onEdit={() => setModal({ open: true, contact: c })} onDelete={() => remove(c)} />)}
           </div>
         ))}
       </div>

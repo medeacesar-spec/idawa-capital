@@ -11,7 +11,7 @@ const CAT_COLOR: Record<string, string> = { Juridique: "#8A4B5A", Reporting: "#1
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return ""; const dt = d.slice(0, 10); return `${parseInt(dt.slice(8, 10), 10)} ${MONTHS[parseInt(dt.slice(5, 7), 10) - 1] ?? ""} ${dt.slice(0, 4)}`; }
 
-export default function DocumentsClient({ data }: { data: DocumentsData }) {
+export default function DocumentsClient({ data, canEdit = true }: { data: DocumentsData; canEdit?: boolean }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [sort, setSort] = useState<"recent" | "alpha">("recent");
@@ -57,10 +57,10 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <SortToggle sort={sort} setSort={setSort} alphaLabel="A → Z (entreprise)" />
-          <button className="btn btn-primary" onClick={() => setModal(true)}>
+          {canEdit && (<button className="btn btn-primary" onClick={() => setModal(true)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Déposer un document
-          </button>
+          </button>)}
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export default function DocumentsClient({ data }: { data: DocumentsData }) {
               {d.category && <span className="badge" style={{ background: `${CAT_COLOR[d.category] ?? "#6B5744"}1a`, color: CAT_COLOR[d.category] ?? "#6B5744" }}>{d.category}</span>}
               <div className="row-actions">
                 {d.storagePath && <button onClick={() => download(d)} aria-label="Ouvrir" title="Ouvrir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 4 5-4" /><path d="M5 21h14" /></svg></button>}
-                <button onClick={() => remove(d)} aria-label="Supprimer" title="Supprimer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
+                {canEdit && <button onClick={() => remove(d)} aria-label="Supprimer" title="Supprimer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>}
               </div>
             </div>
           ))}
