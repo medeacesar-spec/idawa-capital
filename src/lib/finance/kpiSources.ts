@@ -141,3 +141,42 @@ export function budgetTarget(kpiName: string, budget: BudgetRow[]): { year: numb
   }
   return null;
 }
+
+/**
+ * Jeu d'indicateurs financiers NORMALISÉ sur le plan OHADA.
+ *
+ * Sans référence commune, chacun nomme le même solde à sa façon — « CA », « Chiffre
+ * d'affaires HT », « Ventes » — et les fiches deviennent incomparables entre sociétés.
+ * Ces libellés sont ceux du plan comptable, avec le code du poste dont ils sortent.
+ *
+ * Chaque nom est écrit pour correspondre à sa propre règle dans KPI_SOURCES : un KPI
+ * ajouté depuis cette liste est donc alimenté automatiquement dès que les états financiers
+ * sont saisis, sans aucune ressaisie. Le script scripts/check_ohada_kpis.mjs le vérifie.
+ */
+export const OHADA_KPIS: {
+  name: string; code: string; unit: string; direction: "high" | "low"; group: string;
+}[] = [
+  // Soldes intermédiaires de gestion
+  { name: "Chiffre d'affaires", code: "XB", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+  { name: "Marge commerciale", code: "XA", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+  { name: "Valeur ajoutée", code: "XC", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+  { name: "Excédent brut d'exploitation", code: "XD", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+  { name: "Résultat d'exploitation", code: "XE", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+  { name: "Résultat net", code: "XI", unit: "FCFA", direction: "high", group: "Soldes de gestion" },
+
+  // Rentabilité
+  { name: "Taux d'EBE", code: "XD ÷ XB", unit: "%", direction: "high", group: "Rentabilité" },
+  { name: "Marge nette", code: "XI ÷ XB", unit: "%", direction: "high", group: "Rentabilité" },
+  { name: "Rentabilité des capitaux propres", code: "XI ÷ CP", unit: "%", direction: "high", group: "Rentabilité" },
+
+  // Structure financière
+  { name: "Capitaux propres", code: "CP", unit: "FCFA", direction: "high", group: "Structure financière" },
+  { name: "Autonomie financière", code: "CP ÷ DZ", unit: "%", direction: "high", group: "Structure financière" },
+  { name: "Endettement", code: "dettes ÷ CP", unit: "x", direction: "low", group: "Structure financière" },
+
+  // Équilibre financier
+  { name: "Fonds de roulement", code: "DF − AZ", unit: "FCFA", direction: "high", group: "Équilibre financier" },
+  { name: "Besoin en fonds de roulement", code: "BK − DP", unit: "FCFA", direction: "low", group: "Équilibre financier" },
+  { name: "Trésorerie nette", code: "BT − DT", unit: "FCFA", direction: "high", group: "Équilibre financier" },
+  { name: "Liquidité générale", code: "BK ÷ DP", unit: "x", direction: "high", group: "Équilibre financier" },
+];

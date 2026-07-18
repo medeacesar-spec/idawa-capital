@@ -7,7 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { KPI_DIMENSIONS, KPI_DIM_LABEL, KPI_DIM_COLOR, KPI_DIRECTIONS } from "@/lib/ui-constants";
 import type { KpiSeries, LibraryKpi } from "@/lib/data/kpis";
-import { derive, budgetTarget, type BudgetRow } from "@/lib/finance/kpiSources";
+import { derive, budgetTarget, sourceFor, OHADA_KPIS, type BudgetRow } from "@/lib/finance/kpiSources";
 import KpiAutoFillModal from "./KpiAutoFillModal";
 import { useCanEdit } from "./WriteAccess";
 
@@ -139,7 +139,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
   function KpiModal({ entityType, entityId, defaultCat, kpi, library, trackedNames, onClose }: { entityType: string; entityId: string; defaultCat: string; kpi: KpiSeries | null; library: LibraryKpi[]; trackedNames: Set<string>; onClose: () => void }) {
     const available = library.filter((l) => !trackedNames.has(l.name));
     const [added, setAdded] = useState<Set<string>>(new Set());
-    const [mode, setMode] = useState<"library" | "custom">(!kpi && available.length > 0 ? "library" : "custom");
+    const [mode, setMode] = useState<"library" | "ohada" | "custom">(!kpi && available.length > 0 ? "library" : "custom");
     const [busy, setBusy] = useState(false);
     const [name, setName] = useState(kpi?.name ?? "");
     const [category, setCategory] = useState(kpi?.category ?? defaultCat);
@@ -150,6 +150,13 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
     async function addFromLibrary(l: LibraryKpi) {
       await createClient().from("tracked_kpis").insert({ entity_type: entityType, entity_id: entityId, kind: "business", category: l.category, name: l.name });
       setAdded((s) => new Set(s).add(l.name));
+    }
+    async function addOhada(k: (typeof OHADA_KPIS)[number]) {
+      await createClient().from("tracked_kpis").insert({
+        entity_type: entityType, entity_id: entityId, kind: "business",
+        category: "Financier", name: k.name, unit: k.unit, direction: k.direction,
+      });
+      setAdded((s) => new Set(s).add(k.name));
     }
     function closeAndRefresh() { onClose(); router.refresh(); }
 
@@ -172,13 +179,42 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
           : <button className="btn btn-primary" onClick={closeAndRefresh}>Terminé{added.size > 0 ? ` (${added.size} ajouté${added.size > 1 ? "s" : ""})` : ""}</button>}>
         {!kpi && (
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-            {(["library", "custom"] as const).map((m) => (
-              <button key={m} onClick={() => setMode(m)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === m ? "var(--espresso)" : "var(--surface)", color: mode === m ? "#fff" : "var(--text-2)", border: `1px solid ${mode === m ? "var(--espresso)" : "var(--border-strong)"}` }}>{m === "library" ? "Depuis la bibliothèque" : "Personnalisé"}</button>
+            {(["library", "ohada", "custom"] as const).map((m) => (
+              <button key={m} onClick={() => setMode(m)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === m ? "var(--espresso)" : "var(--surface)", color: mode === m ? "#fff" : "var(--text-2)", border: `1px solid ${mode === m ? "var(--espresso)" : "var(--border-strong)"}` }}>{m === "library" ? "Depuis la bibliothèque" : m === "ohada" ? "Norme OHADA" : "Personnalisé"}</button>
             ))}
           </div>
         )}
 
-        {mode === "library" && !kpi ? (
+        {mode === "ohada" && !kpi ? (
+          <div style={{ display: "grid", gap: 12, maxHeight: 360, overflowY: "auto" }}>
+            <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.6 }}>
+              Libellés du <b>plan comptable OHADA</b>, avec le poste dont ils sortent. Les ajouter garantit
+              des chiffres comparables d&apos;une société à l&apos;autre — et ils sont <b>alimentés automatiquement</b>
+              dès que les états financiers sont saisis.
+            </div>
+            {Array.from(new Set(OHADA_KPIS.map((k) => k.group))).map((group) => (
+              <div key={group}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--camel)", marginBottom: 6 }}>{group}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {OHADA_KPIS.filter((k) => k.group === group).map((k) => {
+                    const already = added.has(k.name) || trackedNames.has(k.name);
+                    return (
+                      <button key={k.name} disabled={already} onClick={() => addOhada(k)}
+                        title={already ? "Déjà suivi" : `Alimenté depuis ${k.code}`}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999,
+                          fontSize: 11.5, fontWeight: 600, cursor: already ? "default" : "pointer", opacity: already ? 0.45 : 1,
+                          background: "var(--surface)", color: "var(--text-2)", border: "1px dashed var(--border-strong)" }}>
+                        {already ? "✓" : "+"} {k.name}
+                        <span style={{ color: "var(--text-3)", fontWeight: 500 }}>{k.code}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {added.size > 0 && <div style={{ fontSize: 11.5, color: "var(--green-fg)" }}>✅ {added.size} indicateur{added.size > 1 ? "s" : ""} ajouté{added.size > 1 ? "s" : ""}. Utilisez « Alimenter depuis les chiffres saisis » pour les remplir.</div>}
+          </div>
+        ) : mode === "library" && !kpi ? (
           available.length === 0 ? (
             <div style={{ fontSize: 12.5, color: "var(--text-3)", padding: "8px 0" }}>Aucun indicateur de bibliothèque disponible pour ce secteur (sous-secteur non défini, ou tous déjà suivis). Utilisez « Personnalisé ».</div>
           ) : (
