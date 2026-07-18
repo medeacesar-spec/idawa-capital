@@ -6,10 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 import { fmtM } from "@/lib/format";
 import { INSTRUMENT_TYPES } from "@/lib/ui-constants";
 import type { Instrument } from "@/lib/data/instruments";
+import { computeSchedule } from "@/lib/finance/amortization";
 import InstrumentFormModal from "./InstrumentFormModal";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
+function frDay(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
+const fmtN = (v: number) => Math.round(v).toLocaleString("fr-FR");
 const typeLabel = (t: string) => INSTRUMENT_TYPES.find((x) => x.key === t)?.label ?? t;
 const kindOf = (t: string) => INSTRUMENT_TYPES.find((x) => x.key === t)?.kind ?? "debt";
 const TYPE_BADGE: Record<string, string> = { equity: "badge-green", "quasi-equity": "badge-amber", "pret-campagne": "badge-neutral" };
@@ -17,6 +20,7 @@ const TYPE_BADGE: Record<string, string> = { equity: "badge-green", "quasi-equit
 export default function InstrumentsTab({ companyId, instruments }: { companyId: string; instruments: Instrument[] }) {
   const router = useRouter();
   const [modal, setModal] = useState<{ open: boolean; instrument: Instrument | null }>({ open: false, instrument: null });
+  const [openSchedule, setOpenSchedule] = useState<string | null>(null);
 
   const committed = instruments.reduce((a, i) => a + (i.amountCommitted ?? 0), 0);
   const disbursed = instruments.reduce((a, i) => a + (i.amountDisbursed ?? 0), 0);
@@ -89,6 +93,7 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
                   )}
                 </div>
                 {i.notes && <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 8, lineHeight: 1.5 }}>{i.notes}</div>}
+                {!equity && <ScheduleBlock instrument={i} open={openSchedule === i.id} onToggle={() => setOpenSchedule(openSchedule === i.id ? null : i.id)} />}
               </div>
             );
           })}
@@ -96,10 +101,64 @@ export default function InstrumentsTab({ companyId, instruments }: { companyId: 
       )}
 
       <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 12 }}>
-        Les échéanciers d'amortissement et le suivi des créances (facturation, encaissements, arriérés) arrivent à l'étape suivante.
+        Échéancier d'amortissement calculé automatiquement (dépliable sur chaque prêt). Le suivi des créances réelles — facturation, encaissements, arriérés — arrive à l'étape suivante.
       </div>
 
       {modal.open && <InstrumentFormModal companyId={companyId} instrument={modal.instrument} onClose={() => setModal({ open: false, instrument: null })} />}
+    </div>
+  );
+}
+
+function ScheduleBlock({ instrument, open, onToggle }: { instrument: Instrument; open: boolean; onToggle: () => void }) {
+  const sched = computeSchedule(instrument);
+  if (!sched) {
+    return (
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sep)", fontSize: 11, color: "var(--text-3)" }}>
+        Renseignez montant, taux, durée, périodicité et 1ʳᵉ échéance pour générer l'échéancier.
+      </div>
+    );
+  }
+  const th: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontSize: 10.5, color: "var(--text-3)", fontWeight: 600, whiteSpace: "nowrap" };
+  const td: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontSize: 11.5, color: "var(--ink)", whiteSpace: "nowrap" };
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--sep)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <button onClick={onToggle} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "var(--camel)" }}>
+          {open ? "− Masquer l'échéancier" : `+ Échéancier (${sched.rows.length} échéances)`}
+        </button>
+        <span style={{ fontSize: 11, color: "var(--text-2)" }}>Taux retenu <b style={{ color: "var(--ink)" }}>{sched.ratePct} %</b></span>
+        <span style={{ fontSize: 11, color: "var(--text-2)" }}>Total intérêts <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(sched.totalInterest)}</b></span>
+        <span style={{ fontSize: 11, color: "var(--text-2)" }}>Total à rembourser <b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(sched.totalPaid)}</b></span>
+      </div>
+      {open && (
+        <div style={{ overflowX: "auto", marginTop: 10 }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 520 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <th style={{ ...th, textAlign: "left" }}>N°</th>
+                <th style={{ ...th, textAlign: "left" }}>Échéance</th>
+                <th style={th}>Amortissement</th>
+                <th style={th}>Intérêts</th>
+                <th style={th}>Échéance totale</th>
+                <th style={th}>Solde restant dû</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sched.rows.map((row) => (
+                <tr key={row.n} style={{ borderBottom: "1px solid var(--sep)" }}>
+                  <td style={{ ...td, textAlign: "left", color: "var(--text-3)" }}>{row.n}</td>
+                  <td style={{ ...td, textAlign: "left" }}>{frDay(row.date)}</td>
+                  <td style={td} className="tnum">{fmtN(row.principal)}</td>
+                  <td style={td} className="tnum">{fmtN(row.interest)}</td>
+                  <td style={{ ...td, fontWeight: 600 }} className="tnum">{fmtN(row.payment)}</td>
+                  <td style={{ ...td, color: "var(--text-2)" }} className="tnum">{fmtN(row.balance)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 6 }}>Montants en FCFA. Prévisionnel calculé (différé = intérêts seuls, puis échéances constantes).</div>
+        </div>
+      )}
     </div>
   );
 }
