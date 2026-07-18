@@ -12,6 +12,8 @@ const DOMAINS: { key: string; label: string }[] = [
   { key: "comites", label: "Comités" },
   { key: "reporting", label: "Reporting" },
   { key: "consolide", label: "Performance · ESG global" },
+  { key: "contacts", label: "Répertoire contacts" },
+  { key: "documents", label: "Documents" },
   { key: "partenaires", label: "Partenaires & LPs" },
   { key: "config", label: "Paramètres · Biblio. KPIs" },
   { key: "users", label: "Utilisateurs & rôles" },

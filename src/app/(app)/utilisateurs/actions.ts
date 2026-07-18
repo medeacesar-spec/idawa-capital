@@ -48,7 +48,7 @@ export async function inviteUser(email: string, roleId: string, fullName: string
   return { ok: true, inviteLink, emailed: sent.ok };
 }
 
-const PERM_DOMAINS = ["pipeline", "portefeuille", "comites", "reporting", "consolide", "partenaires", "config", "users"];
+const PERM_DOMAINS = ["pipeline", "portefeuille", "comites", "reporting", "consolide", "contacts", "documents", "partenaires", "config", "users"];
 const PERM_LEVELS = ["-", "L", "V", "E"];
 
 export async function setRolePermission(roleId: string, domain: string, level: string) {

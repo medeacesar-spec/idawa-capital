@@ -5,7 +5,7 @@ export type Permissions = Record<string, string>;
 
 // Rangs de niveau d'accès : aucun < lecture < validation < édition
 export const PERM_RANK: Record<string, number> = { "-": 0, "L": 1, "V": 2, "E": 3 };
-export const ADMIN_PERMS: Permissions = { users: "E", config: "E", comites: "E", pipeline: "E", consolide: "E", reporting: "E", portefeuille: "E" };
+export const ADMIN_PERMS: Permissions = { users: "E", config: "E", comites: "E", pipeline: "E", consolide: "E", reporting: "E", portefeuille: "E", contacts: "E", documents: "E" };
 
 export async function getMyPermissions(): Promise<{ perms: Permissions; roleName: string }> {
   const supabase = await createClient();
