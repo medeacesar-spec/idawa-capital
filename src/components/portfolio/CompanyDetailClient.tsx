@@ -27,7 +27,12 @@ function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); retu
 
 const BASE_TABS = ["Investissement", "Remboursements", "Structuration", "États financiers", "KPIs", "Suivi", "Décisions", "ESG", "Budget & BP", "Création de valeur", "Flux & Valorisation", "Cap table", "Documents", "Contacts"];
 const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favorable sous conditions": "badge-amber", Ajourné: "badge-neutral", Défavorable: "badge-red" };
-const OUTCOME_BADGE: Record<string, string> = { Sortie: "badge-neutral", Radiation: "badge-red" };
+// Rouge = la participation se termine ; ambre = signal de vigilance ; vert = engagement accru.
+const OUTCOME_BADGE: Record<string, string> = {
+  "Réinvestissement": "badge-green", "Sortie partielle": "badge-neutral", "Sortie complète": "badge-neutral",
+  "Radiation": "badge-red", "Dépréciation": "badge-amber", "Restructuration": "badge-amber",
+  "Conversion": "badge-neutral", "Distribution": "badge-green", "Mise sous surveillance": "badge-amber",
+};
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return (

@@ -3,9 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { getMyPermissions } from "@/lib/auth/permissions";
 import { revalidatePath } from "next/cache";
+import { COMPANY_OUTCOME_STATUS } from "@/lib/ui-constants";
 
 // Valide (ou annule) une décision de comité prise sur une société.
-// Une décision « Sortie » / « Radiation » favorable, une fois validée, bascule le statut de la société.
+// Certaines décisions (sortie complète, radiation, mise sous surveillance) font basculer le
+// statut de la société une fois validées ; les autres (réinvestissement, dépréciation,
+// restructuration…) sont tracées sans toucher au statut.
 // Réservé aux rôles ayant le niveau « Validation » sur le domaine comités.
 export async function setCompanyDecisionValidation(passageId: string, validate: boolean) {
   const supabase = await createClient();
@@ -22,15 +25,14 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
   if (!passage.company_id) return { error: "Cette décision n'est pas rattachée à une société." };
 
   const favorable = passage.decision === "Favorable" || passage.decision === "Favorable sous conditions";
-  const lifecycle = passage.outcome === "Sortie" || passage.outcome === "Radiation";
+  const newStatus = passage.outcome ? COMPANY_OUTCOME_STATUS[passage.outcome] : undefined;
 
   if (validate) {
     const { error } = await supabase.from("committee_passages")
       .update({ status: "Validée", validated_by: user.id, validated_at: new Date().toISOString() })
       .eq("id", passageId);
     if (error) return { error: error.message };
-    if (lifecycle && favorable) {
-      const newStatus = passage.outcome === "Sortie" ? "Sorti" : "Radié";
+    if (newStatus && favorable) {
       const { error: sErr } = await supabase.from("portfolio_companies").update({ status: newStatus }).eq("id", passage.company_id);
       if (sErr) return { error: sErr.message };
     }
@@ -39,7 +41,7 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
       .update({ status: "Proposée", validated_by: null, validated_at: null })
       .eq("id", passageId);
     if (error) return { error: error.message };
-    if (lifecycle) {
+    if (newStatus) {
       // On rouvre la participation (retour au portefeuille actif).
       const { error: sErr } = await supabase.from("portfolio_companies").update({ status: "Actif" }).eq("id", passage.company_id);
       if (sErr) return { error: sErr.message };

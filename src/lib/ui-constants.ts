@@ -68,7 +68,19 @@ export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "A
 // Nature d'une décision structurante prise en comité (déclenche un changement de cycle de vie une fois validée).
 export const COMMITTEE_OUTCOME_NONE = "Aucune (suivi)";
 export const DEAL_COMMITTEE_OUTCOMES = ["Investissement"]; // sur un dossier : feu vert pour convertir en participation
-export const COMPANY_COMMITTEE_OUTCOMES = ["Sortie", "Radiation"]; // sur une participation : bascule Sorti / Radié
+// Sur une participation : toute la vie du portefeuille, pas seulement la fin.
+// Les trois dernières entraînent un changement de statut (voir COMPANY_OUTCOME_STATUS).
+export const COMPANY_COMMITTEE_OUTCOMES = [
+  "Réinvestissement", "Sortie partielle", "Sortie complète", "Radiation",
+  "Dépréciation", "Restructuration", "Conversion", "Distribution", "Mise sous surveillance",
+];
+
+/** Décisions qui font basculer le statut de la société une fois validées. */
+export const COMPANY_OUTCOME_STATUS: Record<string, string> = {
+  "Sortie complète": "Sorti",
+  "Radiation": "Radié",
+  "Mise sous surveillance": "En difficulté",
+};
 
 export const NOTE_TYPES = ["Réunion", "Appel", "Email", "Note"];
 export const TASK_STATUS = ["À faire", "En cours", "Fait"];
