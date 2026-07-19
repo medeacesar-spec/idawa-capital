@@ -12,7 +12,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, assignmentEmail, decisionEmail } from "@/lib/email/resend";
+import { sendEmail, assignmentEmail, decisionEmail, digestEmail } from "@/lib/email/resend";
 
 export type AssignmentKind = "Action de suivi" | "Action E&S" | "Initiative de création de valeur" | "Point de due diligence";
 
@@ -57,6 +57,45 @@ export async function notifyAssignment(input: {
 
   const res = await sendEmail({ to: assignee.email as string, subject, html });
   return { ok: res.ok, skipped: res.skipped };
+}
+
+// Envoyer à SOI-MÊME un récap de test — pour vérifier que la chaîne d'email fonctionne
+// (clé Resend, domaine, adresse) sans attendre le cron hebdomadaire.
+export async function sendTestDigest(): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non authentifié." };
+  const { data: prof } = await supabase.from("profiles").select("email, full_name").eq("id", user.id).single();
+  if (!prof?.email) return { ok: false, error: "Aucune adresse email n'est renseignée sur votre profil." };
+
+  const admin = createAdminClient();
+  const { data: tasks } = await admin
+    .from("tasks")
+    .select("title, due_date, status, entity_type, entity_id")
+    .eq("assignee_id", user.id).neq("status", "Fait");
+  const rows = tasks ?? [];
+  const dealIds = [...new Set(rows.filter((r) => r.entity_type === "deal").map((r) => r.entity_id))];
+  const compIds = [...new Set(rows.filter((r) => r.entity_type === "company").map((r) => r.entity_id))];
+  const [{ data: deals }, { data: comps }] = await Promise.all([
+    dealIds.length ? admin.from("deals").select("id, company_name").in("id", dealIds) : Promise.resolve({ data: [] }),
+    compIds.length ? admin.from("portfolio_companies").select("id, name").in("id", compIds) : Promise.resolve({ data: [] }),
+  ]);
+  const nameOf = new Map<string, string>();
+  (deals ?? []).forEach((d) => nameOf.set(d.id, d.company_name ?? "—"));
+  (comps ?? []).forEach((c) => nameOf.set(c.id, c.name ?? "—"));
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://idawa-capital.vercel.app";
+  const { subject, html } = digestEmail({
+    fullName: prof.full_name as string | null,
+    siteUrl: site,
+    items: rows.map((it) => ({
+      title: it.title, entityName: nameOf.get(it.entity_id) ?? "—",
+      dueDate: it.due_date, status: it.status,
+      link: `${site}${it.entity_type === "company" ? "/portefeuille/" : "/pipeline/"}${it.entity_id}`,
+    })),
+  });
+  const res = await sendEmail({ to: prof.email as string, subject: `[Test] ${subject}`, html });
+  return { ok: res.ok, skipped: res.skipped, error: res.error };
 }
 
 // Prévenir l'ÉQUIPE qu'une décision de comité vient d'être validée (investissement,

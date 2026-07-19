@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { sendTestDigest } from "@/app/(app)/notify-actions";
 import { Field, Input } from "@/components/ui/form";
 
 function Msg({ kind, text }: { kind: "ok" | "err"; text: string }) {
@@ -24,6 +25,18 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
   const [pwd2, setPwd2] = useState("");
   const [pwdBusy, setPwdBusy] = useState(false);
   const [pwdMsg, setPwdMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  const [testBusy, setTestBusy] = useState(false);
+  const [testMsg, setTestMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  async function sendTest() {
+    setTestBusy(true); setTestMsg(null);
+    const res = await sendTestDigest();
+    setTestBusy(false);
+    if (res.ok) setTestMsg({ kind: "ok", text: `Email de test envoyé à ${email}. Vérifiez votre boîte (et les indésirables).` });
+    else if (res.skipped) setTestMsg({ kind: "err", text: "Aucune clé d'envoi (RESEND_API_KEY) n'est configurée : rien n'a été envoyé." });
+    else setTestMsg({ kind: "err", text: "Échec de l'envoi : " + (res.error ?? "erreur inconnue") });
+  }
 
   async function saveName() {
     if (!name.trim()) return;
@@ -69,6 +82,15 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
           <button className="btn btn-primary" disabled={pwdBusy || !pwd || !pwd2} onClick={changePwd}>{pwdBusy ? "Modification…" : "Changer le mot de passe"}</button>
         </div>
         {pwdMsg && <Msg kind={pwdMsg.kind} text={pwdMsg.text} />}
+      </div>
+
+      <div style={card}>
+        <h3 style={h3}>Notifications</h3>
+        <p style={sub}>Vous recevez par e-mail : un récap hebdomadaire de vos actions ouvertes, une relance avant chaque échéance, et les décisions de comité validées. Envoyez-vous un e-mail de test pour vérifier la réception.</p>
+        <div style={{ marginTop: 4 }}>
+          <button className="btn btn-ghost" disabled={testBusy} onClick={sendTest}>{testBusy ? "Envoi…" : "Recevoir un e-mail de test"}</button>
+        </div>
+        {testMsg && <Msg kind={testMsg.kind} text={testMsg.text} />}
       </div>
     </div>
   );
