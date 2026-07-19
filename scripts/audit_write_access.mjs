@@ -29,6 +29,7 @@ const OWN_DOMAIN = [
   ["app/(app)/utilisateurs/", "gestion des comptes, garde requirePerm sur la page"],
   ["app/(app)/saisie/", "garde en tête de page : can(perms, domaine, E)"],
   ["app/reinitialiser/", "définition du mot de passe, page publique par nature"],
+  ["app/login/", "enregistre la connexion de la personne qui vient de s'authentifier, pour elle-même"],
   ["components/account/", "chacun modifie son propre profil, pas celui d'un autre"],
   ["components/params/", "rendu uniquement par /parametres, gardé requirePerm(config, E)"],
   ["components/saisie/", "rendu uniquement par /saisie, gardé en tête de page"],
