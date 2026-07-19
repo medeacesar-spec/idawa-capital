@@ -7,7 +7,7 @@
 // se saisissent ici. Les moyens financiers et les pourcentages restent au niveau du
 // programme, où ils ont un sens — additionner des pourcentages n'en aurait aucun.
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCanEdit } from "@/components/shared/WriteAccess";
@@ -93,8 +93,8 @@ export default function SupportTab({ companyId, data }: { companyId: string; dat
           </thead>
           <tbody>
             {categories.map((cat) => (
-              <>
-                <tr key={cat}>
+              <Fragment key={cat}>
+                <tr>
                   <td colSpan={periods.length + 2} style={{ padding: "9px 8px 4px", fontSize: 11, fontWeight: 700, color: "var(--camel)", textTransform: "uppercase", letterSpacing: ".04em" }}>{cat}</td>
                 </tr>
                 {data.indicators.filter((i) => i.category === cat).map((ind) => (
@@ -118,7 +118,7 @@ export default function SupportTab({ companyId, data }: { companyId: string; dat
                     </td>
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

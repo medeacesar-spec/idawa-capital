@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { useRouter } from "next/navigation";
 import type { PerfOverview } from "@/lib/data/perfOverview";
 import { fmtM } from "@/lib/format";
@@ -59,11 +60,11 @@ export default function PerfOverviewTable({ data }: { data: PerfOverview }) {
               <tr>
                 <th style={{ ...th, textAlign: "left" }}>Société</th>
                 {[0, 1, 2].map((i) => (
-                  <>
-                    <th key={`a${i}`} style={{ ...th, borderLeft: "1px solid var(--sep)" }}>{i === 2 ? "%" : "M FCFA"}</th>
-                    <th key={`b${i}`} style={th}>vs {year - 1}</th>
-                    <th key={`c${i}`} style={th}>vs budget</th>
-                  </>
+                  <Fragment key={i}>
+                    <th style={{ ...th, borderLeft: "1px solid var(--sep)" }}>{i === 2 ? "%" : "M FCFA"}</th>
+                    <th style={th}>vs {year - 1}</th>
+                    <th style={th}>vs budget</th>
+                  </Fragment>
                 ))}
               </tr>
             </thead>
