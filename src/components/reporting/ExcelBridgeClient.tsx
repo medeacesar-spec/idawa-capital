@@ -5,14 +5,19 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Select } from "@/components/ui/form";
 import { readReinjection, applyReinjection, type ReadResult } from "@/app/(app)/reporting/excel/actions";
 import type { Change } from "@/lib/export/datasets";
 
 type Dataset = { key: string; label: string; hint: string; editable: string[] };
+type Company = { id: string; name: string; tracking: string; programId: string | null };
+type Program = { id: string; name: string };
 
 const DASH = "—";
 
-export default function ExcelBridgeClient({ datasets, canEdit }: { datasets: Dataset[]; canEdit: boolean }) {
+export default function ExcelBridgeClient({ datasets, canEdit, companies, programs }: {
+  datasets: Dataset[]; canEdit: boolean; companies: Company[]; programs: Program[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [dataset, setDataset] = useState(datasets[0]?.key ?? "");
@@ -20,6 +25,29 @@ export default function ExcelBridgeClient({ datasets, canEdit }: { datasets: Dat
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ applied: number; rows: number } | null>(null);
   const [skipped, setSkipped] = useState<Set<number>>(new Set());
+
+  // Sélection de la fiche I&P : une société, plusieurs, ou un portefeuille entier.
+  const now = new Date();
+  const [mode, setMode] = useState<"societes" | "programme" | "portefeuille">("societes");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [programId, setProgramId] = useState(programs[0]?.id ?? "");
+  const [tracking, setTracking] = useState<"" | "equity" | "accompagnement">("");
+  const [year, setYear] = useState(now.getFullYear());
+  const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
+  const [depth, setDepth] = useState(12);
+
+  const targeted =
+    mode === "societes" ? companies.filter((c) => picked.has(c.id))
+    : mode === "programme" ? companies.filter((c) => c.programId === programId)
+    : companies.filter((c) => !tracking || c.tracking === tracking);
+
+  const ficheUrl = (() => {
+    const p = new URLSearchParams({ mode, annee: String(year), trimestre: String(quarter), trimestres: String(depth) });
+    if (mode === "societes") p.set("ids", [...picked].join(","));
+    if (mode === "programme") p.set("programme", programId);
+    if (mode === "portefeuille" && tracking) p.set("suivi", tracking);
+    return `/reporting/excel/fiche?${p.toString()}`;
+  })();
 
   const current = datasets.find((d) => d.key === dataset);
   const retained: Change[] = (result?.changes ?? []).filter((_, i) => !skipped.has(i));
@@ -89,6 +117,104 @@ export default function ExcelBridgeClient({ datasets, canEdit }: { datasets: Dat
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg>
           Télécharger le classeur
         </a>
+      </section>
+
+      {/* Fiche entreprise au format I&P — le rapport qu'on veut cesser de remplir à la main */}
+      <section className="card" style={{ padding: "18px 20px", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Fiche entreprise — modèle I&amp;P</div>
+        <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 12 }}>
+          Le classeur trimestriel d&apos;I&amp;P, rempli depuis l&apos;outil : Données figées, Capital, Prêt,
+          Performance, Impact, Coûts de suivi. Ce qui n&apos;est pas encore collecté reste vide et la
+          feuille « À collecter » dit pourquoi.
+        </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {([["societes", "Une ou plusieurs sociétés"], ["programme", "Un portefeuille / programme"], ["portefeuille", "Tout le portefeuille"]] as const).map(([k, label]) => {
+            const on = mode === k;
+            return (
+              <button key={k} onClick={() => setMode(k)}
+                style={{
+                  padding: "6px 13px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, fontWeight: on ? 600 : 400,
+                  border: `1px solid ${on ? "var(--espresso)" : "var(--border-strong)"}`,
+                  background: on ? "var(--espresso)" : "var(--surface)", color: on ? "#fff" : "var(--text-2)",
+                }}>{label}</button>
+            );
+          })}
+        </div>
+
+        {mode === "societes" && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 11.5, color: "var(--text-2)" }}>{picked.size} sélectionnée(s)</span>
+              <button className="btn btn-ghost" style={{ padding: "3px 9px", fontSize: 11.5 }}
+                onClick={() => setPicked(new Set(companies.map((c) => c.id)))}>Tout cocher</button>
+              <button className="btn btn-ghost" style={{ padding: "3px 9px", fontSize: 11.5 }}
+                onClick={() => setPicked(new Set())}>Tout décocher</button>
+            </div>
+            <div style={{ maxHeight: 190, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 4 }}>
+              {companies.map((c) => (
+                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, cursor: "pointer" }}>
+                  <input type="checkbox" checked={picked.has(c.id)} onChange={(e) => {
+                    setPicked((s) => { const n = new Set(s); if (e.target.checked) n.add(c.id); else n.delete(c.id); return n; });
+                  }} />
+                  <span>{c.name}</span>
+                  {c.tracking !== "equity" && <span style={{ fontSize: 10, color: "var(--text-3)" }}>accél.</span>}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mode === "programme" && (
+          <div style={{ marginBottom: 12, maxWidth: 320 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Programme</label>
+            <Select value={programId} onChange={(e) => setProgramId(e.target.value)}>
+              {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+          </div>
+        )}
+
+        {mode === "portefeuille" && (
+          <div style={{ marginBottom: 12, maxWidth: 320 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Type de suivi</label>
+            <Select value={tracking} onChange={(e) => setTracking(e.target.value as "" | "equity" | "accompagnement")}>
+              <option value="">Tous</option>
+              <option value="equity">Participations</option>
+              <option value="accompagnement">Accélération</option>
+            </Select>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ width: 110 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Exercice</label>
+            <Select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+              {Array.from({ length: 8 }, (_, i) => now.getFullYear() - i).map((y) => <option key={y} value={y}>{y}</option>)}
+            </Select>
+          </div>
+          <div style={{ width: 110 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Trimestre</label>
+            <Select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))}>
+              {[1, 2, 3, 4].map((q) => <option key={q} value={q}>T{q}</option>)}
+            </Select>
+          </div>
+          <div style={{ width: 170 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Profondeur</label>
+            <Select value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+              {[4, 8, 12, 16, 20, 24].map((n) => <option key={n} value={n}>{n} trimestres</option>)}
+            </Select>
+          </div>
+          <a href={targeted.length ? ficheUrl : undefined} className="btn btn-primary"
+            style={{ textDecoration: "none", display: "inline-flex", opacity: targeted.length ? 1 : 0.45, pointerEvents: targeted.length ? "auto" : "none" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg>
+            Générer la fiche
+          </a>
+          <span style={{ fontSize: 11.5, color: targeted.length > 30 ? "var(--red-fg)" : "var(--text-2)" }}>
+            {targeted.length === 0 ? "Sélectionnez au moins une société."
+              : targeted.length === 1 ? `1 société — ossature exacte du modèle.`
+              : `${targeted.length} sociétés — un bloc par société dans chaque feuille${targeted.length > 30 ? " (maximum 30)" : ""}.`}
+          </span>
+        </div>
       </section>
 
       {canEdit && (
