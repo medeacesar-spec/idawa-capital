@@ -106,6 +106,9 @@ export async function importDeals(drafts: DealDraft[]): Promise<ImportResult> {
     expected_close: d.expectedClose,
     primary_sub_sector_id: matchSubSector(d.sector, subSectors ?? []),
     deal_source_detail: d.sourceDetail,
+    // Tout entre au Sourcing : qu'un partenaire ait « sélectionné » une PME ne dit rien
+    // de l'avancement d'Idawa sur le dossier. C'est une base à instruire, pas un pipeline
+    // déjà qualifié.
     stage: "Sourcing",
     deal_state: "Actif",
     // program_id volontairement absent : le rattachement se fait après l'import.

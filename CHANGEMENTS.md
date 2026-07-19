@@ -104,7 +104,7 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | « Post-mortem » sur les dossiers écartés | à tester | 0027 |
 | ESG & Création de valeur masqués tant que le dossier n'est pas au stade avancé | à tester | non |
 | Analyses par source d'entrée : volume, montant, aboutis, écartés, taux d'aboutissement | à tester | non |
-| **Outil d'import du pipeline** — dépôt d'un fichier Excel/CSV ou copier-coller, détection de la feuille et de la ligne d'en-tête, correspondance colonne → champ proposée puis modifiable, écran de vérification (montants aberrants, doublons de nom, emails douteux, **colonnes non reprises listées**) et création seulement au dernier clic. Lecteur .xlsx maison, sans dépendance. | à tester | non |
+| **Outil d'import du pipeline** — dépôt d'un fichier Excel/CSV ou copier-coller, détection de la feuille et de la ligne d'en-tête, correspondance colonne → champ proposée puis modifiable, **regroupement des lignes d'une même entreprise** (un rapportage mensuel donne plusieurs lignes par PME), écran de vérification (montants aberrants, doublons, pourcentages hors bornes) et création seulement au dernier clic. **Aucune colonne n'est perdue** : tout ce qui n'a pas de champ dédié est conservé sur la fiche, chiffres d'affaires déclarés en tête. Tous les dossiers entrent au **Sourcing**. Lecteur .xlsx maison, sans dépendance ni migration. | à tester | non |
 | À l'import : **portefeuille / programme non assigné au départ**, assignable ensuite — les dossiers entrent au stade « Sourcing » sans `program_id`, le rattachement se fait depuis le pipeline | à tester | non |
 
 ---

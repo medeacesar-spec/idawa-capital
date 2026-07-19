@@ -13,7 +13,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/form";
 import { describeColumns, bodyRows, type Column } from "@/lib/import/table";
-import { autoMap, buildDrafts, composedDescription, TARGET_FIELDS, type FieldKey, type Mapping } from "@/lib/import/pipelineMapping";
+import { autoMap, buildDrafts, groupByCompany, composedDescription, TARGET_FIELDS, type FieldKey, type Mapping } from "@/lib/import/pipelineMapping";
 import { analyzeImportSource, importDeals, type AnalyzeResult } from "@/app/(app)/pipeline/import/actions";
 
 type Sheets = { name: string; rows: string[][] }[];
@@ -44,6 +44,7 @@ export default function PipelineImportClient() {
   const [headerRow, setHeaderRow] = useState(0);
   const [mapping, setMapping] = useState<Mapping>({});
   const [excludeFlagged, setExcludeFlagged] = useState(false);
+  const [group, setGroup] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ created: number; contacts: number } | null>(null);
   const [pasted, setPasted] = useState("");
@@ -54,17 +55,26 @@ export default function PipelineImportClient() {
   const columns: Column[] = useMemo(() => (rows.length ? describeColumns(rows, headerRow) : []), [rows, headerRow]);
   const body = useMemo(() => (rows.length ? bodyRows(rows, headerRow) : []), [rows, headerRow]);
 
-  const drafts = useMemo(() => {
+  const rawDrafts = useMemo(() => {
     if (!columns.length) return [];
     const aligned = body.map((r) => columns.map((c) => r[c.index] ?? ""));
-    return buildDrafts(aligned, mapping, headerRow);
+    return buildDrafts(aligned, columns, mapping, headerRow);
   }, [body, columns, mapping, headerRow]);
+
+  // Nombre de lignes en trop si l'on n'y touche pas — sert à proposer le regroupement.
+  const duplicateRows = useMemo(
+    () => rawDrafts.filter((d) => d.issues.some((i) => i.message.startsWith("Même nom"))).length,
+    [rawDrafts]);
+
+  const drafts = useMemo(() => (group ? groupByCompany(rawDrafts) : rawDrafts), [rawDrafts, group]);
 
   const nameMapped = Object.values(mapping).includes("companyName");
   const blocking = drafts.filter((d) => d.issues.some((i) => i.level === "bloquant"));
   const flagged = drafts.filter((d) => d.issues.some((i) => i.level === "attention"));
+  // Une « information » (regroupement effectué) n'est pas un motif de mise à l'écart.
   const retained = drafts.filter((d) =>
-    d.companyName.trim() !== "" && (!excludeFlagged || !d.issues.length));
+    d.companyName.trim() !== "" &&
+    (!excludeFlagged || !d.issues.some((i) => i.level !== "information")));
   const ignoredColumns = columns.filter((_, i) => !mapping[i]);
 
   function analyze(form: FormData) {
@@ -122,7 +132,7 @@ export default function PipelineImportClient() {
           </div>
           <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
             {done.contacts > 0 && `${done.contacts} contact${done.contacts > 1 ? "s" : ""} rattaché${done.contacts > 1 ? "s" : ""}. `}
-            Ils sont au stade « Sourcing », sans programme : rattachez-les depuis le pipeline.
+            Ils sont <strong>sans programme</strong> : rattachez-les depuis le pipeline.
           </div>
           <button className="btn btn-primary" onClick={() => router.push("/pipeline")}>Voir le pipeline</button>
         </div>
@@ -240,7 +250,8 @@ export default function PipelineImportClient() {
                 {([
                   ["Dossiers à créer", String(retained.length)],
                   ["Sans nom, écartés", String(blocking.length)],
-                  ["À vérifier", String(flagged.length)],
+                  [group && duplicateRows > 0 ? "Lignes regroupées" : "À vérifier",
+                    group && duplicateRows > 0 ? String(duplicateRows) : String(flagged.length)],
                   ["Colonnes non reprises", String(ignoredColumns.length)],
                 ] as [string, string][]).map(([k, v]) => (
                   <div key={k} style={{ background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
@@ -265,6 +276,20 @@ export default function PipelineImportClient() {
                     ))}
                   </div>
                 </details>
+              )}
+
+              {duplicateRows > 0 && (
+                <div style={{ background: "var(--amber-bg)", borderRadius: 10, padding: "11px 14px", marginBottom: 12 }}>
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12.5, color: "var(--amber-fg)", cursor: "pointer" }}>
+                    <input type="checkbox" checked={group} onChange={(e) => setGroup(e.target.checked)} style={{ marginTop: 2 }} />
+                    <span>
+                      <strong>Ce fichier décrit {drafts.length} entreprises sur {rawDrafts.length} lignes.</strong>{" "}
+                      Regrouper les lignes d&apos;une même entreprise et retenir la plus récente
+                      — les valeurs manquantes sont complétées par les lignes antérieures.
+                      {!group && " Décoché, chaque ligne deviendra un dossier distinct."}
+                    </span>
+                  </label>
+                </div>
               )}
 
               {flagged.length > 0 && (
@@ -309,7 +334,7 @@ export default function PipelineImportClient() {
                             {d.issues.length === 0
                               ? <span style={{ color: "var(--green-fg)" }}>ok</span>
                               : d.issues.map((iss, n) => (
-                                  <div key={n} style={{ color: iss.level === "bloquant" ? "var(--red-fg)" : "var(--amber-fg)" }}>{iss.message}</div>
+                                  <div key={n} style={{ color: iss.level === "bloquant" ? "var(--red-fg)" : iss.level === "information" ? "var(--text-2)" : "var(--amber-fg)" }}>{iss.message}</div>
                                 ))}
                           </td>
                         </tr>
