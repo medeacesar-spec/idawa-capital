@@ -50,8 +50,9 @@ export default function Sidebar({
     const supabase = createClient();
     await recordAuthEvent("déconnexion");
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // Rechargement complet : la déconnexion doit repartir d'une page vierge, sans état
+    // client conservé, et sans dépendre d'une navigation qui traverse le middleware.
+    window.location.assign("/login");
   }
 
   return (

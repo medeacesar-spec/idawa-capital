@@ -91,6 +91,7 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | Journal en trois onglets : activité, modifications, accès & sécurité | à tester | non |
 | Alerte sur compte dormant ou accès jamais utilisé | à faire | non |
 | Emails aux personnes assignées à une action | à tester | non |
+| **Correction — connexion figée sur « Connexion… »** : `router.push` après l'ouverture de session traversait le middleware avant que les cookies soient visibles, qui renvoyait alors sur /login. Navigation par rechargement complet, trace d'accès non bloquante (2,5 s max), et sortie d'erreur au bout de 8 s. Même correction sur la définition du mot de passe (parcours de tout nouvel invité) et sur la déconnexion. | à tester | non |
 | Verrouillage RLS par rôle en base | à faire | oui |
 
 ---

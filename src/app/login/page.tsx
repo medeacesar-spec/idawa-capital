@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { recordAuthEvent } from "@/app/auth-events";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,26 +18,58 @@ export default function LoginPage() {
     }
   }, []);
 
+  /** Une trace d'accès ne doit jamais retarder — ni bloquer — une connexion. */
+  async function trace(kind: "connexion" | "échec", input: { userId?: string | null; email?: string | null }) {
+    try {
+      await Promise.race([
+        recordAuthEvent(kind, input),
+        new Promise((resolve) => setTimeout(resolve, 2500)),
+      ]);
+    } catch {
+      // Journalisation indisponible : on continue.
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      // Une série d'échecs sur un compte est le premier signe d'une tentative d'intrusion.
-      // Sans trace, elle serait totalement invisible.
-      await recordAuthEvent("échec", { email });
-      setError("Email ou mot de passe incorrect.");
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // Une série d'échecs sur un compte est le premier signe d'une tentative d'intrusion.
+        // Sans trace, elle serait totalement invisible.
+        await trace("échec", { email });
+        setError("Email ou mot de passe incorrect.");
+        setLoading(false);
+        return;
+      }
+
+      // Supabase ne conserve que la DERNIÈRE connexion : sans cet enregistrement, on ne
+      // saurait jamais qui est venu ni à quelle fréquence. L'utilisateur est déjà dans la
+      // réponse de connexion — inutile de redemander au serveur qui vient de répondre.
+      await trace("connexion", { userId: data.user?.id ?? null, email });
+
+      // NAVIGATION PAR RECHARGEMENT COMPLET, et non router.push.
+      //
+      // Un push déclenche une navigation côté client : sa requête traverse le middleware,
+      // qui rappelle getUser(). Si les cookies de session ne sont pas encore tous visibles
+      // sur cette requête, le middleware renvoie vers /login — la page où l'on se trouve
+      // déjà. Rien ne bouge alors à l'écran et le bouton reste figé sur « Connexion… ».
+      // Un rechargement complet part avec les cookies posés : le middleware voit la session.
+      window.location.assign("/dashboard");
+
+      // Si la navigation n'a pas eu lieu au bout de quelques secondes, on rend la main
+      // plutôt que de laisser un bouton mort.
+      setTimeout(() => {
+        setLoading(false);
+        setError("La connexion a abouti mais la page n'a pas pu s'ouvrir. Cliquez sur « Se connecter » à nouveau, ou ouvrez directement le tableau de bord.");
+      }, 8000);
+    } catch {
+      setError("La connexion n'a pas pu aboutir. Vérifiez votre accès à Internet et réessayez.");
       setLoading(false);
-      return;
     }
-    // Supabase ne conserve que la DERNIÈRE connexion : sans cet enregistrement, on ne
-    // saurait jamais qui est venu ni à quelle fréquence.
-    const { data: { user } } = await supabase.auth.getUser();
-    await recordAuthEvent("connexion", { userId: user?.id ?? null, email });
-    router.push("/dashboard");
-    router.refresh();
   }
 
   const inputStyle: React.CSSProperties = {

@@ -84,7 +84,10 @@ export default function ResetPasswordPage() {
     if (user) await supabase.from("profiles").update({ must_set_password: false }).eq("id", user.id);
     setBusy(false);
     setDone(true);
-    setTimeout(() => { router.push("/dashboard"); router.refresh(); }, 1500);
+    // Rechargement complet plutôt que router.push : la session vient d'être établie et une
+    // navigation côté client peut traverser le middleware avant que les cookies soient
+    // visibles, qui renvoie alors sur la page de connexion. Voir /login.
+    setTimeout(() => window.location.assign("/dashboard"), 1500);
   }
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "11px 13px", border: "1px solid var(--border-strong)", borderRadius: 10, background: "var(--surface)", color: "var(--ink)", fontSize: 14, fontFamily: "inherit", outline: "none" };
