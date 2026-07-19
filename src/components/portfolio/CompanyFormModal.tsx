@@ -62,8 +62,17 @@ export default function CompanyFormModal({
       tri: isEquity ? num(f.tri) : null,
       ownership_pct: isEquity ? num(f.ownership) : null,
     };
-    if (company) await supabase.from("portfolio_companies").update(payload).eq("id", company.id);
-    else await supabase.from("portfolio_companies").insert(payload);
+    if (company) {
+      await supabase.from("portfolio_companies").update(payload).eq("id", company.id);
+      // Trace datée dans le Suivi de tout changement de statut de la participation.
+      if (f.status !== company.status) {
+        await supabase.from("notes").insert({
+          entity_type: "company", entity_id: company.id, type: "Note",
+          note_date: new Date().toISOString().slice(0, 10),
+          summary: `Statut de la participation : ${company.status} → ${f.status}`,
+        });
+      }
+    } else await supabase.from("portfolio_companies").insert(payload);
     setBusy(false);
     onClose();
     router.refresh();

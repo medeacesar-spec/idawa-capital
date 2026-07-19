@@ -27,14 +27,25 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
   const favorable = passage.decision === "Favorable" || passage.decision === "Favorable sous conditions";
   const newStatus = passage.outcome ? COMPANY_OUTCOME_STATUS[passage.outcome] : undefined;
 
+  // Trace datée dans le Suivi de tout changement de statut de la participation.
+  async function logStatusChange(from: string, to: string, reason: string) {
+    await supabase.from("notes").insert({
+      entity_type: "company", entity_id: passage!.company_id, type: "Note",
+      note_date: new Date().toISOString().slice(0, 10),
+      summary: `Statut de la participation : ${from} → ${to} — ${reason}`,
+    });
+  }
+
   if (validate) {
     const { error } = await supabase.from("committee_passages")
       .update({ status: "Validée", validated_by: user.id, validated_at: new Date().toISOString() })
       .eq("id", passageId);
     if (error) return { error: error.message };
     if (newStatus && favorable) {
+      const { data: co } = await supabase.from("portfolio_companies").select("status").eq("id", passage.company_id).single();
       const { error: sErr } = await supabase.from("portfolio_companies").update({ status: newStatus }).eq("id", passage.company_id);
       if (sErr) return { error: sErr.message };
+      if ((co?.status ?? "Actif") !== newStatus) await logStatusChange(co?.status ?? "Actif", newStatus, `décision « ${passage.outcome} » validée en comité`);
     }
   } else {
     const { error } = await supabase.from("committee_passages")
@@ -43,8 +54,10 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
     if (error) return { error: error.message };
     if (newStatus) {
       // On rouvre la participation (retour au portefeuille actif).
+      const { data: co } = await supabase.from("portfolio_companies").select("status").eq("id", passage.company_id).single();
       const { error: sErr } = await supabase.from("portfolio_companies").update({ status: "Actif" }).eq("id", passage.company_id);
       if (sErr) return { error: sErr.message };
+      if ((co?.status ?? "Actif") !== "Actif") await logStatusChange(co?.status ?? "Actif", "Actif", `validation de « ${passage.outcome} » annulée`);
     }
   }
 
