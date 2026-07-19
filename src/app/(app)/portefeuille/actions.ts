@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getMyPermissions } from "@/lib/auth/permissions";
+import { notifyDecision } from "@/app/(app)/notify-actions";
 import { revalidatePath } from "next/cache";
 import { COMPANY_OUTCOME_STATUS } from "@/lib/ui-constants";
 
@@ -19,7 +20,7 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
 
   const { data: passage } = await supabase
     .from("committee_passages")
-    .select("id, company_id, outcome, decision")
+    .select("id, company_id, committee_type, outcome, decision")
     .eq("id", passageId).single();
   if (!passage) return { error: "Décision introuvable." };
   if (!passage.company_id) return { error: "Cette décision n'est pas rattachée à une société." };
@@ -47,6 +48,11 @@ export async function setCompanyDecisionValidation(passageId: string, validate: 
       if (sErr) return { error: sErr.message };
       if ((co?.status ?? "Actif") !== newStatus) await logStatusChange(co?.status ?? "Actif", newStatus, `décision « ${passage.outcome} » validée en comité`);
     }
+    // Informer l'équipe de la décision validée.
+    await notifyDecision({
+      committeeType: passage.committee_type, outcome: passage.outcome ?? null, decision: passage.decision ?? null,
+      entityType: "company", entityId: passage.company_id, actorId: user.id,
+    });
   } else {
     const { error } = await supabase.from("committee_passages")
       .update({ status: "Proposée", validated_by: null, validated_at: null })

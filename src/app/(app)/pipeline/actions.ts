@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getMyPermissions } from "@/lib/auth/permissions";
+import { notifyDecision } from "@/app/(app)/notify-actions";
 import { revalidatePath } from "next/cache";
 
 // Valide (ou annule la validation) d'un passage en comité.
@@ -18,6 +19,21 @@ export async function setCommitteeValidation(passageId: string, validate: boolea
     : { status: "Proposée", validated_by: null, validated_at: null };
   const { error } = await supabase.from("committee_passages").update(payload).eq("id", passageId);
   if (error) return { error: error.message };
+
+  // À la validation, informer l'équipe de la décision.
+  if (validate) {
+    const { data: p } = await supabase
+      .from("committee_passages")
+      .select("committee_type, outcome, decision, deal_id")
+      .eq("id", passageId).single();
+    if (p?.deal_id) {
+      await notifyDecision({
+        committeeType: p.committee_type, outcome: p.outcome ?? null, decision: p.decision ?? null,
+        entityType: "deal", entityId: p.deal_id, actorId: user.id,
+      });
+    }
+  }
+
   revalidatePath("/pipeline");
   return { ok: true };
 }

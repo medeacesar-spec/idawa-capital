@@ -11,7 +11,8 @@
 //   · sans clé d'envoi configurée, la fonction ne fait rien et ne bloque rien.
 
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail, assignmentEmail } from "@/lib/email/resend";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail, assignmentEmail, decisionEmail } from "@/lib/email/resend";
 
 export type AssignmentKind = "Action de suivi" | "Action E&S" | "Initiative de création de valeur" | "Point de due diligence";
 
@@ -56,4 +57,42 @@ export async function notifyAssignment(input: {
 
   const res = await sendEmail({ to: assignee.email as string, subject, html });
   return { ok: res.ok, skipped: res.skipped };
+}
+
+// Prévenir l'ÉQUIPE qu'une décision de comité vient d'être validée (investissement,
+// sortie, radiation…). On informe tout le monde SAUF la personne qui valide.
+export async function notifyDecision(input: {
+  committeeType: string;
+  outcome: string | null;
+  decision: string | null;
+  entityType: "deal" | "company";
+  entityId: string;
+  actorId: string;
+}): Promise<void> {
+  const admin = createAdminClient();
+  const table = input.entityType === "company" ? "portfolio_companies" : "deals";
+  const column = input.entityType === "company" ? "name" : "company_name";
+  const [{ data: entity }, { data: actor }, { data: users }] = await Promise.all([
+    admin.from(table).select(column).eq("id", input.entityId).single(),
+    admin.from("profiles").select("full_name").eq("id", input.actorId).single(),
+    admin.from("profiles").select("id, email, full_name").not("email", "is", null),
+  ]);
+  const entityName = (entity as Record<string, string> | null)?.[column] ?? "—";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://idawa-capital.vercel.app";
+  const path = input.entityType === "company" ? `/portefeuille/${input.entityId}` : `/pipeline/${input.entityId}`;
+  const link = `${base}${path}`;
+
+  for (const u of users ?? []) {
+    if (u.id === input.actorId || !u.email) continue; // pas la personne qui valide
+    const { subject, html } = decisionEmail({
+      fullName: u.full_name as string | null,
+      committeeType: input.committeeType,
+      outcome: input.outcome,
+      decision: input.decision,
+      entityName,
+      validatedBy: (actor?.full_name as string | null) ?? null,
+      link,
+    });
+    await sendEmail({ to: u.email as string, subject, html });
+  }
 }
