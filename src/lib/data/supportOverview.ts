@@ -93,7 +93,9 @@ export async function getSupportOverview(): Promise<SupportOverview> {
         const last = [...rows].sort((a, b) => (b.period as string).localeCompare(a.period as string))[0];
         return { ...base, period: last.period as string, value: num(last.value) };
       })
-      .filter((t) => t.period !== null);
+      // On ne masque PAS un indicateur sélectionné mais non renseigné : le silence est
+      // lui-même une information — il dit qu'un engagement pris n'est pas suivi.
+      ;
 
     return {
       id: p.id as string,

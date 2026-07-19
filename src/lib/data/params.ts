@@ -26,12 +26,15 @@ export type ProgramConfig = {
   esgRequired: boolean;
   ehsFamilies: string[];
   indicators: ProgramIndicator[];
+  /** Participations en capital rattachées : passer le programme en accélération les rendrait incohérentes. */
+  equityCompanies: number;
 };
 
 export async function getProgramConfig(id: string): Promise<ProgramConfig | null> {
   const supabase = await createClient();
-  const [pRes, iRes] = await Promise.all([
+  const [pRes, cRes, iRes] = await Promise.all([
     supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_families").eq("id", id).single(),
+    supabase.from("portfolio_companies").select("id", { count: "exact", head: true }).eq("program_id", id).eq("tracking_type", "equity"),
     supabase.from("program_indicators").select("id, category, name, unit, target, scope, program_indicator_values(period, value)").eq("program_id", id).order("position"),
   ]);
   const p = pRes.data;
@@ -45,6 +48,7 @@ export async function getProgramConfig(id: string): Promise<ProgramConfig | null
     esgFramework: p.esg_framework,
     esgRequired: p.esg_required ?? true,
     ehsFamilies: (p.ehs_families as string[] | null) ?? [],
+    equityCompanies: cRes.count ?? 0,
     indicators: (iRes.data ?? []).map((x) => ({
       id: x.id, category: x.category, name: x.name, unit: x.unit,
       target: x.target != null ? Number(x.target) : null,

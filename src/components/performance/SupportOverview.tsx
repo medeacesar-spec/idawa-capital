@@ -65,7 +65,7 @@ export default function SupportOverviewBlock({ data }: { data: SupportOverview }
             ) : (
               <div style={{ display: "grid", gap: 7 }}>
                 {p.indicators.map((t) => {
-                  const share = t.target && t.target > 0 ? Math.min(1, t.value / t.target) : null;
+                  const share = t.period && t.target && t.target > 0 ? Math.min(1, t.value / t.target) : null;
                   return (
                     <div key={t.name}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5 }}>
@@ -73,7 +73,9 @@ export default function SupportOverviewBlock({ data }: { data: SupportOverview }
                           {t.name}
                           {t.scope === "entreprise" && <span style={{ color: "var(--text-3)", fontSize: 9.5, marginLeft: 5 }} title="Somme des saisies par entreprise">cumulé</span>}
                         </span>
-                        <span className="tnum" style={{ fontWeight: 600, color: "var(--ink)" }}>{fmtValue(t)}</span>
+                        <span className="tnum" style={{ fontWeight: 600, color: t.period ? "var(--ink)" : "var(--text-3)" }}>
+                          {t.period ? fmtValue(t) : "non renseigné"}
+                        </span>
                         {t.target != null && <span className="tnum" style={{ color: "var(--text-3)", fontSize: 10.5 }}>/ {fmtValue({ ...t, value: t.target })}</span>}
                       </div>
                       {share != null && (

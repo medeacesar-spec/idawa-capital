@@ -64,7 +64,21 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Nature">
-            <Select value={nature} onChange={(e) => { const v = e.target.value as ProgramConfig["nature"]; setNature(v); saveGeneral({ nature: v }); }}>
+            <Select value={nature} onChange={(e) => {
+              const v = e.target.value as ProgramConfig["nature"];
+              // Basculer un programme en accélération ferait afficher ses participations
+              // comme de simples accompagnées, sans que leurs données changent. C'est
+              // exactement ce qui est arrivé à Tech & Digital : on prévient avant.
+              if (v === "accompagnement" && config.equityCompanies > 0) {
+                const ok = confirm(
+                  `${config.equityCompanies} participation(s) en capital sont rattachées à ce programme. ` +
+                  `En le passant en accélération, elles s'afficheraient comme accompagnées alors que le fonds détient des parts. ` +
+                  `Rattachez-les d'abord à un programme qui investit. Continuer quand même ?`
+                );
+                if (!ok) return;
+              }
+              setNature(v); saveGeneral({ nature: v });
+            }}>
               {PROGRAM_NATURES.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
             </Select>
           </Field>

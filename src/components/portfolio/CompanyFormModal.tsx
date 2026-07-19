@@ -36,6 +36,10 @@ export default function CompanyFormModal({
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const isEquity = f.trackingType === "equity";
+  // Passer en capital alors qu'un programme d'accélération était choisi laisserait la
+  // fiche dans un état contradictoire : on détache plutôt que d'enregistrer l'incohérence.
+  const selected = programs.find((p) => p.id === f.programId);
+  const programMismatch = isEquity && !!selected && selected.nature !== "invest" && selected.nature !== "mixte";
   const isClosed = f.status === "Sorti" || f.status === "Radié";
   const ehsFamilies = programs.find((p) => p.id === f.programId)?.ehsFamilies ?? [];
 
@@ -71,7 +75,7 @@ export default function CompanyFormModal({
       onClose={onClose}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
-        <button className="btn btn-primary" disabled={busy || !f.name.trim()} onClick={submit}>{busy ? "Enregistrement…" : "Enregistrer"}</button>
+        <button className="btn btn-primary" disabled={busy || !f.name.trim() || programMismatch} onClick={submit}>{busy ? "Enregistrement…" : "Enregistrer"}</button>
       </>}
     >
       <Field label="Nom de l'entreprise"><Input value={f.name} autoFocus onChange={(e) => set("name", e.target.value)} placeholder="Ex : PayNow" /></Field>
@@ -82,13 +86,24 @@ export default function CompanyFormModal({
             <option value="accompagnement">Accélération</option>
           </Select>
         </Field>
-        <Field label="Programme">
+        <Field label="Programme"
+          hint={isEquity ? "Une entreprise en capital relève d'un programme qui investit" : undefined}>
           <Select value={f.programId} onChange={(e) => set("programId", e.target.value)}>
             <option value="">— Aucun —</option>
-            {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {/* Proposer un programme d'accélération à une participation ferait afficher
+                celle-ci comme une simple accompagnée, alors que le fonds détient des parts. */}
+            {programs
+              .filter((p) => !isEquity || p.nature === "invest" || p.nature === "mixte" || p.id === f.programId)
+              .map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Select>
         </Field>
       </div>
+      {programMismatch && (
+        <div style={{ fontSize: 11.5, color: "var(--amber-fg)", background: "var(--amber-bg)", borderRadius: 8, padding: "8px 11px", lineHeight: 1.5 }}>
+          <b>{selected?.name}</b> est un programme d&apos;accélération : il ne peut pas porter une participation en capital.
+          Choisissez un programme qui investit, ou passez le suivi en accélération.
+        </div>
+      )}
       <Field label="Secteur">
         <Select value={f.subSectorId} onChange={(e) => set("subSectorId", e.target.value)}>
           <option value="">— Choisir un sous-secteur —</option>
