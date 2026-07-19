@@ -20,20 +20,27 @@ import type { SuiviTask } from "@/lib/data/suivi";
 import NextStepBanner from "@/components/shared/NextStepBanner";
 import { useDebouncedSave } from "@/components/shared/useDebouncedSave";
 
-export default function DealNextStep({ dealId, tasks, postMortem, rejectionReason, rejected, onOpenSuivi }: {
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function frDate(d: string | null) { if (!d) return null; const s = d.slice(0, 10); return `${parseInt(s.slice(8, 10), 10)} ${MONTHS[parseInt(s.slice(5, 7), 10) - 1] ?? ""} ${s.slice(0, 4)}`; }
+
+export default function DealNextStep({ dealId, tasks, postMortem, postMortemAt, rejectionReason, rejected, onOpenSuivi }: {
   dealId: string;
   tasks: SuiviTask[];
   postMortem: string | null;
+  postMortemAt: string | null;
   rejectionReason: string | null;
   rejected: boolean;
   onOpenSuivi: () => void;
 }) {
   const canEdit = useCanEdit();
   const [pm, setPm] = useState(postMortem ?? "");
+  const [pmAt, setPmAt] = useState(postMortemAt);
 
   // Sauvegarde différée fiable, sans router.refresh() qui réinitialiserait le champ.
   useDebouncedSave(pm, postMortem ?? "", async (v) => {
-    await createClient().from("deals").update({ post_mortem: v.trim() || null }).eq("id", dealId);
+    const at = v.trim() ? new Date().toISOString() : null;
+    await createClient().from("deals").update({ post_mortem: v.trim() || null, post_mortem_at: at }).eq("id", dealId);
+    setPmAt(at);
   });
 
   return (
@@ -45,6 +52,7 @@ export default function DealNextStep({ dealId, tasks, postMortem, rejectionReaso
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Post-mortem</span>
             {rejectionReason && <span className="badge badge-red">Écarté · {rejectionReason}</span>}
+            {pmAt && <span style={{ fontSize: 11, color: "var(--text-3)", marginLeft: "auto" }}>Rédigé le {frDate(pmAt)}</span>}
           </div>
           <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 8 }}>
             Pourquoi ce dossier n&apos;a pas abouti : ce qui a manqué, ce qu&apos;on ferait autrement, ce qui pourrait le rouvrir.

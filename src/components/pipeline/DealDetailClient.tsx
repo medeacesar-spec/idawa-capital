@@ -8,6 +8,7 @@ import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import ConvertDealModal from "./ConvertDealModal";
 import RejectDealModal from "./RejectDealModal";
+import StandbyDealModal from "./StandbyDealModal";
 import CommitteeDocs from "./CommitteeDocs";
 import { setCommitteeValidation } from "@/app/(app)/pipeline/actions";
 import { DEAL_COMMITTEE_OUTCOMES, isAdvancedStage } from "@/lib/ui-constants";
@@ -20,6 +21,8 @@ import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
 import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAccess";
 import DealNextStep from "./DealNextStep";
+import DealPresentationTab from "./DealPresentationTab";
+import type { PromoterData } from "@/components/shared/PromoterCard";
 import ProgramMemberships from "@/components/portfolio/ProgramMemberships";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -52,7 +55,9 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 export default function DealDetailClient({ deal, canEditComites = true, canValidateComites = false, canEdit = true }: { deal: DealDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState(deal.committees.length ? "Comités" : "Présentation");
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // En pipeline avancé (via comité d'ouverture ou passage manuel), les champs avancés
+  // sont ouverts d'emblée : valo pré-money et closing deviennent pertinents à ce stade.
+  const [showAdvanced, setShowAdvanced] = useState(isAdvancedStage(deal.stage));
   const [comModal, setComModal] = useState<{ open: boolean; passage: CommitteePassage | null }>({ open: false, passage: null });
   const [comBusy, setComBusy] = useState<string | null>(null);
 
@@ -66,6 +71,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   }
   const [convertOpen, setConvertOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [standbyOpen, setStandbyOpen] = useState(false);
   const [stateBusy, setStateBusy] = useState(false);
   const tabs = tabsFor(deal.stage);
   // Un dossier peut reculer d'étape : l'onglet ouvert doit rester atteignable.
@@ -75,9 +81,32 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
   async function changeState(next: string) {
     setStateBusy(true);
+    const supabase = createClient();
+    // Réactivation : seconde note datée, qui referme l'épisode d'écartement ou de veille.
+    if (next === "Actif" && (deal.dealState === "Écarté" || deal.dealState === "En veille")) {
+      const wasRejected = deal.dealState === "Écarté";
+      const motif = wasRejected ? deal.rejectionReason : deal.standbyReason;
+      // Le post-mortem a pu être saisi à l'instant (sauvegarde différée, sans refresh) : relire la base.
+      let postMortem = deal.postMortem;
+      if (wasRejected) {
+        const { data } = await supabase.from("deals").select("post_mortem").eq("id", deal.id).single();
+        postMortem = data?.post_mortem ?? deal.postMortem;
+      }
+      const parts = [`Dossier réactivé — précédemment ${wasRejected ? "écarté" : "mis en veille"}`];
+      if (motif) parts.push(`Motif initial : ${motif}`);
+      if (wasRejected && postMortem?.trim()) parts.push(`Post-mortem : ${postMortem.trim()}`);
+      await supabase.from("notes").insert({
+        entity_type: "deal", entity_id: deal.id, type: "Note",
+        note_date: new Date().toISOString().slice(0, 10),
+        summary: parts.join("\n"),
+      });
+    }
+    // On efface les MOTIFS d'état (badges), mais on garde le post-mortem : c'est le récit du dossier,
+    // déjà repris dans la note de réactivation, et utile si le dossier est réinstruit plus tard.
     const payload: Record<string, unknown> = { deal_state: next };
     if (next !== "Écarté") payload.rejection_reason = null;
-    await createClient().from("deals").update(payload).eq("id", deal.id);
+    if (next !== "En veille") payload.standby_reason = null;
+    await supabase.from("deals").update(payload).eq("id", deal.id);
     setStateBusy(false);
     router.refresh();
   }
@@ -143,13 +172,12 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           )
         ) : (
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            {/* La fiche d'instruction, pendant de la fiche société, dès le stade avancé. */}
-            {isAdvancedStage(deal.stage) && (
-              <button className="btn btn-ghost" onClick={() => router.push(`/pipeline/${deal.id}/fiche`)} title="Fiche d'instruction imprimable, au format de la fiche société">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8M8 17h5" /></svg>
-                Fiche d'instruction
-              </button>
-            )}
+            {/* La fiche d'instruction est disponible à tout stade : on peut vouloir partager
+                l'information d'un dossier même tôt, indépendamment du pipeline avancé. */}
+            <button className="btn btn-ghost" onClick={() => router.push(`/pipeline/${deal.id}/fiche`)} title="Fiche d'instruction imprimable, au format de la fiche société">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8M8 17h5" /></svg>
+              Fiche d'instruction
+            </button>
             {canEdit && (<button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=pipeline&entity=${deal.id}`)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               Saisir un reporting
@@ -167,7 +195,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14, padding: "9px 12px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface-cream)" }}>
           <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>État du dossier</span>
           {deal.dealState === "En veille" ? (
-            <span className="badge badge-amber">En veille</span>
+            <span className="badge badge-amber">En veille{deal.standbyReason ? ` · ${deal.standbyReason}` : ""}</span>
           ) : deal.dealState === "Écarté" ? (
             <span className="badge badge-neutral">Écarté{deal.rejectionReason ? ` · ${deal.rejectionReason}` : ""}</span>
           ) : (
@@ -175,7 +203,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           )}
           <div style={{ marginLeft: "auto", display: canEdit ? "flex" : "none", gap: 6, flexWrap: "wrap" }}>
             {deal.dealState === "Actif" && (
-              <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("En veille")}>Mettre en veille</button>
+              <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => setStandbyOpen(true)}>Mettre en veille</button>
             )}
             {deal.dealState === "En veille" && (
               <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={stateBusy} onClick={() => changeState("Actif")}>Réactiver</button>
@@ -207,7 +235,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
       </div>
 
-      <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem} rejectionReason={deal.rejectionReason}
+      <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem} postMortemAt={deal.postMortemAt} rejectionReason={deal.rejectionReason}
         rejected={deal.dealState === "Écarté"} onOpenSuivi={() => setTab("Suivi")} />
 
       <ReadOnlyNotice what="ce dossier" />
@@ -220,10 +248,10 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       </div>
 
       {currentTab === "Présentation" && (
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Thèse d'investissement</div>
-          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.65 }}>{deal.thesis || "Non renseignée. Utilisez « Modifier » pour ajouter la thèse d'investissement."}</div>
-        </div>
+        <DealPresentationTab dealId={deal.id} presentation={{
+          description: deal.description, thesis: deal.thesis, foundedYear: deal.foundedYear,
+          city: deal.city, developmentStage: deal.developmentStage, promoter: deal.promoter as PromoterData,
+        }} />
       )}
 
       {currentTab === "Comités" && (
@@ -301,6 +329,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       {comModal.open && <CommitteeFormModal dealId={deal.id} dealStage={deal.stage} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
       {rejectOpen && <RejectDealModal dealId={deal.id} onClose={() => setRejectOpen(false)} />}
+      {standbyOpen && <StandbyDealModal dealId={deal.id} onClose={() => setStandbyOpen(false)} />}
     </div>
     </WriteAccessProvider>
   );

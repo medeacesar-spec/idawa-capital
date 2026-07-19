@@ -1,37 +1,27 @@
 "use client";
 
-// Onglet « Présentation » de la société — le pendant de la Présentation d'un dossier.
-//
-// Une société n'avait aucun écran disant QUI elle est. Le dossier, lui, a sa thèse. Cette
-// asymétrie est comblée : identité (année, ville, stade), profil libre, rationnel
-// d'investissement repris du dossier d'origine, et promoteur.
+// Présentation du dossier — alignée sur celle de la société : Promoteur, Identité
+// (année, ville, stade), Profil de l'entreprise, et Rationnel (la thèse d'investissement).
+// Les mêmes blocs des deux côtés, pour qu'un dossier converti ne perde pas sa fiche.
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useCanEdit } from "@/components/shared/WriteAccess";
+import { useDebouncedSave } from "@/components/shared/useDebouncedSave";
 import { Field, Input, Select } from "@/components/ui/form";
 import { DEVELOPMENT_STAGES } from "@/lib/ui-constants";
-import { useDebouncedSave } from "@/components/shared/useDebouncedSave";
-import { useCallback } from "react";
 import PromoterCard, { type PromoterData } from "@/components/shared/PromoterCard";
 
-type Presentation = {
+export type DealPresentation = {
   description: string | null;
-  originThesis: string | null;
-  promoter: string | null;
+  thesis: string | null;
   foundedYear: number | null;
   city: string | null;
   developmentStage: string | null;
-  promoterData: PromoterData;
+  promoter: PromoterData;
 };
 
-export default function CompanyPresentationTab({ companyId, presentation, originDealId, originDealName, onOpenOrigin }: {
-  companyId: string;
-  presentation: Presentation;
-  originDealId: string | null;
-  originDealName: string | null;
-  onOpenOrigin?: () => void;
-}) {
+export default function DealPresentationTab({ dealId, presentation }: { dealId: string; presentation: DealPresentation }) {
   const canEdit = useCanEdit();
 
   const [desc, setDesc] = useState(presentation.description ?? "");
@@ -40,21 +30,17 @@ export default function CompanyPresentationTab({ companyId, presentation, origin
   const [stage, setStage] = useState(presentation.developmentStage ?? "");
 
   const saveField = useCallback(async (patch: Record<string, string | number | null>) => {
-    await createClient().from("portfolio_companies").update(patch).eq("id", companyId);
-    // Pas de router.refresh() : il réinitialiserait les champs frères en cours de saisie.
-  }, [companyId]);
+    await createClient().from("deals").update(patch).eq("id", dealId);
+  }, [dealId]);
 
   useDebouncedSave(year, presentation.foundedYear != null ? String(presentation.foundedYear) : "",
     (v) => saveField({ founded_year: v.trim() ? Number(v) : null }));
-  useDebouncedSave(city, presentation.city ?? "",
-    (v) => saveField({ city: v.trim() || null }));
-  useDebouncedSave(desc, presentation.description ?? "",
-    (v) => saveField({ description: v.trim() || null }));
+  useDebouncedSave(city, presentation.city ?? "", (v) => saveField({ city: v.trim() || null }));
+  useDebouncedSave(desc, presentation.description ?? "", (v) => saveField({ description: v.trim() || null }));
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <PromoterCard table="portfolio_companies" entityId={companyId} promoter={presentation.promoterData} fallbackName={presentation.promoter} />
-
+      <PromoterCard table="deals" entityId={dealId} promoter={presentation.promoter} />
 
       <div className="card" style={{ padding: "16px 18px" }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Identité</div>
@@ -85,19 +71,12 @@ export default function CompanyPresentationTab({ companyId, presentation, origin
       </div>
 
       <div className="card" style={{ padding: "16px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Rationnel de l&apos;investissement</div>
-          {originDealId && onOpenOrigin && (
-            <button className="btn btn-ghost" style={{ padding: "4px 10px", fontSize: 11.5 }} onClick={onOpenOrigin}>Instruction d&apos;origine →</button>
-          )}
-        </div>
-        {presentation.originThesis ? (
-          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{presentation.originThesis}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Rationnel de l&apos;investissement</div>
+        {presentation.thesis ? (
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{presentation.thesis}</div>
         ) : (
           <div style={{ fontSize: 12.5, color: "var(--text-3)", fontStyle: "italic" }}>
-            {originDealName
-              ? `Aucune thèse n'avait été saisie sur le dossier ${originDealName}.`
-              : "Cette société n'est pas issue d'un dossier du pipeline ; le rationnel se saisit dans le profil ci-dessus."}
+            Non renseigné. La thèse d&apos;investissement se saisit via « Modifier » (en-tête du dossier).
           </div>
         )}
       </div>

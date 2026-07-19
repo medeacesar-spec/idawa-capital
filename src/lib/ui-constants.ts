@@ -49,6 +49,15 @@ export const REJECTION_REASONS = [
   "Abandonné par la cible",
   "Autre",
 ];
+// La veille est une pause, pas une fin : on note pourquoi on attend, et ce qui la rouvrirait.
+export const STANDBY_REASONS = [
+  "En attente d'informations de la cible",
+  "En attente d'un événement (levée, closing, exercice…)",
+  "Priorité différée — à revoir plus tard",
+  "Instruction suspendue faute de ressources",
+  "Doute à lever avant de poursuivre",
+  "Autre",
+];
 
 export const PORTFOLIO_STATUS = ["Actif", "En difficulté", "Sorti", "Radié"];
 // Statuts qui sortent la société du portefeuille actif (exit réalisé / perte).
@@ -118,6 +127,26 @@ export const ESG_ACTION_CATEGORIES = ["E", "S", "G"];
 export const ESG_CATEGORY_LABEL: Record<string, string> = { E: "Environnement", S: "Social", G: "Gouvernance" };
 export const ESG_ACTION_STATUS = ["À lancer", "En cours", "Réalisée"];
 export const ESG_IMPACT_DIMENSIONS = ["Entrepreneurs", "Clients", "Employés", "Contractants", "Environnement", "Genre"];
+
+// Promoteur : identité + évaluation. Le sexe inclut « Non binaire » (demande du 19/07).
+export const PROMOTER_GENDERS = ["Femme", "Homme", "Non binaire"];
+// Grille d'évaluation du promoteur — 5 critères notés 0–4, dans la logique « on investit
+// d'abord dans une personne » d'I&P. Chaque critère absorbe plusieurs déterminants.
+export const PROMOTER_SCORE_MAX = 4;
+export const PROMOTER_CRITERIA: { key: string; label: string; help: string }[] = [
+  { key: "integrite", label: "Intégrité & gouvernance", help: "Transparence, fiabilité de l'information, ouverture à un board / reporting / pacte." },
+  { key: "coachability", label: "Coachability", help: "Réceptivité au conseil et à l'accompagnement de l'investisseur." },
+  { key: "gestion", label: "Rigueur de gestion & exécution", help: "Finances et organisation maîtrisées, tient ses engagements." },
+  { key: "engagement", label: "Engagement & résilience", help: "Capital et temps engagés (skin in the game), persévérance dans l'adversité." },
+  { key: "experience", label: "Expérience & vision", help: "Maîtrise du métier, track record, clarté du cap stratégique." },
+];
+// Note de synthèse du comité, sur 3 (aligné sur la notation d'impact IPDEV).
+export const PROMOTER_COMMITTEE_NOTES: { v: number; label: string }[] = [
+  { v: 0, label: "0 — Réserve forte" },
+  { v: 1, label: "1 — Réserve" },
+  { v: 2, label: "2 — Correct" },
+  { v: 3, label: "3 — Fort" },
+];
 
 // Données financières société
 export const FINANCIAL_LABELS = ["Chiffre d'affaires", "EBITDA", "Résultat net", "Trésorerie", "Dette nette", "Effectif"];

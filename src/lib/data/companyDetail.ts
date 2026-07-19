@@ -9,6 +9,7 @@ import { getValueCreation, type ValueInitiative } from "./planning";
 import { getInstruments, type Instrument } from "./instruments";
 import { getFinancialStatements, type StatementValues } from "./financialStatements";
 import { getFundUsers, type FundUser } from "./users";
+import type { PromoterEval } from "@/components/shared/PromoterEvalModal";
 
 export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
@@ -57,7 +58,11 @@ export type CompanyDetail = {
   tasks: SuiviTask[];
   /** Présentation : le profil (description éditable), le rationnel repris du dossier, le promoteur. */
   presentation: { description: string | null; originThesis: string | null; promoter: string | null;
-    foundedYear: number | null; city: string | null; developmentStage: string | null };
+    foundedYear: number | null; city: string | null; developmentStage: string | null;
+    promoterData: {
+      name: string | null; bio: string | null; diploma: string | null;
+      age: number | null; gender: string | null; evaluation: PromoterEval | null;
+    } };
   /** Bilan de sortie : pendant du post-mortem, sur une société sortie ou radiée. */
   exitReview: string | null;
   esg: EsgData;
@@ -78,7 +83,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, description, founded_year, city, development_stage, exit_review, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
+    .select("id, name, description, founded_year, city, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, exit_review, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
@@ -157,6 +162,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       foundedYear: c.founded_year != null ? Number(c.founded_year) : null,
       city: (c.city as string) ?? null,
       developmentStage: (c.development_stage as string) ?? null,
+      promoterData: {
+        name: (c.promoter_name as string) ?? null, bio: (c.promoter_bio as string) ?? null,
+        diploma: (c.promoter_diploma as string) ?? null, age: c.promoter_age != null ? Number(c.promoter_age) : null,
+        gender: (c.promoter_gender as string) ?? null, evaluation: c.promoter_eval ?? null,
+      },
     },
     exitReview: (c.exit_review as string) ?? null,
     esg, finance, valueCreation, instruments, statements, support,

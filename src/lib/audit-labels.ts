@@ -22,7 +22,7 @@ export const FIELD_LABEL: Record<string, string> = {
   session_date: "Date de séance", validated_by: "Validé par", validated_at: "Date de validation",
   due_date: "Échéance", target_date: "Échéance", date_end_plan: "Échéance", assignee_id: "Assigné à",
   assignee_label: "Assigné à", title: "Intitulé", item: "Intitulé", initiative: "Initiative", action: "Action",
-  note: "Note", notes: "Notes", thesis: "Thèse", rejection_reason: "Motif", post_mortem: "Post-mortem",
+  note: "Note", notes: "Notes", thesis: "Thèse", rejection_reason: "Motif", standby_reason: "Motif de mise en veille", post_mortem: "Post-mortem",
   budget: "Budget", actual: "Réalisé", value: "Valeur", target: "Cible", period: "Période",
   fiscal_year: "Exercice", method: "Méthode", amount_committed: "Engagé", amount_disbursed: "Décaissé",
   interest_rate: "Taux", duration_months: "Durée (mois)", grace_months: "Différé (mois)",

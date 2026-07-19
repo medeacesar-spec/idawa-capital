@@ -154,6 +154,8 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
                 {d.sector ? `${d.sector} · ` : ""}
                 {d.dealState === "Écarté" && !d.convertedCompanyId
                   ? <span style={{ color: "var(--text-2)" }}>{d.rejectionReason ?? "Écarté"}</span>
+                  : d.dealState === "En veille" && !d.convertedCompanyId
+                  ? <span style={{ color: "var(--text-2)" }}>{d.standbyReason ?? "En veille"}</span>
                   : <><span style={{ color: STAGE_COLOR[d.stage] ?? "var(--text-2)", fontWeight: 600 }}>{d.stage}</span>{d.probability != null ? ` · ${d.probability}%` : ""}</>}
               </div>
             </div>

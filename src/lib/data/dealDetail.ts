@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { PromoterEval } from "@/components/shared/PromoterEvalModal";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
 import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
@@ -17,14 +18,25 @@ export type DealDetail = {
   status: string | null;
   dealState: string;
   rejectionReason: string | null;
+  standbyReason: string | null;
   source: string | null;
   sourceDetail: string | null;
   postMortem: string | null;
+  postMortemAt: string | null;
   amount: number;
   probability: number | null;
   valuationPre: number | null;
   ownershipTarget: number | null;
   thesis: string | null;
+  /** Présentation : mêmes champs qu'au Portefeuille (Identité + Profil + Promoteur). */
+  description: string | null;
+  foundedYear: number | null;
+  city: string | null;
+  developmentStage: string | null;
+  promoter: {
+    name: string | null; bio: string | null; diploma: string | null;
+    age: number | null; gender: string | null; evaluation: PromoterEval | null;
+  };
   sector: string | null;
   programName: string | null;
   programColor: string | null;
@@ -54,7 +66,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const supabase = await createClient();
   const { data: d } = await supabase
     .from("deals")
-    .select("id, company_name, stage, status, deal_state, rejection_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem")
+    .select("id, company_name, stage, status, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, description, founded_year, city, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem, post_mortem_at")
     .eq("id", id).single();
   if (!d) return null;
 
@@ -95,12 +107,17 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
 
   return {
     id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null,
-    dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, source: d.deal_source ?? null, sourceDetail: d.deal_source_detail ?? null,
-    postMortem: d.post_mortem ?? null, amount: Number(d.amount ?? 0),
+    dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, standbyReason: d.standby_reason ?? null, source: d.deal_source ?? null, sourceDetail: d.deal_source_detail ?? null,
+    postMortem: d.post_mortem ?? null, postMortemAt: d.post_mortem_at ?? null, amount: Number(d.amount ?? 0),
     probability: d.probability, valuationPre: d.valuation_pre != null ? Number(d.valuation_pre) : null,
     ownershipTarget: d.ownership_target != null ? Number(d.ownership_target) : null,
     convertedCompanyId: (convRes.data as { id?: string } | null)?.id ?? null,
     thesis: d.thesis,
+    description: d.description ?? null, foundedYear: d.founded_year ?? null, city: d.city ?? null, developmentStage: d.development_stage ?? null,
+    promoter: {
+      name: d.promoter_name ?? null, bio: d.promoter_bio ?? null, diploma: d.promoter_diploma ?? null,
+      age: d.promoter_age ?? null, gender: d.promoter_gender ?? null, evaluation: d.promoter_eval ?? null,
+    },
     sector: (subRes.data as { name?: string } | null)?.name ?? null,
     programName: prog?.name ?? null, programColor: prog?.color ?? null,
     programs, programOptions,

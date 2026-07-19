@@ -6,7 +6,7 @@
 // toujours ce qu'une personne précise a fait, ou ce qui est arrivé à un objet précis.
 // Et « modification » ne suffit pas — il faut voir la valeur avant et après.
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { TABLE_LABEL, ACTION_LABEL, FIELD_LABEL } from "@/lib/audit-labels";
 import type { AuditEntry } from "@/lib/data/audit";
 
@@ -87,8 +87,8 @@ export default function JournalClient({ entries }: { entries: AuditEntry[] }) {
                 const n = e.changes ? Object.keys(e.changes).length : 0;
                 const open = openRow === e.id;
                 return (
-                  <>
-                    <tr key={e.id}>
+                  <Fragment key={e.id}>
+                    <tr>
                       <td style={{ ...td, color: "var(--text-2)" }}>{frDateTime(e.at)}</td>
                       <td style={td}><span className={`badge ${ACTION_COLOR[e.action] ?? "badge-neutral"}`}>{ACTION_LABEL[e.action] ?? e.action}</span></td>
                       <td style={{ ...td, color: "var(--text-2)" }}>{TABLE_LABEL[e.table] ?? e.table}</td>
@@ -106,7 +106,7 @@ export default function JournalClient({ entries }: { entries: AuditEntry[] }) {
                       </td>
                     </tr>
                     {open && e.changes && (
-                      <tr key={`${e.id}-d`}>
+                      <tr>
                         <td colSpan={6} style={{ padding: "4px 14px 12px", borderTop: "none", background: "var(--surface-cream)" }}>
                           <table style={{ borderCollapse: "collapse", width: "100%" }}>
                             <tbody>
@@ -123,7 +123,7 @@ export default function JournalClient({ entries }: { entries: AuditEntry[] }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

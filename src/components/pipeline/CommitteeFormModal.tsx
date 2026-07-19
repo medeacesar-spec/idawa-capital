@@ -54,7 +54,22 @@ export default function CommitteeFormModal({
       outcome: outcomeVal,
     };
     if (passage) await supabase.from("committee_passages").update(payload).eq("id", passage.id);
-    else await supabase.from("committee_passages").insert({ ...payload, deal_id: dealId ?? null, company_id: companyId ?? null });
+    else {
+      await supabase.from("committee_passages").insert({ ...payload, deal_id: dealId ?? null, company_id: companyId ?? null });
+      // Un passage en comité est un événement du dossier : on en laisse une trace datée dans le Suivi.
+      const parts = [`Passage en ${f.committeeType}`];
+      if (outcomeVal) parts.push(outcomeVal);
+      if (f.decision) parts.push(`Décision : ${f.decision}`);
+      if (f.conditions.trim()) parts.push(f.conditions.trim());
+      await supabase.from("notes").insert({
+        entity_type: dealId ? "deal" : "company",
+        entity_id: dealId ?? companyId,
+        type: "Réunion",
+        note_date: f.sessionDate || new Date().toISOString().slice(0, 10),
+        participants: f.participants || null,
+        summary: parts.join(" — "),
+      });
+    }
 
     // Le passage au Comité d'ouverture de dossier fait entrer le dossier dans le pipeline
     // avancé — sauf s'il l'a déjà dépassé. Le stade reste modifiable à la main ensuite.

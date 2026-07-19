@@ -128,7 +128,16 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 
 | Item | Statut | Migration |
 |---|---|---|
-| **Découvrabilité de « Écarter »** : le bouton existe (petit lien rouge dans la barre « État du dossier ») mais Médéa ne le trouve pas. À rendre visible — action franche, avec le post-mortem qui en découle. | à faire | non |
+| ~~**Découvrabilité de « Écarter »**~~ — **abandonné** (Médéa, 19/07) : pas besoin de la rendre plus visible. | abandonné | non |
+| **Passage en comité → note automatique dans le Suivi** : chaque nouveau passage (dossier ou société) écrit une note « Réunion » datée (type, nature, décision, conditions, participants). | vérifié navigateur | non |
+| **Fiche d'instruction générable à tout stade** : le bouton n'est plus réservé au pipeline avancé — on peut partager l'info d'un dossier tôt. | vérifié navigateur | non |
+| **Champs avancés auto-ouverts en pipeline avancé** : dès qu'un dossier passe en pipeline avancé (comité d'ouverture ou manuel), valo pré-money et closing s'affichent d'emblée. | vérifié navigateur | non |
+| **Présentation du dossier alignée sur celle de la société** : Promoteur, Identité (année, ville, stade), Profil de l'entreprise, Rationnel — les mêmes blocs qu'au Portefeuille (`DealPresentationTab`, `PromoterCard` partagé). | vérifié navigateur | **0037** |
+| **Promoteur enrichi + évaluation** : descriptif (bio, plus haut diplôme, âge, sexe H/F/Non binaire) et **grille d'évaluation** en 5 critères notés 0–4 + justification, appréciation générale et note de synthèse comité /3 (`PromoterEvalModal`, stockée en jsonb `promoter_eval`). Critères : Intégrité & gouvernance · Coachability · Rigueur de gestion & exécution · Engagement & résilience · Expérience & vision. | vérifié navigateur | **0037** |
+| Bug pré-existant corrigé : `JournalClient` (onglet Modifications du Journal d'audit) rendait un fragment de liste sans `key` → overlay d'erreur en dev. Passé en `<Fragment key={e.id}>`. | vérifié navigateur | non |
+| **« Mettre en veille » reçoit la même fiche que « Écarter »** : fiche modale motif + précision (`StandbyDealModal`), 6 motifs pensés pour une *pause*, badge « En veille · motif » sur la fiche dossier et dans la liste, motif effacé à la réactivation. | vérifié navigateur | **0035** |
+| **Historisation des transitions d'état dans le Suivi** : chaque écartement / mise en veille écrit une **note datée** (en plus du badge) ; la **réactivation** écrit une **seconde note** qui referme l'épisode (motif initial + post-mortem repris, relu en base). Le post-mortem n'est **pas effacé** à la réactivation (récit du dossier, déjà repris dans la note). | vérifié navigateur | non |
+| **Post-mortem daté** : horodaté à la rédaction (`post_mortem_at`), « Rédigé le … » affiché dans l'encart (disparaît si vidé). | vérifié navigateur | **0036** |
 | **Pas de temps MENSUEL pour les rapports d'entreprise** (demande Saint-André) + **aligner les données d'entreprise** sur ce pas de temps. L'outil est aujourd'hui trimestriel/annuel. | à faire | oui (probable) |
 | **Questionnaire d'impact par PME** — le vrai chantier de fond restant : collecter les indicateurs d'impact détaillés (emplois par sexe/statut, formalisation, petits producteurs, salaires décents) qu'attendent la fiche I&P et l'outil ESG. À concevoir : questions, cadence, voie de saisie. | à faire | oui |
 | Contenu qualitatif entreprise (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
