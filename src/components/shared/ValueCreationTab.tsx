@@ -9,6 +9,7 @@ import { VALUE_LEVERS, VALUE_STATUS } from "@/lib/ui-constants";
 import type { ValueInitiative } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
+import { notifyAssignment } from "@/app/(app)/notify-actions";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return null; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -67,7 +68,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
     </div>
   );
 
-  function VcModal({ entityType, entityId, item, contacts, users, onClose }: { entityType: string; entityId: string; item: ValueInitiative | null; contacts: ContactOpt[]; users: FundUser[]; onClose: () => void }) {
+  function VcModal({ entityType, entityId, item, contacts, users, onClose }: { entityType: "deal" | "company"; entityId: string; item: ValueInitiative | null; contacts: ContactOpt[]; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [lever, setLever] = useState(item?.lever ?? VALUE_LEVERS[0]);
     const [initiative, setInitiative] = useState(item?.initiative ?? "");
@@ -83,6 +84,14 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
       const payload = { entity_type: entityType, entity_id: entityId, lever, initiative: initiative.trim(), owner: owner.trim() || null, assignee_id: assigneeId || null, status, target_date: target || null, impact: impact.trim() || null };
       if (item) await supabase.from("value_creation").update(payload).eq("id", item.id);
       else await supabase.from("value_creation").insert(payload);
+      // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
+      // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
+      if (assigneeId && assigneeId !== (item?.assigneeId ?? "")) {
+        await notifyAssignment({
+          kind: "Initiative de création de valeur", title: initiative.trim(), assigneeId,
+          dueDate: target || null, entityType, entityId,
+        });
+      }
       onClose(); router.refresh();
     }
     return (

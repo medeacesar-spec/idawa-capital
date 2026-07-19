@@ -9,6 +9,7 @@ import { EHS_SECTORS, ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ES
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
+import { notifyAssignment } from "@/app/(app)/notify-actions";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -151,7 +152,7 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
     </div>
   );
 
-  function DiagModal({ entityType, entityId, assessment, onClose }: { entityType: string; entityId: string; assessment: EsgAssessment | null; onClose: () => void }) {
+  function DiagModal({ entityType, entityId, assessment, onClose }: { entityType: "deal" | "company"; entityId: string; assessment: EsgAssessment | null; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [risk, setRisk] = useState(assessment?.riskCategory ?? ESG_RISK_LEVELS[0]);
     const [excl, setExcl] = useState(assessment?.exclusionOk ?? true);
@@ -176,7 +177,7 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
     );
   }
 
-  function ActionModal({ entityType, entityId, action, users, onClose }: { entityType: string; entityId: string; action: EsgAction | null; users: FundUser[]; onClose: () => void }) {
+  function ActionModal({ entityType, entityId, action, users, onClose }: { entityType: "deal" | "company"; entityId: string; action: EsgAction | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [cat, setCat] = useState(action?.category ?? "G");
     const [text, setText] = useState(action?.action ?? "");
@@ -191,6 +192,14 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
       const payload = { entity_type: entityType, entity_id: entityId, category: cat, action: text.trim(), responsible_code: resp.trim() || null, assignee_id: assigneeId || null, date_end_plan: due || null, status };
       if (action) await supabase.from("esg_actions").update(payload).eq("id", action.id);
       else await supabase.from("esg_actions").insert(payload);
+      // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
+      // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
+      if (assigneeId && assigneeId !== (action?.assigneeId ?? "")) {
+        await notifyAssignment({
+          kind: "Action E&S", title: text.trim(), assigneeId,
+          dueDate: due || null, entityType, entityId,
+        });
+      }
       onClose(); router.refresh();
     }
     return (
@@ -208,7 +217,7 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
     );
   }
 
-  function ImpactModal({ entityType, entityId, impact, onClose }: { entityType: string; entityId: string; impact: EsgImpact | null; onClose: () => void }) {
+  function ImpactModal({ entityType, entityId, impact, onClose }: { entityType: "deal" | "company"; entityId: string; impact: EsgImpact | null; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [dim, setDim] = useState(impact?.dimension ?? ESG_IMPACT_DIMENSIONS[0]);
     const [score, setScore] = useState(impact?.score != null ? String(impact.score) : "");

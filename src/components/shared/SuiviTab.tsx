@@ -9,6 +9,7 @@ import { NOTE_TYPES, TASK_STATUS } from "@/lib/ui-constants";
 import type { SuiviNote, SuiviTask } from "@/lib/data/suivi";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
+import { notifyAssignment } from "@/app/(app)/notify-actions";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; const dd = d.slice(8, 10); return `${dd} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -110,7 +111,7 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
     </div>
   );
 
-  function NoteModal({ entityType, entityId, note, onClose }: { entityType: string; entityId: string; note: SuiviNote | null; onClose: () => void }) {
+  function NoteModal({ entityType, entityId, note, onClose }: { entityType: "deal" | "company"; entityId: string; note: SuiviNote | null; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [type, setType] = useState(note?.type ?? NOTE_TYPES[0]);
     const [date, setDate] = useState(note?.noteDate ?? todayISO());
@@ -138,7 +139,7 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
     );
   }
 
-  function TaskModal({ entityType, entityId, task, users, onClose }: { entityType: string; entityId: string; task: SuiviTask | null; users: FundUser[]; onClose: () => void }) {
+  function TaskModal({ entityType, entityId, task, users, onClose }: { entityType: "deal" | "company"; entityId: string; task: SuiviTask | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [title, setTitle] = useState(task?.title ?? "");
     const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
@@ -152,6 +153,14 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
       const payload = { entity_type: entityType, entity_id: entityId, title: title.trim(), assignee_id: assigneeId || null, assignee_label: label, due_date: due || null, status, source: "manuel" };
       if (task) await supabase.from("tasks").update(payload).eq("id", task.id);
       else await supabase.from("tasks").insert(payload);
+      // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
+      // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
+      if (assigneeId && assigneeId !== (task?.assigneeId ?? "")) {
+        await notifyAssignment({
+          kind: "Action de suivi", title: title.trim(), assigneeId,
+          dueDate: due || null, entityType, entityId,
+        });
+      }
       onClose(); router.refresh();
     }
     return (

@@ -9,6 +9,7 @@ import { DD_DOMAINS, DD_STATUS } from "@/lib/ui-constants";
 import type { DdItem } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
+import { notifyAssignment } from "@/app/(app)/notify-actions";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Terminé": "badge-green", "Point d'attention": "badge-red" };
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -74,7 +75,7 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
     </div>
   );
 
-  function DdModal({ entityType, entityId, item, users, onClose }: { entityType: string; entityId: string; item: DdItem | null; users: FundUser[]; onClose: () => void }) {
+  function DdModal({ entityType, entityId, item, users, onClose }: { entityType: "deal" | "company"; entityId: string; item: DdItem | null; users: FundUser[]; onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [domain, setDomain] = useState(item?.domain ?? DD_DOMAINS[0]);
     const [text, setText] = useState(item?.item ?? "");
@@ -88,6 +89,14 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
       const payload = { entity_type: entityType, entity_id: entityId, domain, item: text.trim(), status, note: note.trim() || null, assignee_id: assigneeId || null };
       if (item) await supabase.from("dd_items").update(payload).eq("id", item.id);
       else await supabase.from("dd_items").insert(payload);
+      // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
+      // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
+      if (assigneeId && assigneeId !== (item?.assigneeId ?? "")) {
+        await notifyAssignment({
+          kind: "Point de due diligence", title: text.trim(), assigneeId,
+          dueDate: null, entityType, entityId,
+        });
+      }
       onClose(); router.refresh();
     }
     return (

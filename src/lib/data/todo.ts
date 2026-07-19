@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type TodoItem = { kind: string; label: string; sub: string; href: string; severity: "high" | "medium"; assigneeId: string | null; validation?: boolean };
+export type TodoItem = {
+  kind: string; label: string; sub: string; href: string;
+  severity: "high" | "medium"; assigneeId: string | null; validation?: boolean;
+  /** Échéance de l'action. « En retard » sans dire depuis quand n'aide pas à arbitrer. */
+  dueDate: string | null;
+};
 export type TodoData = { items: TodoItem[]; total: number };
 
 function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -27,27 +32,31 @@ export async function getTodoItems(): Promise<TodoData> {
 
   for (const a of esgRes.data ?? []) {
     if (a.date_end_plan && a.date_end_plan < today) {
-      items.push({ kind: "ESG", label: a.action ?? "Action E&S", sub: `${nameOf(a.entity_type, a.entity_id)} · échéance dépassée`, href: hrefOf(a.entity_type, a.entity_id), severity: "high", assigneeId: a.assignee_id ?? null });
+      items.push({ kind: "ESG", label: a.action ?? "Action E&S", sub: nameOf(a.entity_type, a.entity_id), href: hrefOf(a.entity_type, a.entity_id), severity: "high", assigneeId: a.assignee_id ?? null, dueDate: a.date_end_plan });
     }
   }
   for (const t of taskRes.data ?? []) {
     if (t.due_date && t.due_date < today) {
-      items.push({ kind: "Action", label: t.title, sub: `${nameOf(t.entity_type, t.entity_id)} · échéance dépassée`, href: hrefOf(t.entity_type, t.entity_id), severity: "high", assigneeId: t.assignee_id ?? null });
+      items.push({ kind: "Action", label: t.title, sub: nameOf(t.entity_type, t.entity_id), href: hrefOf(t.entity_type, t.entity_id), severity: "high", assigneeId: t.assignee_id ?? null, dueDate: t.due_date });
     }
   }
   for (const d of ddRes.data ?? []) {
-    items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)} · point d'attention`, href: hrefOf(d.entity_type, d.entity_id), severity: "high", assigneeId: d.assignee_id ?? null });
+    items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)} · point d'attention`, href: hrefOf(d.entity_type, d.entity_id), severity: "high", assigneeId: d.assignee_id ?? null, dueDate: null });
   }
   for (const v of vcRes.data ?? []) {
     if (v.target_date && v.target_date < today && v.status !== "Réalisée" && v.status !== "En pause") {
-      items.push({ kind: "Création de valeur", label: v.initiative, sub: `${nameOf(v.entity_type, v.entity_id)} · échéance dépassée`, href: hrefOf(v.entity_type, v.entity_id), severity: "medium", assigneeId: v.assignee_id ?? null });
+      items.push({ kind: "Création de valeur", label: v.initiative, sub: nameOf(v.entity_type, v.entity_id), href: hrefOf(v.entity_type, v.entity_id), severity: "medium", assigneeId: v.assignee_id ?? null, dueDate: v.target_date });
     }
   }
 
   for (const c of comRes.data ?? []) {
-    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${dealMap.get(c.deal_id) ?? "—"}${c.decision ? ` · ${c.decision}` : ""}`, href: c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline", severity: "high", assigneeId: null, validation: true });
+    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${dealMap.get(c.deal_id) ?? "—"}${c.decision ? ` · ${c.decision}` : ""}`, href: c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline", severity: "high", assigneeId: null, validation: true, dueDate: null });
   }
 
-  items.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "high" ? -1 : 1));
+  // À gravité égale, le plus ancien retard passe devant : c'est celui qui coûte le plus.
+  items.sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === "high" ? -1 : 1;
+    return (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999");
+  });
   return { items, total: items.length };
 }

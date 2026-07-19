@@ -6,6 +6,19 @@ import type { TodoData } from "@/lib/data/todo";
 
 const KIND_COLOR: Record<string, string> = { ESG: "#7C7A3A", Action: "#8A5A18", "Due diligence": "#9A3B26", "Création de valeur": "#185FA5", "Comité": "#2F6140" };
 
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const frDay = (d: string) => `${parseInt(d.slice(8, 10), 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""}`;
+
+/** « En retard » ne dit rien : trois jours ou six mois n'appellent pas la même réaction. */
+function lateBy(due: string): string {
+  const days = Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(due)) / 86_400_000);
+  if (days <= 0) return frDay(due);
+  if (days === 1) return `${frDay(due)} · 1 jour de retard`;
+  if (days < 31) return `${frDay(due)} · ${days} jours de retard`;
+  const months = Math.round(days / 30);
+  return `${frDay(due)} · ${months} mois de retard`;
+}
+
 export default function TodoBanner({ data, currentUserId, canSeeAll, canValidateComites = false }: { data: TodoData; currentUserId: string; canSeeAll: boolean; canValidateComites?: boolean }) {
   const [scope, setScope] = useState<"mine" | "all">("mine");
   const effScope = canSeeAll ? scope : "mine";
@@ -46,7 +59,10 @@ export default function TodoBanner({ data, currentUserId, canSeeAll, canValidate
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: it.severity === "high" ? "var(--red-fg)" : "var(--amber-fg)", flexShrink: 0 }} />
             <span className="badge" style={{ background: `${KIND_COLOR[it.kind] ?? "#6B5744"}1a`, color: KIND_COLOR[it.kind] ?? "#6B5744", flexShrink: 0 }}>{it.kind}</span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
-            <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 240 }}>{it.sub}</span>
+            <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{it.sub}</span>
+            <span className="tnum" style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: it.dueDate ? "var(--red-fg)" : "var(--text-3)" }}>
+              {it.dueDate ? lateBy(it.dueDate) : "sans échéance"}
+            </span>
           </Link>
         ))}
       </div>
