@@ -55,6 +55,8 @@ export type CompanyDetail = {
   originNotes: OriginNote[];
   notes: SuiviNote[];
   tasks: SuiviTask[];
+  /** Présentation : le profil (description éditable), le rationnel repris du dossier, le promoteur. */
+  presentation: { description: string | null; originThesis: string | null; promoter: string | null };
   esg: EsgData;
   finance: CompanyFinance;
   support: CompanySupport;
@@ -73,14 +75,14 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
+    .select("id, name, description, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
   const [progRes, subRes, dealRes, contactRes, docRes] = await Promise.all([
     c.program_id ? supabase.from("programs").select("name, color").eq("id", c.program_id).single() : Promise.resolve({ data: null }),
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
-    c.origin_deal_id ? supabase.from("deals").select("company_name").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
+    c.origin_deal_id ? supabase.from("deals").select("company_name, thesis").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
     supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("company_id", id),
     supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
   ]);
@@ -142,7 +144,15 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     originCommittees: (ocRes.data ?? []).map((x) => ({ id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision, conditions: x.conditions })),
     decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
-    notes: suivi.notes, tasks: suivi.tasks, esg, finance, valueCreation, instruments, statements, support,
+    notes: suivi.notes, tasks: suivi.tasks,
+    presentation: {
+      description: (c.description as string) ?? null,
+      originThesis: (dealRes.data as { thesis?: string } | null)?.thesis ?? null,
+      // Le promoteur : le contact dont la fonction évoque la direction.
+      promoter: (contactRes.data ?? []).find((x) => /pdg|dg|g[ée]rant|promot|dirige|fondat/i.test(String(x.function ?? "")))?.name
+        ?? (contactRes.data ?? [])[0]?.name ?? null,
+    },
+    esg, finance, valueCreation, instruments, statements, support,
     structuration: {
       ehsSector: c.ehs_sector ?? null,
       valuationMethodsEntry: (c.valuation_methods_entry as string[] | null) ?? [],

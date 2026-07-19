@@ -18,6 +18,8 @@ import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAc
 import { BudgetTab, FlowsTab, CapTableTab } from "./CompanyFinanceTabs";
 import InstrumentsTab from "./InstrumentsTab";
 import RepaymentsTab from "./RepaymentsTab";
+import CompanyPresentationTab from "./CompanyPresentationTab";
+import NextStepBanner from "@/components/shared/NextStepBanner";
 import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
@@ -32,6 +34,8 @@ function initials(name: string) { const caps = name.replace(/[^A-Z]/g, ""); retu
 // d'investissement de la performance : on regroupe donc par NATURE de l'information,
 // et chaque famille garde ses propres onglets.
 const FAMILIES: { key: string; label: string; hint: string; tabs: string[] }[] = [
+  { key: "presentation", label: "Présentation", hint: "qui est l'entreprise, et pourquoi le fonds y est",
+    tabs: ["Présentation"] },
   { key: "invest", label: "Investissement", hint: "ce que le fonds a engagé et décaissé",
     tabs: ["Investissement", "Remboursements", "Flux financiers", "Cap table"] },
   { key: "valo", label: "Valorisation", hint: "arrêtée une fois par exercice, et piste de sortie",
@@ -73,7 +77,8 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
 
 export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false, canEdit = true }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
   const router = useRouter();
-  const [tab, setTab] = useState(company.trackingType === "equity" ? "KPIs" : company.support.indicators.length > 0 ? "Accompagnement" : "KPIs");
+  // On ouvre sur la Présentation, comme un dossier : d'abord qui est l'entreprise.
+  const [tab, setTab] = useState(company.trackingType === "equity" ? "Présentation" : company.support.indicators.length > 0 ? "Accompagnement" : "Présentation");
   const [decModal, setDecModal] = useState<{ open: boolean; passage: CompanyDecision | null }>({ open: false, passage: null });
   const [decBusy, setDecBusy] = useState<string | null>(null);
   const equity = company.trackingType === "equity";
@@ -84,7 +89,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
     ...FAMILIES.filter((f) => equity || !EQUITY_ONLY.includes(f.key)),
     ...(accompanied ? [SUPPORT_FAMILY] : []),
   ].sort((a, b) => {
-    const order = ["invest", "valo", "accomp", "perf", "suivi"];
+    const order = ["presentation", "invest", "valo", "accomp", "perf", "suivi"];
     return order.indexOf(a.key) - order.indexOf(b.key);
   });
   const families = company.originDealId
@@ -155,6 +160,11 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
         ))}
       </div>
 
+      {/* La même question que sur un dossier : qu'est-ce qui avance ? */}
+      <div style={{ marginBottom: 14 }}>
+        <NextStepBanner tasks={company.tasks} kind="company" onOpenSuivi={() => setTab("Suivi")} />
+      </div>
+
       <ReadOnlyNotice what="cette société" />
 
       {/* Familles, puis onglets de la famille choisie */}
@@ -189,6 +199,15 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} statements={company.statements} budget={company.finance.financials} />}
 
+      {tab === "Présentation" && (
+        <CompanyPresentationTab
+          companyId={company.id}
+          presentation={company.presentation}
+          originDealId={company.originDealId}
+          originDealName={company.originDealName}
+          onOpenOrigin={company.originDealId ? () => setTab("Origine / instruction") : undefined}
+        />
+      )}
       {tab === "Suivi" && <SuiviTab entityType="company" entityId={company.id} notes={company.notes} tasks={company.tasks} users={company.users} />}
 
       {tab === "Décisions" && (

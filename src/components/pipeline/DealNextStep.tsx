@@ -18,11 +18,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCanEdit } from "@/components/shared/WriteAccess";
 import type { SuiviTask } from "@/lib/data/suivi";
-
-const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-const frDay = (d: string) => `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`;
-
-const DONE = ["Fait", "Terminé", "Terminée", "Annulé", "Annulée"];
+import NextStepBanner from "@/components/shared/NextStepBanner";
 
 export default function DealNextStep({ dealId, tasks, postMortem, rejected, onOpenSuivi }: {
   dealId: string;
@@ -35,14 +31,6 @@ export default function DealNextStep({ dealId, tasks, postMortem, rejected, onOp
   const canEdit = useCanEdit();
   const [pm, setPm] = useState(postMortem ?? "");
 
-  const today = new Date().toISOString().slice(0, 10);
-  const open = tasks
-    .filter((t) => !DONE.includes(t.status ?? ""))
-    // Sans échéance, une tâche passe après celles qui en ont une : elle n'engage à rien.
-    .sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
-  const next = open[0] ?? null;
-  const late = !!next?.dueDate && next.dueDate < today;
-
   async function savePostMortem() {
     if (pm === (postMortem ?? "")) return;
     await createClient().from("deals").update({ post_mortem: pm.trim() || null }).eq("id", dealId);
@@ -51,27 +39,7 @@ export default function DealNextStep({ dealId, tasks, postMortem, rejected, onOp
 
   return (
     <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-      <div className="card" style={{ padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap" }}>Prochaine étape</span>
-        {next ? (
-          <>
-            <span style={{ fontSize: 12.5, color: "var(--ink)", flex: 1, minWidth: 180 }}>{next.title}</span>
-            {next.assigneeLabel && <span style={{ fontSize: 11.5, color: "var(--text-2)" }}>{next.assigneeLabel}</span>}
-            {next.dueDate
-              ? <span className={`badge ${late ? "badge-red" : "badge-neutral"}`}>{late ? "en retard · " : ""}{frDay(next.dueDate)}</span>
-              : <span style={{ fontSize: 11, color: "var(--text-3)" }}>sans échéance</span>}
-            {open.length > 1 && <span style={{ fontSize: 11, color: "var(--text-3)" }}>+{open.length - 1} autre{open.length > 2 ? "s" : ""}</span>}
-          </>
-        ) : (
-          <span style={{ fontSize: 12, color: "var(--text-3)", flex: 1 }}>
-            Aucune action ouverte — ce dossier n&apos;avance pas.
-          </span>
-        )}
-        <button onClick={onOpenSuivi}
-          style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: "var(--camel)", whiteSpace: "nowrap" }}>
-          {next ? "Voir le suivi →" : "Ajouter une action →"}
-        </button>
-      </div>
+      <NextStepBanner tasks={tasks} kind="deal" onOpenSuivi={onOpenSuivi} />
 
       {rejected && (
         <div className="card" style={{ padding: "13px 16px" }}>
