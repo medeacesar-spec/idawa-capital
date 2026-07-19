@@ -146,6 +146,9 @@ Rejouables et idempotents, à lancer depuis la racine du projet :
 node scripts/seed_demo_companies.mjs     # toutes les entreprises : états financiers OHADA,
                                          # budget, KPIs, suivi, ESG, création de valeur,
                                          # due diligence, contacts, documents, cap table
+node scripts/seed_demo_deals.mjs         # dossiers du pipeline : thèse, suivi, due diligence,
+                                         # comités, KPIs, ESG, création de valeur — le volume
+                                         # d'information suit l'étape du dossier
 node scripts/seed_demo_support.mjs       # accélération : indicateurs programme et entreprise
 node scripts/seed_test_instruments.mjs   # 3 sociétés, 7 instruments variés
 node scripts/seed_test_financials.mjs    # 3 sociétés × 3 années × 12 postes OHADA
