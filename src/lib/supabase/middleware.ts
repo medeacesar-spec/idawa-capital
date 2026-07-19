@@ -31,7 +31,11 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser");
+  // `/api/auth-event` doit rester joignable SANS session : c'est là que s'enregistre un
+  // échec de connexion, qui par définition survient avant toute session. Sans cette
+  // exemption, la redirection transforme l'appel en POST sur /login, qui répond 405 —
+  // et aucune tentative ratée n'est jamais consignée.
+  const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser") || path === "/api/auth-event";
 
   // Non connecté sur une page protégée -> connexion
   if (!user && !isPublic) {

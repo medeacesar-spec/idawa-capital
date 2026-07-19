@@ -31,6 +31,7 @@ const OWN_DOMAIN = [
   ["app/reinitialiser/", "définition du mot de passe, page publique par nature"],
   ["app/login/", "enregistre la connexion de la personne qui vient de s'authentifier, pour elle-même"],
   ["app/auth-events.ts", "journal des accès : consigne l'événement de la personne elle-même, y compris un échec où aucune session n'existe"],
+  ["app/api/auth-event/", "journal des accès : l'identité est prise dans la SESSION, jamais dans la requête ; sans session, seul un échec de connexion est accepté"],
   ["components/account/", "chacun modifie son propre profil, pas celui d'un autre"],
   ["components/params/", "rendu uniquement par /parametres, gardé requirePerm(config, E)"],
   ["components/saisie/", "rendu uniquement par /saisie, gardé en tête de page"],

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 // Enregistrement des événements d'accès, par une route ordinaire et NON par une action
 // serveur.
@@ -22,6 +23,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
+    // L'identité ne vient JAMAIS du corps de la requête : cette route est ouverte (un
+    // échec de connexion survient sans session), et accepter un identifiant fourni par
+    // l'appelant permettrait d'attribuer de fausses connexions à n'importe qui.
+    const { data: { user } } = await (await createClient()).auth.getUser();
+
+    // Sans session, seuls les événements qui en sont dépourvus par nature sont acceptés.
+    if (!user && body.kind !== "échec") {
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+
     const h = await headers();
     // Derrière un proxy, l'adresse d'origine est la première de la liste.
     const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || null;
@@ -31,8 +42,8 @@ export async function POST(req: Request) {
     // ce qui est précisément le cas d'un échec de connexion.
     await createAdminClient().from("auth_events").insert({
       kind: body.kind,
-      user_id: body.userId ?? null,
-      email: body.email ?? null,
+      user_id: user?.id ?? null,
+      email: (user?.email ?? body.email ?? null)?.slice(0, 160) ?? null,
       ip,
       user_agent: userAgent,
     });
