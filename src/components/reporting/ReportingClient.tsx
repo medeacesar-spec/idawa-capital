@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { REPORTING_STATUS } from "@/lib/ui-constants";
 import type { ReportingData } from "@/lib/data/reporting";
+import ExtractionPicker, { type ExtractionSet } from "./ExtractionPicker";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Validé": "badge-green" };
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n)); }
@@ -21,7 +22,7 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data, canEdit = true }: { data: ReportingData; canEdit?: boolean }) {
+export default function ReportingClient({ data, canEdit = true, extractionSets, programs }: { data: ReportingData; canEdit?: boolean; extractionSets: ExtractionSet[]; programs: { id: string; name: string }[] }) {
   const router = useRouter();
   const [tab, setTab] = useState<"collecte" | "extraction">("collecte");
   const [period, setPeriod] = useState(data.periods[0] ?? "2026-T2");
@@ -83,7 +84,17 @@ export default function ReportingClient({ data, canEdit = true }: { data: Report
         </div>
       )}
 
-      {tab === "extraction" && <Extraction data={data} />}
+      {tab === "extraction" && (
+        <>
+          <ExtractionPicker extractionSets={extractionSets} programs={programs} />
+          <details style={{ marginTop: 4 }}>
+            <summary style={{ fontSize: 12.5, color: "var(--text-2)", cursor: "pointer", padding: "6px 0" }}>
+              Export CSV rapide — synthèse, données financières ou KPIs d&apos;une seule période
+            </summary>
+            <div style={{ marginTop: 10 }}><Extraction data={data} /></div>
+          </details>
+        </>
+      )}
     </div>
   );
 }
