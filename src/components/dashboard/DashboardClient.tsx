@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { DashboardData, ProgramMetrics, ProgNature } from "@/lib/data/dashboard";
 import { fmtM, fmtMult, fmtPct, fmtInt, fmtFCFA } from "@/lib/format";
 
@@ -193,10 +194,50 @@ function ProgramView({ p }: { p: ProgramMetrics }) {
           </>
         )}
       </div>
-      <div style={panel}>
-        <h3 style={{ ...h3, marginBottom: 6 }}>Pipeline du programme</h3>
-        <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-          {p.dealsCount} deal{p.dealsCount > 1 ? "s" : ""} · {fmtM(p.pipelineAmount)} en jeu
+      {/* Le détail derrière les tuiles : un total ne dit pas de quoi il est fait. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={panel}>
+          <h3 style={{ ...h3, marginBottom: 2 }}>Portefeuille</h3>
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8 }}>
+            {p.portfolioLines.length} ligne{p.portfolioLines.length > 1 ? "s" : ""} suivie{p.portfolioLines.length > 1 ? "s" : ""}
+          </div>
+          {p.portfolioLines.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--text-3)" }}>Aucune entreprise rattachée à ce programme.</div>
+          ) : (
+            <div>
+              {p.portfolioLines.map((c, i) => (
+                <Link key={c.id} href={`/portefeuille/${c.id}`} className="deal-row-click"
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 4px", textDecoration: "none", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
+                  {c.status !== "Actif" && <span className="badge badge-amber">{c.status}</span>}
+                  {c.support
+                    ? <span style={{ fontSize: 11, color: "var(--text-3)" }}>accélération</span>
+                    : <span className="tnum serif" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(c.valuation || c.invested)}</span>}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={panel}>
+          <h3 style={{ ...h3, marginBottom: 2 }}>Pipeline</h3>
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8 }}>
+            {p.dealsCount} dossier{p.dealsCount > 1 ? "s" : ""} · {fmtM(p.pipelineAmount)} en jeu
+          </div>
+          {p.pipelineLines.length === 0 ? (
+            <div style={{ fontSize: 12, color: "var(--text-3)" }}>Aucun dossier actif sur ce programme.</div>
+          ) : (
+            <div>
+              {p.pipelineLines.map((d, i) => (
+                <Link key={d.id} href={`/pipeline/${d.id}`} className="deal-row-click"
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 4px", textDecoration: "none", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap" }}>{d.stage}</span>
+                  <span className="tnum serif" style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{fmtM(d.amount)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

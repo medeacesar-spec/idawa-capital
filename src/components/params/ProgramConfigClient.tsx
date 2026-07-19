@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { ProgramConfig, ProgramIndicator } from "@/lib/data/params";
-import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES } from "@/lib/ui-constants";
+import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES , defaultIndicatorScope } from "@/lib/ui-constants";
 import { Field, Input, Select } from "@/components/ui/form";
 import ProgramIndicatorValues from "./ProgramIndicatorValues";
 
@@ -33,7 +33,7 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
 
   async function addIndicator(category: string, indName: string, unit: string) {
     const { data } = await supabase.from("program_indicators")
-      .insert({ program_id: config.id, category, name: indName, unit, position: inds.length })
+      .insert({ program_id: config.id, category, name: indName, unit, position: inds.length, scope: defaultIndicatorScope(category, unit) })
       .select("id, category, name, unit, target, scope").single();
     if (data) setInds((x) => [...x, { id: data.id, category: data.category, name: data.name, unit: data.unit, target: null, scope: data.scope ?? "entreprise", values: [] }]);
   }

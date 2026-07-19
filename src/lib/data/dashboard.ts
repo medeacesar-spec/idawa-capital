@@ -24,6 +24,9 @@ export type ProgramMetrics = {
   jobs: number | null;
   dealsCount: number;
   pipelineAmount: number;
+  /** Le détail derrière les chiffres : sans lui, un total ne dit pas de quoi il est fait. */
+  portfolioLines: { id: string; name: string; invested: number; valuation: number; status: string; support: boolean }[];
+  pipelineLines: { id: string; name: string; stage: string; amount: number }[];
   weight: number; // pour la répartition
 };
 
@@ -46,8 +49,8 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const [progRes, compRes, dealRes, indRes, civRes] = await Promise.all([
     supabase.from("programs").select("id, name, color, nature, position, status").order("position"),
-    supabase.from("portfolio_companies").select("id, invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type, origin_deal_id"),
-    supabase.from("deals").select("id, amount, stage, program_id, deal_state"),
+    supabase.from("portfolio_companies").select("id, name, invested_amount, current_valuation, tvpi, tri, program_id, status, tracking_type, origin_deal_id"),
+    supabase.from("deals").select("id, company_name, amount, stage, program_id, deal_state"),
     supabase.from("program_indicators").select("id, program_id, name, scope, program_indicator_values(period, value)"),
     supabase.from("company_indicator_values").select("company_id, program_indicator_id, period, value"),
   ]);
@@ -125,6 +128,26 @@ export async function getDashboardData(): Promise<DashboardData> {
       jobs: ind["Emplois créés"] ?? null,
       dealsCount: pdeals.length,
       pipelineAmount: sum(active, "amount"),
+      // Mêmes règles que les tuiles au-dessus : programme principal, entités vivantes.
+      portfolioLines: allCompanies
+        .filter((c) => c.program_id === p.id && c.status !== "Sorti" && c.status !== "Radié")
+        .map((c) => ({
+          id: c.id as string,
+          name: (c.name as string) ?? "—",
+          invested: num(c.invested_amount),
+          valuation: num(c.current_valuation),
+          status: (c.status as string) ?? "Actif",
+          support: (c.tracking_type ?? "equity") !== "equity",
+        }))
+        .sort((a, b) => b.invested - a.invested || a.name.localeCompare(b.name)),
+      pipelineLines: active
+        .map((d) => ({
+          id: d.id as string,
+          name: (d.company_name as string) ?? "—",
+          stage: (d.stage as string) ?? "—",
+          amount: num(d.amount),
+        }))
+        .sort((a, b) => b.amount - a.amount),
       weight,
     };
   });

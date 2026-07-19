@@ -247,6 +247,8 @@ export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; 
     { name: "Taux d'exécution budgétaire", unit: "%" },
     { name: "Cofinancement mobilisé", unit: "FCFA" },
     { name: "Coût moyen par bénéficiaire", unit: "FCFA" },
+    { name: "Coût par emploi créé", unit: "FCFA" },
+    { name: "Contribution financière des bénéficiaires", unit: "FCFA" },
   ]},
   { category: "Bénéficiaires", items: [
     { name: "PME/entreprises accompagnées", unit: "nb" },
@@ -255,6 +257,9 @@ export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; 
     { name: "% jeunes (<35 ans)", unit: "%" },
     { name: "% en milieu rural", unit: "%" },
     { name: "Nouveaux bénéficiaires", unit: "nb" },
+    { name: "Bénéficiaires sortis du programme", unit: "nb" },
+    { name: "Taux d'abandon", unit: "%" },
+    { name: "Ancienneté moyenne dans le programme", unit: "mois" },
   ]},
   { category: "Activités", items: [
     { name: "Jours d'assistance technique (AT)", unit: "jours" },
@@ -263,6 +268,10 @@ export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; 
     { name: "Ateliers / événements", unit: "nb" },
     { name: "Diagnostics d'entreprise réalisés", unit: "nb" },
     { name: "Consultants/experts mobilisés", unit: "nb" },
+    { name: "Heures de mentorat individuel", unit: "heures" },
+    { name: "Taux de présence aux formations", unit: "%" },
+    { name: "Délai moyen de réponse à une demande", unit: "jours" },
+    { name: "Satisfaction des bénéficiaires", unit: "/10" },
   ]},
   { category: "Réalisations", items: [
     { name: "Plans d'affaires élaborés", unit: "nb" },
@@ -270,6 +279,10 @@ export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; 
     { name: "Certifications/labels obtenus", unit: "nb" },
     { name: "Outils de gestion mis en place", unit: "nb" },
     { name: "Mises en relation financement/marché", unit: "nb" },
+    { name: "États financiers produits", unit: "nb" },
+    { name: "Comptes bancaires professionnels ouverts", unit: "nb" },
+    { name: "Recommandations mises en œuvre", unit: "%" },
+    { name: "Entreprises dotées d'une gouvernance formelle", unit: "nb" },
   ]},
   { category: "Résultats", items: [
     { name: "Emplois créés", unit: "nb" },
@@ -278,8 +291,30 @@ export const ACCOMPAGNEMENT_CATALOG: { category: string; items: { name: string; 
     { name: "Financements levés par les PME", unit: "FCFA" },
     { name: "Taux de survie des entreprises", unit: "%" },
     { name: "Accès à de nouveaux marchés", unit: "nb" },
+    { name: "Emplois féminins créés", unit: "nb" },
+    { name: "Emplois jeunes créés", unit: "nb" },
+    { name: "Croissance des effectifs", unit: "%" },
+    { name: "Amélioration de la marge", unit: "%" },
+    { name: "Entreprises devenues bancarisables", unit: "nb" },
+    { name: "Entreprises entrées au pipeline d'investissement", unit: "nb" },
+    { name: "Entreprises investies après accompagnement", unit: "nb" },
   ]},
 ];
+
+/**
+ * Portée par défaut d'un indicateur d'accompagnement.
+ *
+ * Se saisissent au niveau du PROGRAMME : les moyens financiers, tout ce qui s'exprime en
+ * pourcentage, en moyenne ou sur une échelle — additionner des pourcentages ou des
+ * moyennes entre entreprises n'aurait aucun sens. Le reste se compte par entreprise et
+ * s'additionne. Même règle que la migration 0024, gardée à un seul endroit.
+ */
+export function defaultIndicatorScope(category: string, unit: string): "programme" | "entreprise" {
+  if (category === "Moyens") return "programme";
+  if (unit === "%" || unit === "/10") return "programme";
+  if (/moyen/i.test(category)) return "programme";
+  return "entreprise";
+}
 
 export const ACCOMP_CATEGORY_COLOR: Record<string, string> = {
   Moyens: "#6B5744", Bénéficiaires: "#8A4B5A", Activités: "#B5623F", Réalisations: "#B07A2E", Résultats: "#7C7A3A",
