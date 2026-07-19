@@ -124,6 +124,19 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 
 ---
 
+## Phase 5 — Suite (retours du 19/07)
+
+| Item | Statut | Migration |
+|---|---|---|
+| **Découvrabilité de « Écarter »** : le bouton existe (petit lien rouge dans la barre « État du dossier ») mais Médéa ne le trouve pas. À rendre visible — action franche, avec le post-mortem qui en découle. | à faire | non |
+| **Pas de temps MENSUEL pour les rapports d'entreprise** (demande Saint-André) + **aligner les données d'entreprise** sur ce pas de temps. L'outil est aujourd'hui trimestriel/annuel. | à faire | oui (probable) |
+| **Questionnaire d'impact par PME** — le vrai chantier de fond restant : collecter les indicateurs d'impact détaillés (emplois par sexe/statut, formalisation, petits producteurs, salaires décents) qu'attendent la fiche I&P et l'outil ESG. À concevoir : questions, cadence, voie de saisie. | à faire | oui |
+| Contenu qualitatif entreprise (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
+
+> **Clarification 19/07** : la « fiche entreprise » de Saint-André = le fichier **Analyse Financière** (déjà intégré comme onglet Analyse financière). Ce n'était pas une nouvelle pièce jointe. Point du tableau d'exécution reclassé « livré ».
+
+---
+
 ## Ordre de test après chaque déploiement
 
 Le chemin critique de l'application, à dérouler dans cet ordre :
