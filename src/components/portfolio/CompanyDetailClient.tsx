@@ -20,6 +20,7 @@ import InstrumentsTab from "./InstrumentsTab";
 import RepaymentsTab from "./RepaymentsTab";
 import CompanyPresentationTab from "./CompanyPresentationTab";
 import NextStepBanner from "@/components/shared/NextStepBanner";
+import ExitReview from "./ExitReview";
 import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
@@ -164,6 +165,9 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       <div style={{ marginBottom: 14 }}>
         <NextStepBanner tasks={company.tasks} kind="company" onOpenSuivi={() => setTab("Suivi")} />
       </div>
+
+      {/* Bilan de sortie — pendant du post-mortem, une fois la participation terminée. */}
+      {isClosed && <ExitReview companyId={company.id} value={company.exitReview} />}
 
       <ReadOnlyNotice what="cette société" />
 

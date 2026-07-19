@@ -56,7 +56,10 @@ export type CompanyDetail = {
   notes: SuiviNote[];
   tasks: SuiviTask[];
   /** Présentation : le profil (description éditable), le rationnel repris du dossier, le promoteur. */
-  presentation: { description: string | null; originThesis: string | null; promoter: string | null };
+  presentation: { description: string | null; originThesis: string | null; promoter: string | null;
+    foundedYear: number | null; city: string | null; developmentStage: string | null };
+  /** Bilan de sortie : pendant du post-mortem, sur une société sortie ou radiée. */
+  exitReview: string | null;
   esg: EsgData;
   finance: CompanyFinance;
   support: CompanySupport;
@@ -75,7 +78,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, description, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
+    .select("id, name, description, founded_year, city, development_stage, exit_review, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
@@ -151,7 +154,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       // Le promoteur : le contact dont la fonction évoque la direction.
       promoter: (contactRes.data ?? []).find((x) => /pdg|dg|g[ée]rant|promot|dirige|fondat/i.test(String(x.function ?? "")))?.name
         ?? (contactRes.data ?? [])[0]?.name ?? null,
+      foundedYear: c.founded_year != null ? Number(c.founded_year) : null,
+      city: (c.city as string) ?? null,
+      developmentStage: (c.development_stage as string) ?? null,
     },
+    exitReview: (c.exit_review as string) ?? null,
     esg, finance, valueCreation, instruments, statements, support,
     structuration: {
       ehsSector: c.ehs_sector ?? null,

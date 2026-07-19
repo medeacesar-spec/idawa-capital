@@ -1,5 +1,4 @@
--- EN ATTENTE — NE PAS APPLIQUER pendant la période de tests (base gelée).
--- Complète la symétrie fiche société / fiche dossier avec des champs structurés.
+-- Complète la symétrie fiche société ↔ fiche dossier (gel de tests levé 2026-07-19).
 
 -- Onglet Présentation société : champs que la fiche I&P attend aussi.
 alter table public.portfolio_companies

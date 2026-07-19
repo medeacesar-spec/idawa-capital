@@ -1,6 +1,8 @@
 // Constantes utilisables côté client (aucune dépendance serveur).
 
 export const DEAL_STAGES = ["Sourcing", "Analyse", "Pipeline avancé", "Due Diligence", "Négociation", "Closing", "Investi", "Perdu"];
+// Stade de développement d'une entreprise, pour la fiche Présentation (aligné sur le vocabulaire I&P).
+export const DEVELOPMENT_STAGES = ["Amorçage", "Démarrage", "Croissance", "Maturité", "Redressement"];
 // Étapes de l'entonnoir (progression d'un dossier actif) — sans les issues terminales.
 export const DEAL_FUNNEL_STAGES = ["Sourcing", "Analyse", "Pipeline avancé", "Due Diligence", "Négociation", "Closing"];
 
