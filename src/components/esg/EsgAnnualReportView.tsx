@@ -197,6 +197,7 @@ export default function EsgAnnualReportView({ report, editedBy }: { report: EsgA
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)", margin: "0 0 5px" }}>
                 Rating d&apos;impact IPDEV2 — moyenne {r.esg.impactAverage != null ? `${r.esg.impactAverage.toFixed(1).replace(".", ",")} / ${r.esg.impactMax}` : DASH}
+                {r.esg.impactBonus !== 0 ? ` · bonus cumulés ${r.esg.impactBonus > 0 ? "+" : ""}${r.esg.impactBonus}` : ""}
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>

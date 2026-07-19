@@ -54,6 +54,7 @@ export type EsgAnnualReport = {
     byRisk: { level: string; count: number }[];
     rated: number;
     impactAverage: number | null;
+    impactBonus: number;
     impactMax: number;
     impactByDimension: { dimension: string; score: number; max: number }[];
     actionsTotal: number;
@@ -235,7 +236,11 @@ export async function getEsgAnnualReport(year?: number): Promise<EsgAnnualReport
   const assessments = (assessRes.data ?? []).filter((a) => a.entity_type === "company");
   const byRisk = ["A", "B", "C"].map((level) => ({ level, count: assessments.filter((a) => a.risk_category === level).length }));
 
-  const impacts = (impactRes.data ?? []).filter((i) => i.entity_type === "company");
+  // La ligne « Bonus » s'ajoute au score sans relever le maximum : la compter dans la
+  // moyenne sur 32 fausserait la lecture. Elle est agrégée à part.
+  const allImpacts = (impactRes.data ?? []).filter((i) => i.entity_type === "company");
+  const impacts = allImpacts.filter((i) => String(i.dimension) !== "Bonus");
+  const impactBonus = allImpacts.filter((i) => String(i.dimension) === "Bonus").reduce((s, i) => s + num(i.score), 0);
   const scoreByEntity = new Map<string, { score: number; max: number }>();
   const dimAgg = new Map<string, { score: number; max: number }>();
   for (const i of impacts) {
@@ -299,6 +304,7 @@ export async function getEsgAnnualReport(year?: number): Promise<EsgAnnualReport
     esg: {
       byRisk, rated,
       impactAverage,
+      impactBonus,
       impactMax: 32,
       impactByDimension: [...dimAgg].map(([dimension, v]) => ({ dimension, score: v.score, max: v.max })),
       actionsTotal: actions.length, actionsDone, actionsLate,

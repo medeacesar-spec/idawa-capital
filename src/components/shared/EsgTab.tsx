@@ -7,6 +7,8 @@ import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { EHS_SECTORS, ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
+import ImpactRatingModal from "./ImpactRatingModal";
+import { BASE_MAX, BONUS_LABEL, noteOnThree } from "@/lib/esg/impactRating";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
 import { notifyAssignment } from "@/app/(app)/notify-actions";
@@ -28,14 +30,17 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
   const router = useRouter();
   const [diagOpen, setDiagOpen] = useState(false);
   const [actModal, setActModal] = useState<{ open: boolean; action: EsgAction | null }>({ open: false, action: null });
-  const [impModal, setImpModal] = useState<{ open: boolean; impact: EsgImpact | null }>({ open: false, impact: null });
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   const a = data.assessment;
-  const impactScore = data.impacts.reduce((s, i) => s + (i.score ?? 0), 0);
-  const impactMax = data.impacts.reduce((s, i) => s + (i.maxScore ?? 0), 0);
+  // Les bonus s'ajoutent par-dessus la note de base : les additionner au maximum
+  // donnerait un « 34 / 34 » qui ne veut rien dire.
+  const baseRows = data.impacts.filter((i) => i.dimension !== BONUS_LABEL);
+  const impactScore = baseRows.reduce((s, i) => s + (i.score ?? 0), 0);
+  const impactMax = baseRows.reduce((s, i) => s + (i.maxScore ?? 0), 0);
+  const impactBonus = data.impacts.filter((i) => i.dimension === BONUS_LABEL).reduce((s, i) => s + (i.score ?? 0), 0);
 
   async function delAction(id: string) { if (!confirm("Supprimer cette action ESG ?")) return; await createClient().from("esg_actions").delete().eq("id", id); router.refresh(); }
-  async function delImpact(id: string) { if (!confirm("Supprimer cet indicateur d'impact ?")) return; await createClient().from("esg_impact_ratings").delete().eq("id", id); router.refresh(); }
 
   async function saveEhs(value: string) {
     if (!companyId) return;
@@ -114,18 +119,35 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
       {/* Impact */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Rating d'impact <span style={{ fontWeight: 400, color: "var(--text-3)" }}>(IPDEV 2){impactMax > 0 ? ` — ${impactScore} / ${impactMax}` : ""}</span></div>
-          {canEdit && (<button className="btn btn-ghost" onClick={() => setImpModal({ open: true, impact: null })}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            Ajouter une dimension
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+            Rating d&apos;impact{" "}
+            <span style={{ fontWeight: 400, color: "var(--text-3)" }}>
+              (IPDEV 2){impactMax > 0 ? ` — ${impactScore} / ${impactMax}` : ""}
+              {impactBonus !== 0 ? ` · bonus ${impactBonus > 0 ? "+" : ""}${impactBonus}` : ""}
+              {impactMax > 0 ? ` · note comité ${noteOnThree(impactScore)}/3` : ""}
+            </span>
+          </div>
+          {canEdit && (<button className="btn btn-ghost" onClick={() => setRatingOpen(true)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+            {data.impacts.length ? "Revoir la notation" : "Noter l'impact"}
           </button>)}
         </div>
         {data.impacts.length === 0 ? (
-          <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun indicateur d'impact. Ajoutez les dimensions notées (entrepreneurs, clients, employés…).</div>
+          <div className="card" style={{ padding: "22px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Impact non noté. La grille IPDEV 2 se remplit critère par critère, le total se calcule.</div>
         ) : (
           <div className="card" style={{ padding: "14px 20px", display: "grid", gap: 10 }}>
             {data.impacts.map((im) => {
+              const isBonus = im.dimension === BONUS_LABEL;
               const pct = im.maxScore ? Math.round(((im.score ?? 0) / im.maxScore) * 100) : 0;
+              if (isBonus) {
+                if (!im.score) return null;
+                return (
+                  <div key={im.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, paddingTop: 4, borderTop: "1px solid var(--sep)" }}>
+                    <span style={{ color: "var(--text-2)" }}>Bonus et malus <span style={{ color: "var(--text-3)" }}>(hors note sur {BASE_MAX})</span></span>
+                    <span className="tnum" style={{ fontWeight: 600, color: (im.score ?? 0) < 0 ? "var(--red-fg)" : "var(--green-fg)" }}>{(im.score ?? 0) > 0 ? "+" : ""}{im.score}</span>
+                  </div>
+                );
+              }
               return (
                 <div key={im.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -134,10 +156,6 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
                       <span className="tnum" style={{ fontWeight: 600, color: "var(--ink)" }}>{im.score ?? 0}/{im.maxScore ?? 0}</span>
                     </div>
                     <div style={{ height: 5, background: "var(--cream)", borderRadius: 3 }}><div style={{ width: `${pct}%`, height: "100%", background: "#3B6D11", borderRadius: 3 }} /></div>
-                  </div>
-                  <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
-                    <button onClick={() => setImpModal({ open: true, impact: im })} aria-label="Modifier"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
-                    <button onClick={() => delImpact(im.id)} aria-label="Supprimer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>
                   </div>
                 </div>
               );
@@ -148,7 +166,7 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
 
       {diagOpen && <DiagModal entityType={entityType} entityId={entityId} assessment={a} onClose={() => setDiagOpen(false)} />}
       {actModal.open && <ActionModal entityType={entityType} entityId={entityId} action={actModal.action} users={users} onClose={() => setActModal({ open: false, action: null })} />}
-      {impModal.open && <ImpactModal entityType={entityType} entityId={entityId} impact={impModal.impact} onClose={() => setImpModal({ open: false, impact: null })} />}
+      {ratingOpen && <ImpactRatingModal entityType={entityType} entityId={entityId} impacts={data.impacts} onClose={() => setRatingOpen(false)} />}
     </div>
   );
 
@@ -213,31 +231,6 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
           <Field label="Échéance"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
         <Field label="Suivi par (équipe Idawa)" hint="Reçoit le rappel dans « À faire »"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
-      </Modal>
-    );
-  }
-
-  function ImpactModal({ entityType, entityId, impact, onClose }: { entityType: "deal" | "company"; entityId: string; impact: EsgImpact | null; onClose: () => void }) {
-    const [busy, setBusy] = useState(false);
-    const [dim, setDim] = useState(impact?.dimension ?? ESG_IMPACT_DIMENSIONS[0]);
-    const [score, setScore] = useState(impact?.score != null ? String(impact.score) : "");
-    const [max, setMax] = useState(impact?.maxScore != null ? String(impact.maxScore) : "12");
-    async function save() {
-      setBusy(true);
-      const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, dimension: dim, score: score ? Number(score) : null, max_score: max ? Number(max) : null };
-      if (impact) await supabase.from("esg_impact_ratings").update(payload).eq("id", impact.id);
-      else await supabase.from("esg_impact_ratings").insert(payload);
-      onClose(); router.refresh();
-    }
-    return (
-      <Modal title={impact ? "Modifier la dimension" : "Ajouter une dimension d'impact"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
-        <Field label="Dimension"><Select value={dim} onChange={(e) => setDim(e.target.value)}>{ESG_IMPACT_DIMENSIONS.map((d) => <option key={d} value={d}>{d}</option>)}</Select></Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Score"><Input type="number" value={score} onChange={(e) => setScore(e.target.value)} placeholder="Ex : 8" /></Field>
-          <Field label="Score max"><Input type="number" value={max} onChange={(e) => setMax(e.target.value)} placeholder="Ex : 12" /></Field>
-        </div>
       </Modal>
     );
   }
