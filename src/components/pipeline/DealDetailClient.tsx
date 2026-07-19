@@ -207,7 +207,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
       </div>
 
-      <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem}
+      <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem} rejectionReason={deal.rejectionReason}
         rejected={deal.dealState === "Écarté"} onOpenSuivi={() => setTab("Suivi")} />
 
       <ReadOnlyNotice what="ce dossier" />
