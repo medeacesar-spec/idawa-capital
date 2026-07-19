@@ -298,7 +298,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
       {currentTab === "Contacts" && <EntityContacts entityType="deal" entityId={deal.id} contacts={deal.contacts} />}
 
-      {comModal.open && <CommitteeFormModal dealId={deal.id} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
+      {comModal.open && <CommitteeFormModal dealId={deal.id} dealStage={deal.stage} outcomes={DEAL_COMMITTEE_OUTCOMES} passage={comModal.passage} onClose={() => setComModal({ open: false, passage: null })} />}
       {convertOpen && <ConvertDealModal deal={deal} onClose={() => setConvertOpen(false)} />}
       {rejectOpen && <RejectDealModal dealId={deal.id} onClose={() => setRejectOpen(false)} />}
     </div>

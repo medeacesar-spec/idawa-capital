@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { COMMITTEE_TYPES, COMMITTEE_DECISIONS, COMMITTEE_OUTCOME_NONE } from "@/lib/ui-constants";
+import { COMMITTEE_TYPES, COMMITTEE_DECISIONS, COMMITTEE_OUTCOME_NONE, DEAL_ADVANCED_FROM } from "@/lib/ui-constants";
 
 type PassageInput = {
   id: string;
@@ -18,10 +18,12 @@ type PassageInput = {
 };
 
 export default function CommitteeFormModal({
-  dealId, companyId, outcomes = [], defaultType, passage, onClose,
+  dealId, companyId, dealStage, outcomes = [], defaultType, passage, onClose,
 }: {
   dealId?: string;
   companyId?: string;
+  /** Stade actuel du dossier — permet l'avancement automatique après le comité d'ouverture. */
+  dealStage?: string;
   outcomes?: string[];
   defaultType?: string;
   passage: PassageInput | null;
@@ -53,6 +55,13 @@ export default function CommitteeFormModal({
     };
     if (passage) await supabase.from("committee_passages").update(payload).eq("id", passage.id);
     else await supabase.from("committee_passages").insert({ ...payload, deal_id: dealId ?? null, company_id: companyId ?? null });
+
+    // Le passage au Comité d'ouverture de dossier fait entrer le dossier dans le pipeline
+    // avancé — sauf s'il l'a déjà dépassé. Le stade reste modifiable à la main ensuite.
+    if (!passage && dealId && f.committeeType === "Comité d'ouverture de dossier"
+        && (dealStage === "Sourcing" || dealStage === "Analyse")) {
+      await supabase.from("deals").update({ stage: DEAL_ADVANCED_FROM }).eq("id", dealId);
+    }
     setBusy(false);
     onClose();
     router.refresh();

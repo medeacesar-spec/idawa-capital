@@ -5,10 +5,20 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
-import { DEAL_FUNNEL_STAGES, DEAL_SOURCES } from "@/lib/ui-constants";
+import { DEAL_FUNNEL_STAGES, DEAL_SOURCES, isAdvancedStage } from "@/lib/ui-constants";
 import type { PipelineDeal, PipelineProgram, PipelineSubSector, PipelineMember } from "@/lib/data/pipeline";
 
 const M = 1_000_000;
+
+// Ce que chaque étape signifie, pour que le choix ne soit pas à deviner.
+const STAGE_HINT: Record<string, string> = {
+  "Sourcing": "Premier contact, avant toute analyse.",
+  "Analyse": "Étude préliminaire de l'opportunité.",
+  "Pipeline avancé": "Dossier réellement engagé — automatique après le comité d'ouverture.",
+  "Due Diligence": "Vérifications approfondies.",
+  "Négociation": "Termes de l'investissement en discussion.",
+  "Closing": "Finalisation, avant conversion en participation.",
+};
 
 export default function DealFormModal({
   deal, programs, subSectors, members, onClose,
@@ -76,6 +86,10 @@ export default function DealFormModal({
           <Select value={f.stage} onChange={(e) => set("stage", e.target.value)}>
             {DEAL_FUNNEL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
           </Select>
+          <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4, lineHeight: 1.5 }}>
+            {STAGE_HINT[f.stage] ?? ""}
+            {isAdvancedStage(f.stage) && <span style={{ color: "var(--camel)" }}> ESG et création de valeur s&apos;activent.</span>}
+          </div>
         </Field>
         <Field label="Programme">
           <Select value={f.programId} onChange={(e) => set("programId", e.target.value)}>
