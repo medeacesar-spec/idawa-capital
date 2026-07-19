@@ -22,6 +22,10 @@ export const INSTRUMENT_TYPES: { key: string; label: string; kind: "equity" | "d
   { key: "pret-campagne", label: "Prêt de campagne", kind: "debt" },
 ];
 export const INSTRUMENT_PERIODICITY = ["mensuelle", "trimestrielle", "semestrielle", "annuelle"];
+/** Nature d'un instrument : capital ou dette. Le repli sur « dette » est volontaire —
+ *  un type inconnu porte un échéancier plutôt qu'une participation. */
+export const instrumentKind = (type: string): "equity" | "debt" =>
+  INSTRUMENT_TYPES.find((t) => t.key === type)?.kind ?? "debt";
 
 // Source d'entrée du dossier dans le pipeline (pour analyses par source).
 export const DEAL_SOURCES = [

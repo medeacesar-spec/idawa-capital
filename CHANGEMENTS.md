@@ -116,7 +116,7 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | **Secteurs EHS (IFC)** — le **programme** porte une **famille** de secteurs, chaque **entreprise** son **secteur précis** (liste ordonnée selon la famille du programme) | fait | 0013 |
 | Indicateurs d'impact IPDEV2 alignés sur la fiche I&P (emplois, genre, formalisation, producteurs…) | à faire | oui |
 | Contenu qualitatif (profils entrepreneurs, études de cas, témoignages) | à faire | oui |
-| **Export fiche entreprise** (trimestriel, format I&P) | à faire | non |
+| **Export fiche entreprise** (trimestriel, format I&P) — document imprimable monté depuis les données déjà saisies, **aucune ressaisie** : identité, investissement et instruments, remboursements, situation financière vs N-1 **et** vs budget, indicateurs de suivi, accompagnement, ESG & impact, faits marquants du trimestre, actions ouvertes, interlocuteurs. Les sections qui ne s'appliquent pas au type de suivi disparaissent et la numérotation se recalcule. Navigation par trimestre, impression / enregistrement en PDF. | à tester | non |
 | **Export rapport ESG & Impact** (annuel, modèle IPDEV) | à faire | non |
 | **Passerelle Excel bidirectionnelle** : sortir les données vers Excel pour présenter (à un bailleur, un entrepreneur…) **et** réinjecter dans l'outil ce qui a été travaillé sous Excel. Même moteur que l'import des états financiers (analyseur + écran de vérification). Éventuellement un module dédié. | à faire | non |
 

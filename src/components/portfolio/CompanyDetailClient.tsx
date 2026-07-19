@@ -128,6 +128,11 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
             {company.originDealName && ` · issue du deal ${company.originDealName}`}
           </div>
         </div>
+        {/* Sortir la fiche est une LECTURE : elle reste ouverte à qui peut consulter la société. */}
+        <button className="btn btn-ghost" onClick={() => router.push(`/portefeuille/${company.id}/fiche`)} style={{ flexShrink: 0 }} title="Fiche de suivi trimestrielle, prête à imprimer ou à envoyer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8M8 17h5" /></svg>
+          Fiche trimestrielle
+        </button>
         {canEdit && (<button className="btn btn-ghost" onClick={() => router.push(`/saisie?scope=portefeuille&entity=${company.id}`)} style={{ flexShrink: 0 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Saisir un reporting
