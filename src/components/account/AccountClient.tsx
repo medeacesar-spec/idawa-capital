@@ -34,8 +34,9 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
     const res = await sendTestDigest();
     setTestBusy(false);
     if (res.ok) setTestMsg({ kind: "ok", text: `Email de test envoyé à ${email}. Vérifiez votre boîte (et les indésirables).` });
-    else if (res.skipped) setTestMsg({ kind: "err", text: "Aucune clé d'envoi (RESEND_API_KEY) n'est configurée : rien n'a été envoyé." });
-    else setTestMsg({ kind: "err", text: "Échec de l'envoi : " + (res.error ?? "erreur inconnue") });
+    else if (res.skipped && !res.onVercel) setTestMsg({ kind: "err", text: "Vous êtes sur l'environnement LOCAL (pas en ligne) : la clé RESEND_API_KEY n'existe que dans Vercel, pas ici. Faites ce test sur le site en ligne (idawa-capital.vercel.app)." });
+    else if (res.skipped) setTestMsg({ kind: "err", text: "En production, la clé RESEND_API_KEY n'est pas lue : vérifiez que sa VALEUR est bien renseignée dans Vercel, puis redéployez (Deployments → Redeploy)." });
+    else setTestMsg({ kind: "err", text: "Clé présente, mais l'envoi a échoué : " + (res.error ?? "erreur inconnue") + " — souvent le domaine idawacapital.com pas encore vérifié dans Resend." });
   }
 
   async function saveName() {

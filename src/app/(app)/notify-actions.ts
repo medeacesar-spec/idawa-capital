@@ -61,12 +61,13 @@ export async function notifyAssignment(input: {
 
 // Envoyer à SOI-MÊME un récap de test — pour vérifier que la chaîne d'email fonctionne
 // (clé Resend, domaine, adresse) sans attendre le cron hebdomadaire.
-export async function sendTestDigest(): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+export async function sendTestDigest(): Promise<{ ok: boolean; skipped?: boolean; error?: string; onVercel?: boolean }> {
+  const onVercel = process.env.VERCEL === "1";
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Non authentifié." };
+  if (!user) return { ok: false, error: "Non authentifié.", onVercel };
   const { data: prof } = await supabase.from("profiles").select("email, full_name").eq("id", user.id).single();
-  if (!prof?.email) return { ok: false, error: "Aucune adresse email n'est renseignée sur votre profil." };
+  if (!prof?.email) return { ok: false, error: "Aucune adresse email n'est renseignée sur votre profil.", onVercel };
 
   const admin = createAdminClient();
   const { data: tasks } = await admin
@@ -95,7 +96,7 @@ export async function sendTestDigest(): Promise<{ ok: boolean; skipped?: boolean
     })),
   });
   const res = await sendEmail({ to: prof.email as string, subject: `[Test] ${subject}`, html });
-  return { ok: res.ok, skipped: res.skipped, error: res.error };
+  return { ok: res.ok, skipped: res.skipped, error: res.error, onVercel };
 }
 
 // Prévenir les personnes habilitées à VALIDER qu'une décision de comité (dossier OU
