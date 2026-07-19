@@ -73,6 +73,21 @@ des instruments de financement, une valorisation et une cap table sans objet.
 
 ---
 
+## Socle transverse — sécurité, traçabilité, cohérence
+
+Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
+
+| Item | Statut | Migration |
+|---|---|---|
+| Actions d'écriture masquées selon le rôle + contrôle automatique `audit_write_access.mjs` | à tester | non |
+| Domaines de permission **Contacts** et **Documents** | à tester | 0021 |
+| Cohérence entreprise ↔ programme (une participation relève d'un programme qui investit) | à tester | non |
+| **Journal d'audit : détail des champs modifiés (avant → après) + filtres** | à tester | 0030 |
+| Emails aux personnes assignées à une action | à tester | non |
+| Verrouillage RLS par rôle en base | à faire | oui |
+
+---
+
 ## Phase 3 — Pipeline avancé
 
 | Item | Statut | Migration |
