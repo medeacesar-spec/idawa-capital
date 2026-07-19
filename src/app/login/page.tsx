@@ -30,6 +30,13 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    // Supabase ne conserve que la DERNIÈRE connexion : sans cet enregistrement, on ne
+    // saurait jamais qui est venu et à quelle fréquence. Un échec ici ne doit pas
+    // empêcher d'entrer — la connexion prime sur sa trace.
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await supabase.from("login_events").insert({ user_id: user.id, user_agent: navigator.userAgent.slice(0, 200) });
+    } catch { /* la trace est utile, pas indispensable */ }
     router.push("/dashboard");
     router.refresh();
   }

@@ -83,6 +83,11 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | Domaines de permission **Contacts** et **Documents** | à tester | 0021 |
 | Cohérence entreprise ↔ programme (une participation relève d'un programme qui investit) | à tester | non |
 | **Journal d'audit : détail des champs modifiés (avant → après) + filtres** | à tester | 0030 |
+| **Suivi des connexions** : historique par personne sur 30 jours, dernière venue, comptes dormants | à tester | 0031 |
+| **Employés connectés à l'instant** (session active vue dans les 20 dernières minutes) | à tester | 0031 |
+| Rapprocher connexions et modifications par personne (qui vient, qui agit) | à tester | non |
+| Historique de connexion par appareil et adresse (enregistré, pas encore affiché) | à faire | non |
+| Alerte sur compte dormant ou accès jamais utilisé | à faire | non |
 | Emails aux personnes assignées à une action | à tester | non |
 | Verrouillage RLS par rôle en base | à faire | oui |
 
