@@ -104,6 +104,10 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
         <span><b className="tnum" style={{ color: "var(--ink)" }}>{fmtInt(list.length)}</b> dossier{list.length > 1 ? "s" : ""}</span>
         <span><b className="serif tnum" style={{ color: "var(--ink)" }}>{fmtM(total)}</b> FCFA {status === "clotures" ? "clôturés" : "en jeu"}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          {canEdit && (<button className="btn btn-ghost" onClick={() => router.push("/pipeline/import")} title="Reprendre une liste de projets depuis un fichier Excel ou un copier-coller">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg>
+            Importer
+          </button>)}
           {canEdit && (<button className="btn btn-ghost" onClick={() => router.push("/saisie?scope=pipeline")}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             Saisir un reporting

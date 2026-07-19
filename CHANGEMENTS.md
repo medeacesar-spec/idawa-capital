@@ -104,8 +104,8 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | « Post-mortem » sur les dossiers écartés | à tester | 0027 |
 | ESG & Création de valeur masqués tant que le dossier n'est pas au stade avancé | à tester | non |
 | Analyses par source d'entrée : volume, montant, aboutis, écartés, taux d'aboutissement | à tester | non |
-| **Outil d'import du pipeline** (Médéa fournira des exemples de fichiers) — réutilise l'analyseur de l'import des états financiers | à faire | non |
-| À l'import : **portefeuille / programme non assigné au départ**, assignable ensuite | à faire | non |
+| **Outil d'import du pipeline** — dépôt d'un fichier Excel/CSV ou copier-coller, détection de la feuille et de la ligne d'en-tête, correspondance colonne → champ proposée puis modifiable, écran de vérification (montants aberrants, doublons de nom, emails douteux, **colonnes non reprises listées**) et création seulement au dernier clic. Lecteur .xlsx maison, sans dépendance. | à tester | non |
+| À l'import : **portefeuille / programme non assigné au départ**, assignable ensuite — les dossiers entrent au stade « Sourcing » sans `program_id`, le rattachement se fait depuis le pipeline | à tester | non |
 
 ---
 
