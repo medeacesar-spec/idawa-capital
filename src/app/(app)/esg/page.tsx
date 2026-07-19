@@ -24,6 +24,11 @@ export default async function EsgPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <span className="badge" style={{ background: "var(--surface-cream)", color: "var(--espresso)" }}>Méthodologie I&P / IPDEV 2 · Normes IFC (PS1–PS8)</span>
         <span style={{ fontSize: 12, color: "var(--text-2)" }}>Consolidation du portefeuille — l'ESG se saisit dans chaque fiche société (onglet ESG).</span>
+        <Link href="/esg/rapport" className="btn btn-ghost" style={{ marginLeft: "auto", textDecoration: "none" }}
+          title="Matière chiffrée du rapport ESG & Impact annuel, au format du modèle IPDEV">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8M8 17h5" /></svg>
+          Rapport annuel
+        </Link>
       </div>
 
       {/* Chiffres-clés */}
