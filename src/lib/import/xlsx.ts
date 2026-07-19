@@ -129,12 +129,16 @@ export function readWorkbook(buf: Buffer): SheetData[] {
       const rowNum = Number(rowXml.match(/<row[^>]*\sr="(\d+)"/)?.[1] ?? rows.length + 1);
       const cells: string[] = [];
 
-      for (const c of rowXml.matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)) {
+      // Une cellule vide s'écrit en balise AUTO-FERMANTE (`<c r="I5"/>`), et Excel en
+      // produit beaucoup. Ne reconnaître que la forme `<c …>…</c>` faisait consommer la
+      // cellule suivante comme contenu de la cellule vide : toute la ligne se décalait
+      // d'une colonne, et un montant atterrissait dans la colonne d'à côté.
+      for (const c of rowXml.matchAll(/<c([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
         const attrs = c[1];
         const ref = attrs.match(/\sr="([A-Z]+\d+)"/)?.[1];
         const type = attrs.match(/\st="(\w+)"/)?.[1] ?? "n";
         const style = Number(attrs.match(/\ss="(\d+)"/)?.[1] ?? -1);
-        const body = c[2];
+        const body = c[2] ?? ""; // vide sur une balise auto-fermante
 
         let value = "";
         if (type === "inlineStr") {

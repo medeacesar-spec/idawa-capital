@@ -42,6 +42,11 @@ export default function ReportingClient({ data, canEdit = true }: { data: Report
         {([["collecte", "Collecte"], ["extraction", "Extraction"]] as const).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} style={{ padding: "9px 14px", border: "none", background: "none", cursor: "pointer", fontSize: 13, fontWeight: tab === k ? 600 : 500, color: tab === k ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${tab === k ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{label}</button>
         ))}
+        {/* La passerelle est une page à part : l'aller-retour Excel a ses propres étapes. */}
+        <Link href="/reporting/excel" className="btn btn-ghost" style={{ marginLeft: "auto", marginBottom: 6, textDecoration: "none" }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16M10 4v16" /></svg>
+          Passerelle Excel
+        </Link>
       </div>
 
       {tab === "collecte" && (
