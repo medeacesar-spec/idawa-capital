@@ -1,6 +1,6 @@
 "use client";
 
-// Rattachement d'une société à ses programmes.
+// Rattachement d'une société OU d'un dossier à ses programmes.
 //
 // Une même PME peut être suivie au titre de plusieurs programmes en même temps —
 // Agri-PME et Femmes Entrepreneures, par exemple. L'obliger à choisir fausserait le
@@ -16,8 +16,12 @@ import { useCanEdit } from "@/components/shared/WriteAccess";
 export type ProgramTag = { id: string; name: string; color: string | null; principal: boolean };
 export type ProgramOption = { id: string; name: string; color: string | null };
 
-export default function ProgramMemberships({ companyId, programs, options }: {
-  companyId: string; programs: ProgramTag[]; options: ProgramOption[];
+export default function ProgramMemberships({ entityType = "company", entityId, programs, options }: {
+  /** Sociétés et dossiers partagent le même modèle d'adhésion : un seul composant. */
+  entityType?: "company" | "deal";
+  entityId: string;
+  programs: ProgramTag[];
+  options: ProgramOption[];
 }) {
   const router = useRouter();
   const canEdit = useCanEdit();
@@ -31,7 +35,7 @@ export default function ProgramMemberships({ companyId, programs, options }: {
   async function attach(programId: string) {
     setBusy(true); setError(null);
     const { error: err } = await createClient().from("program_memberships").insert({
-      entity_type: "company", entity_id: companyId, program_id: programId,
+      entity_type: entityType, entity_id: entityId, program_id: programId,
       date_start: new Date().toISOString().slice(0, 10),
     });
     setBusy(false);
@@ -40,14 +44,14 @@ export default function ProgramMemberships({ companyId, programs, options }: {
   }
 
   async function detach(p: ProgramTag) {
-    if (p.principal) { setError("Le programme principal ne se retire pas ici : changez-le en modifiant la société."); return; }
+    if (p.principal) { setError("Le programme principal ne se retire pas ici : changez-le en modifiant la fiche."); return; }
     if (!confirm(`Retirer ${p.name} ? Le rattachement est clos à aujourd'hui, l'historique est conservé.`)) return;
     setBusy(true); setError(null);
     // On CLÔT l'adhésion au lieu de la supprimer : savoir qu'une société a relevé d'un
     // programme, et jusqu'à quand, fait partie de son histoire.
     const { error: err } = await createClient().from("program_memberships")
       .update({ date_end: new Date().toISOString().slice(0, 10) })
-      .eq("entity_type", "company").eq("entity_id", companyId).eq("program_id", p.id).is("date_end", null);
+      .eq("entity_type", entityType).eq("entity_id", entityId).eq("program_id", p.id).is("date_end", null);
     setBusy(false);
     if (err) { setError(err.message); return; }
     router.refresh();
@@ -72,13 +76,13 @@ export default function ProgramMemberships({ companyId, programs, options }: {
       </div>
 
       {open && (
-        <Modal title="Programmes de la société" onClose={() => setOpen(false)}
+        <Modal title={entityType === "deal" ? "Programmes du dossier" : "Programmes de la société"} onClose={() => setOpen(false)}
           footer={<button className="btn btn-primary" onClick={() => setOpen(false)}>Terminé</button>}>
           <div style={{ padding: "16px 20px", display: "grid", gap: 14 }}>
             <div style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.6 }}>
-              Une société peut relever de plusieurs programmes en même temps. Le programme <b>principal</b> reste
+              Une fiche peut relever de plusieurs programmes en même temps. Le programme <b>principal</b> reste
               celui qui compte dans les répartitions et les totaux du fonds — sans lui, elle serait comptée deux fois.
-              Il se change en modifiant la société.
+              Il se change en modifiant la fiche.
             </div>
 
             <div>
@@ -112,8 +116,8 @@ export default function ProgramMemberships({ companyId, programs, options }: {
             )}
 
             <div style={{ fontSize: 10.5, color: "var(--text-3)", lineHeight: 1.6 }}>
-              Retirer un programme <b>clôt</b> le rattachement à aujourd&apos;hui : la société n&apos;y apparaît plus,
-              mais l&apos;historique est conservé — savoir qu&apos;elle en a relevé, et jusqu&apos;à quand, fait partie de son dossier.
+              Retirer un programme <b>clôt</b> le rattachement à aujourd&apos;hui : la fiche n&apos;y apparaît plus,
+              mais l&apos;historique est conservé — savoir qu&apos;elle en a relevé, et jusqu&apos;à quand, fait partie de son histoire.
             </div>
             {error && <div style={{ fontSize: 11.5, color: "var(--red-fg)" }}>{error}</div>}
           </div>

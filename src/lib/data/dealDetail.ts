@@ -28,6 +28,9 @@ export type DealDetail = {
   sector: string | null;
   programName: string | null;
   programColor: string | null;
+  /** Programmes du dossier : le principal en tête, puis les rattachements simultanés. */
+  programs: { id: string; name: string; color: string | null; principal: boolean }[];
+  programOptions: { id: string; name: string; color: string | null }[];
   officer: string | null;
   analyst: string | null;
   expectedClose: string | null;
@@ -72,6 +75,24 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const { data: comDocs } = comIds.length ? await supabase.from("documents").select("id, title, storage_path, committee_id").in("committee_id", comIds) : { data: [] as { id: string; title: string; storage_path: string | null; committee_id: string }[] };
 
   const prog = progRes.data as { name?: string; color?: string } | null;
+  // Rattachements en cours, principal compris — même modèle que les sociétés.
+  const [{ data: memRows }, { data: allProgs }] = await Promise.all([
+    supabase.from("program_memberships").select("program_id").eq("entity_type", "deal").eq("entity_id", id).is("date_end", null),
+    supabase.from("programs").select("id, name, color, status, position").order("position"),
+  ]);
+  const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
+  const progIds = Array.from(new Set([
+    ...(d.program_id ? [d.program_id as string] : []),
+    ...(memRows ?? []).map((m) => m.program_id as string).filter(Boolean),
+  ]));
+  const programs = progIds.map((pid) => {
+    const p = progById.get(pid);
+    return { id: pid, name: (p?.name as string) ?? "—", color: (p?.color as string) ?? null, principal: pid === d.program_id };
+  });
+  const programOptions = (allProgs ?? [])
+    .filter((p) => (p as { status?: string }).status !== "Clos")
+    .map((p) => ({ id: p.id as string, name: p.name as string, color: (p.color as string) ?? null }));
+
   return {
     id: d.id, companyName: d.company_name, stage: d.stage, status: d.status ?? null,
     dealState: d.deal_state ?? "Actif", rejectionReason: d.rejection_reason ?? null, source: d.deal_source ?? null, sourceDetail: d.deal_source_detail ?? null,
@@ -82,6 +103,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     thesis: d.thesis,
     sector: (subRes.data as { name?: string } | null)?.name ?? null,
     programName: prog?.name ?? null, programColor: prog?.color ?? null,
+    programs, programOptions,
     officer: dn(offRes.data as { full_name?: string; email?: string } | null),
     analyst: dn(anaRes.data as { full_name?: string; email?: string } | null),
     expectedClose: d.expected_close,

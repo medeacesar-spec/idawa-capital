@@ -69,7 +69,7 @@ des instruments de financement, une valorisation et une cap table sans objet.
 | **KPIs financiers sortis de RH & Management** (8 indicateurs sectoriels replacés en Financier) | fait | 0019 |
 | **KPIs alignés sur la norme OHADA** : 16 indicateurs normalisés avec leur code de poste, ajoutables en un clic, tous alimentés automatiquement | à tester | non |
 | **KPIs financiers alimentés automatiquement** depuis les états financiers **et la grille Budget & BP** (valeurs + cibles), bouton « Alimenter » sur l'onglet KPIs — double saisie supprimée | à tester | non |
-| **Une société peut appartenir à plusieurs programmes** simultanément, avec un programme principal pour les totaux et un historique daté des rattachements | à tester | 0026 |
+| **Une société ET un dossier peuvent appartenir à plusieurs programmes** simultanément, avec un programme principal pour les totaux et un historique daté des rattachements | à tester | 0026, 0029 |
 
 ---
 

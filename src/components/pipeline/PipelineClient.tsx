@@ -45,7 +45,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const [scope, setScope] = useState<string>("all");
   const [status, setStatus] = useState<StatusFilter>("actifs");
   const [modal, setModal] = useState<{ open: boolean; deal: PipelineDeal | null }>({ open: false, deal: null });
-  const byProgram = scope === "all" ? data.deals : data.deals.filter((d) => d.programId === scope);
+  const byProgram = scope === "all" ? data.deals : data.deals.filter((d) => (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope));
   const closedCount = byProgram.filter(isClosed).length;
   const veilleCount = byProgram.filter(isVeille).length;
   const list = byProgram.filter((d) =>

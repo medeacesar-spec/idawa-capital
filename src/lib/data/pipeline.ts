@@ -7,6 +7,8 @@ export type PipelineDeal = {
   amount: number;
   probability: number | null;
   programId: string | null;
+  /** Tous les programmes dont le dossier relève, principal compris. */
+  programIds: string[];
   programName: string | null;
   programColor: string | null;
   sector: string | null;
@@ -40,7 +42,7 @@ const displayName = (p?: { full_name?: string | null; email?: string | null } | 
 export async function getPipelineData(): Promise<PipelineData> {
   const supabase = await createClient();
 
-  const [dealRes, progRes, subRes, indRes, profRes, convRes] = await Promise.all([
+  const [dealRes, progRes, subRes, indRes, profRes, convRes, memRes] = await Promise.all([
     supabase
       .from("deals")
       .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason, deal_source, deal_source_detail")
@@ -50,11 +52,20 @@ export async function getPipelineData(): Promise<PipelineData> {
     supabase.from("industries").select("id, name"),
     supabase.from("profiles").select("id, full_name, email"),
     supabase.from("portfolio_companies").select("id, origin_deal_id").not("origin_deal_id", "is", null),
+    // Adhésions en cours : un dossier peut relever de plusieurs programmes à la fois.
+    supabase.from("program_memberships").select("entity_id, program_id").eq("entity_type", "deal").is("date_end", null),
   ]);
 
   const allPrograms = progRes.data ?? [];
   const programs = allPrograms.filter((p) => p.status !== "Clos");
   const progMap = new Map(allPrograms.map((p) => [p.id, p]));
+  // Programmes de chaque dossier : le principal plus toute adhésion ouverte.
+  const dealPrograms = new Map<string, string[]>();
+  for (const m of memRes.data ?? []) {
+    const list = dealPrograms.get(m.entity_id as string) ?? [];
+    if (m.program_id && !list.includes(m.program_id as string)) list.push(m.program_id as string);
+    dealPrograms.set(m.entity_id as string, list);
+  }
   const subMap = new Map((subRes.data ?? []).map((s) => [s.id, s.name]));
   const indMap = new Map((indRes.data ?? []).map((i) => [i.id, i.name]));
   const profMap = new Map((profRes.data ?? []).map((p) => [p.id, p]));
@@ -69,6 +80,7 @@ export async function getPipelineData(): Promise<PipelineData> {
       amount: Number(d.amount ?? 0),
       probability: d.probability,
       programId: d.program_id,
+      programIds: Array.from(new Set([...(d.program_id ? [d.program_id] : []), ...(dealPrograms.get(d.id) ?? [])])),
       programName: prog?.name ?? null,
       programColor: prog?.color ?? null,
       sector: d.primary_sub_sector_id ? subMap.get(d.primary_sub_sector_id) ?? null : null,

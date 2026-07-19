@@ -137,7 +137,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       {/* Tags */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {company.sector && <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: "var(--espresso)", color: "#fff" }}>{company.sector}</span>}
-        <ProgramMemberships companyId={company.id} programs={company.programs} options={company.programOptions} />
+        <ProgramMemberships entityType="company" entityId={company.id} programs={company.programs} options={company.programOptions} />
       </div>
 
       {/* Facts */}

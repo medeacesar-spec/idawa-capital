@@ -20,6 +20,7 @@ import EntityDocuments from "@/components/shared/EntityDocuments";
 import EntityContacts from "@/components/shared/EntityContacts";
 import { WriteAccessProvider, ReadOnlyNotice } from "@/components/shared/WriteAccess";
 import DealNextStep from "./DealNextStep";
+import ProgramMemberships from "@/components/portfolio/ProgramMemberships";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -128,7 +129,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
             {deal.sector && <span style={{ fontSize: 12, color: "var(--text-2)" }}>{deal.sector}</span>}
-            {deal.programName && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--text-3)" }}>· <span style={{ width: 7, height: 7, borderRadius: "50%", background: deal.programColor ?? "var(--text-3)" }} />{deal.programName}</span>}
+            
           </div>
         </div>
         {converted ? (
@@ -193,6 +194,10 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <button type="button" onClick={() => setShowAdvanced((a) => !a)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: "var(--camel)" }}>
           {showAdvanced ? "− Masquer les champs avancés" : "+ Champs avancés (valo pré-money, closing)"}
         </button>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
       </div>
 
       <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem}
