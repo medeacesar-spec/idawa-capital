@@ -6,8 +6,10 @@
 // fixes ne conviendrait : chaque programme affiche donc les siens, avec sa cible quand
 // elle est fixée.
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fmtM } from "@/lib/format";
+import { SUPPORT_HEADLINE_INDICATORS, SUPPORT_HEADLINE_FALLBACK } from "@/lib/ui-constants";
 import type { SupportOverview, SupportIndicatorTotal } from "@/lib/data/supportOverview";
 
 const NATURE_LABEL: Record<string, string> = { accompagnement: "Accélération", mixte: "Mixte" };
@@ -19,8 +21,34 @@ function fmtValue(t: SupportIndicatorTotal) {
   return t.unit ? `${n} ${t.unit}` : n;
 }
 
+const HEADLINE = SUPPORT_HEADLINE_INDICATORS.map((h) => h.name);
+const WHY = new Map(SUPPORT_HEADLINE_INDICATORS.map((h) => [h.name, h.why]));
+
+/**
+ * Les six indicateurs de tête d'un programme, dans l'ordre de la chaîne de résultats.
+ * Un programme qui n'en suit aucun n'afficherait rien : on complète alors avec ceux qui
+ * portent une valeur, plutôt que de laisser une carte vide.
+ */
+function headlineOf(indicators: SupportIndicatorTotal[]): SupportIndicatorTotal[] {
+  const byName = new Map(indicators.map((i) => [i.name, i]));
+  const picked = HEADLINE.map((n) => byName.get(n)).filter(Boolean) as SupportIndicatorTotal[];
+  if (picked.length >= 6) return picked.slice(0, 6);
+  const already = new Set(picked.map((i) => i.name));
+  for (const n of SUPPORT_HEADLINE_FALLBACK) {
+    if (picked.length >= 6) break;
+    const i = byName.get(n);
+    if (i && !already.has(n)) { picked.push(i); already.add(n); }
+  }
+  for (const i of indicators) {
+    if (picked.length >= 6) break;
+    if (!already.has(i.name) && i.period) { picked.push(i); already.add(i.name); }
+  }
+  return picked;
+}
+
 export default function SupportOverviewBlock({ data }: { data: SupportOverview }) {
   const router = useRouter();
+  const [expanded, setExpanded] = useState<string | null>(null);
   if (data.programs.length === 0) return null;
 
   const tiles: [string, string, string][] = [
@@ -64,12 +92,12 @@ export default function SupportOverviewBlock({ data }: { data: SupportOverview }
               </div>
             ) : (
               <div style={{ display: "grid", gap: 7 }}>
-                {p.indicators.map((t) => {
+                {(expanded === p.id ? p.indicators : headlineOf(p.indicators)).map((t) => {
                   const share = t.period && t.target && t.target > 0 ? Math.min(1, t.value / t.target) : null;
                   return (
                     <div key={t.name}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5 }}>
-                        <span style={{ color: "var(--text-2)", flex: 1, minWidth: 0 }}>
+                        <span style={{ color: "var(--text-2)", flex: 1, minWidth: 0 }} title={WHY.get(t.name)}>
                           {t.name}
                           {t.scope === "entreprise" && <span style={{ color: "var(--text-3)", fontSize: 9.5, marginLeft: 5 }} title="Somme des saisies par entreprise">cumulé</span>}
                         </span>
@@ -89,6 +117,12 @@ export default function SupportOverviewBlock({ data }: { data: SupportOverview }
               </div>
             )}
 
+            {p.indicators.length > 6 && (
+              <button onClick={() => setExpanded(expanded === p.id ? null : p.id)}
+                style={{ background: "none", border: "none", padding: 0, marginTop: 10, marginRight: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: "var(--camel)" }}>
+                {expanded === p.id ? "− Revenir à l'essentiel" : `+ Les ${p.indicators.length - 6} autres indicateurs`}
+              </button>
+            )}
             <button onClick={() => router.push(`/parametres/${p.id}`)}
               style={{ background: "none", border: "none", padding: 0, marginTop: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: "var(--camel)" }}>
               Configurer et saisir →

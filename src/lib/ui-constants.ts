@@ -316,6 +316,33 @@ export function defaultIndicatorScope(category: string, unit: string): "programm
   return "entreprise";
 }
 
+/**
+ * Les six indicateurs mis en avant pour un programme d'accélération.
+ *
+ * Le catalogue en compte une cinquantaine : tous affichés, aucun n'est lu. On suit donc la
+ * CHAÎNE DE RÉSULTATS, un maillon à la fois — l'argent engagé, la portée atteinte, l'effort
+ * réellement fourni, ce que l'entreprise en retire, la qualité perçue, et le retour vers le
+ * métier d'investisseur. Chaque maillon répond à une question qu'on se pose vraiment ;
+ * en retirer un laisse un trou dans le raisonnement.
+ *
+ * L'ordre compte : c'est celui de la lecture. Le reste des indicateurs reste consultable,
+ * mais à la demande.
+ */
+export const SUPPORT_HEADLINE_INDICATORS: { name: string; why: string }[] = [
+  { name: "Taux d'exécution budgétaire", why: "l'argent engagé est-il réellement dépensé" },
+  { name: "PME/entreprises accompagnées", why: "combien d'entreprises sont touchées" },
+  { name: "Jours d'assistance technique (AT)", why: "l'effort effectivement fourni" },
+  { name: "Emplois créés", why: "le résultat attendu par les bailleurs" },
+  { name: "Satisfaction des bénéficiaires", why: "la qualité perçue, pas seulement le volume" },
+  { name: "Entreprises entrées au pipeline d'investissement", why: "ce que l'accompagnement rapporte au fonds" },
+];
+
+/** Repli quand un programme ne suit aucun des indicateurs mis en avant. */
+export const SUPPORT_HEADLINE_FALLBACK = [
+  "Montant décaissé", "Budget alloué", "Entrepreneurs formés", "Sessions de formation",
+  "Emplois soutenus/maintenus", "Recommandations mises en œuvre",
+];
+
 export const ACCOMP_CATEGORY_COLOR: Record<string, string> = {
   Moyens: "#6B5744", Bénéficiaires: "#8A4B5A", Activités: "#B5623F", Réalisations: "#B07A2E", Résultats: "#7C7A3A",
 };
