@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { OHADA_SECTIONS, computeOhada, bilanFonctionnel, ratios, type OhadaSection } from "@/lib/finance/ohada";
+import { OHADA_SECTIONS, computeOhada, ratios, type OhadaSection } from "@/lib/finance/ohada";
+import { computeRatios, RATIO_FAMILIES, bilanFonctionnelComplet, soldesDeGestion, variation, SECTOR_RATIOS_PENDING } from "@/lib/finance/analysis";
 import type { StatementValues } from "@/lib/data/financialStatements";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
 import OhadaImportModal from "./OhadaImportModal";
@@ -167,23 +168,89 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
             </tr>
           </thead>
           <tbody>
-            {[
-              { k: "Fonds de roulement (FR)", f: (y: number) => fmt(bilanFonctionnel(computed[y]).fondsRoulement) },
-              { k: "Besoin en fonds de roulement (BFR)", f: (y: number) => fmt(bilanFonctionnel(computed[y]).bfr) },
-              { k: "Trésorerie nette", f: (y: number) => fmt(bilanFonctionnel(computed[y]).tresorerieNette) },
-              { k: "Marge d'EBE (EBE / CA)", f: (y: number) => pct(ratios(computed[y]).margeEbe) },
-              { k: "Marge nette (RN / CA)", f: (y: number) => pct(ratios(computed[y]).margeNette) },
-              { k: "Rentabilité des capitaux propres (ROE)", f: (y: number) => pct(ratios(computed[y]).roe) },
-              { k: "Autonomie financière (CP / total bilan)", f: (y: number) => pct(ratios(computed[y]).autonomie) },
-              { k: "Endettement (dettes fin. / CP)", f: (y: number) => mult(ratios(computed[y]).endettement) },
-              { k: "Liquidité générale (AC / PC)", f: (y: number) => mult(ratios(computed[y]).liquiditeGenerale) },
-            ].map((row) => (
-              <tr key={row.k} style={{ borderTop: "1px solid var(--sep)" }}>
-                <td style={{ padding: "5px 8px", fontSize: 12, color: "var(--ink)" }}>{row.k}</td>
-                {years.map((y) => (
-                  <td key={y} className="tnum" style={{ padding: "5px 8px", fontSize: 12, textAlign: "right", color: "var(--ink)" }}>{row.f(y)}</td>
-                ))}
-              </tr>
+            {(() => {
+              // Le modèle d'analyse déposé se lit famille par famille, chaque ratio avec
+              // sa NORME : « 0,8 » ne veut rien dire tant qu'on ignore qu'on l'attend
+              // au-dessus de 1. On reprend cette présentation.
+              const bilan = years.map((y) => bilanFonctionnelComplet(computed[y]));
+              const soldes = years.map((y) => soldesDeGestion(computed[y]));
+              const rats = years.map((y) => computeRatios(computed[y]));
+              // La variation se compare à l'exercice PRÉCÉDENT, pas à la colonne voisine :
+              // les exercices sont affichés du plus récent au plus ancien, et comparer au
+              // voisin de gauche inversait le sens de toutes les évolutions.
+              const prevIndexOf = (i: number) => years.indexOf(years[i] - 1);
+              const rows: { k: string; sub?: string; famille?: boolean; f: (i: number) => React.ReactNode }[] = [];
+
+              rows.push({ k: "Soldes de gestion", famille: true, f: () => null });
+              soldes[0].forEach((line, li) => rows.push({
+                k: line.label,
+                sub: "part du chiffre d'affaires · variation",
+                f: (i) => {
+                  const cur = soldes[i][li];
+                  const pi = prevIndexOf(i);
+                  const prev = pi >= 0 ? soldes[pi][li].value : null;
+                  const va = variation(cur.value, prev);
+                  return (
+                    <>
+                      {fmt(cur.value ?? 0)}
+                      <div style={{ fontSize: 10, color: "var(--text-3)" }}>
+                        {cur.share != null ? pct(cur.share) : "—"}
+                        {va != null && <span style={{ marginLeft: 6, color: va >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{va >= 0 ? "▲" : "▼"} {pct(Math.abs(va))}</span>}
+                      </div>
+                    </>
+                  );
+                },
+              }));
+
+              rows.push({ k: "Bilan fonctionnel", famille: true, f: () => null });
+              bilan[0].analyse.forEach((line, li) => rows.push({
+                k: line.label,
+                f: (i) => {
+                  const cur = bilan[i].analyse[li];
+                  const pi = prevIndexOf(i);
+                  const prev = pi >= 0 ? bilan[pi].analyse[li].value : null;
+                  const va = variation(cur.value, prev);
+                  return (
+                    <>
+                      {fmt(cur.value ?? 0)}
+                      {va != null && <div style={{ fontSize: 10, color: va >= 0 ? "var(--green-fg)" : "var(--red-fg)" }}>{va >= 0 ? "▲" : "▼"} {pct(Math.abs(va))}</div>}
+                    </>
+                  );
+                },
+              }));
+
+              for (const fam of RATIO_FAMILIES) {
+                rows.push({ k: fam, famille: true, f: () => null });
+                rats[0].filter((r) => r.family === fam).forEach((def) => rows.push({
+                  k: def.label,
+                  sub: def.norm ? `${def.formula} · norme ${def.norm}` : def.formula,
+                  f: (i) => {
+                    const r = rats[i].find((x) => x.key === def.key);
+                    if (!r || r.value == null) return "—";
+                    const txt = r.unit === "%" ? pct(r.value) : r.unit === "x" ? mult(r.value) : fmt(r.value);
+                    const col = r.verdict === "conforme" ? "var(--green-fg)" : r.verdict === "à surveiller" ? "var(--amber-fg)" : "var(--ink)";
+                    return <span style={{ color: col, fontWeight: r.verdict ? 600 : 400 }}>{txt}</span>;
+                  },
+                }));
+              }
+              return rows;
+            })().map((row, ri) => (
+
+              row.famille ? (
+                <tr key={`fam-${row.k}-${ri}`}>
+                  <td colSpan={years.length + 1} style={{ padding: "10px 8px 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--camel)" }}>{row.k}</td>
+                </tr>
+              ) : (
+                <tr key={`${row.k}-${ri}`} style={{ borderTop: "1px solid var(--sep)" }}>
+                  <td style={{ padding: "5px 8px", fontSize: 12, color: "var(--ink)" }}>
+                    {row.k}
+                    {row.sub && <div style={{ fontSize: 10, color: "var(--text-3)" }}>{row.sub}</div>}
+                  </td>
+                  {years.map((y, i) => (
+                    <td key={y} className="tnum" style={{ padding: "5px 8px", fontSize: 12, textAlign: "right", color: "var(--ink)", verticalAlign: "top" }}>{row.f(i)}</td>
+                  ))}
+                </tr>
+              )
             ))}
             <tr style={{ borderTop: "1px solid var(--border)" }}>
               <td style={{ padding: "5px 8px", fontSize: 12, color: "var(--text-2)" }}>Équilibre du bilan (Actif − Passif)</td>

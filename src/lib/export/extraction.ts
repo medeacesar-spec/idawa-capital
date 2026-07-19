@@ -11,6 +11,8 @@
 // un oubli, une feuille vide dit qu'il n'y a rien.
 
 import { createClient } from "@/lib/supabase/server";
+import { computeOhada } from "@/lib/finance/ohada";
+import { computeRatios, bilanFonctionnelComplet, soldesDeGestion, variation, SECTOR_RATIOS_PENDING } from "@/lib/finance/analysis";
 import type { Sheet, CellValue } from "./xlsx";
 
 export type ExtractionScope = {
@@ -40,6 +42,7 @@ export const EXTRACTION_SETS: ExtractionSet[] = [
 
   { key: "etats", group: "Finances", label: "États financiers OHADA", hint: "Poste par poste, par exercice, avec le code OHADA." },
   { key: "budget", group: "Finances", label: "Budget & business plan", hint: "Budget et réalisé par poste et par exercice." },
+  { key: "analyse", group: "Finances", label: "Analyse financière", hint: "Soldes de gestion, bilan fonctionnel, CAF et ratios avec leur norme — au format du modèle d'analyse." },
 
   { key: "kpis", group: "Suivi", label: "Indicateurs suivis", hint: "Toutes les valeurs de KPI, par période — pas une seule période." },
   { key: "taches", group: "Suivi", label: "Tâches", hint: "Actions ouvertes et closes, responsable, échéance." },
@@ -208,6 +211,51 @@ export async function buildExtraction(keys: string[], scope: ExtractionScope): P
         return [nameOf.get(r.company_id as string) ?? "—", r.period as string, r.label as string, b, a,
           b != null && a != null ? a - b : null];
       }), [24, 10, 34, 16, 16, 16]);
+  }
+
+  if (wanted.has("analyse")) {
+    const { data: st } = noCompany ? { data: [] } : await supabase.from("financial_statements").select("*").in("company_id", ids);
+    // Un exercice par société, avec les totaux recalculés — jamais ceux qui seraient saisis.
+    const byKey = new Map<string, Record<string, number>>();
+    for (const r of st ?? []) {
+      if (!yearInRange(r.fiscal_year, scope.from, scope.to)) continue;
+      const k = `${r.company_id}|${r.fiscal_year}`;
+      if (!byKey.has(k)) byKey.set(k, {});
+      if (r.amount != null) byKey.get(k)![r.code as string] = Number(r.amount);
+    }
+    const keys = [...byKey.keys()].sort();
+    const computedOf = new Map([...byKey].map(([k, raw]) => [k, computeOhada(raw)]));
+    const rows: CellValue[][] = [];
+
+    for (const k of keys) {
+      const [cid, year] = k.split("|");
+      const v = computedOf.get(k)!;
+      const prev = computedOf.get(`${cid}|${Number(year) - 1}`) ?? null;
+      const co = nameOf.get(cid) ?? "—";
+
+      for (const l of soldesDeGestion(v)) {
+        const p = prev ? (soldesDeGestion(prev).find((x) => x.code === l.code)?.value ?? null) : null;
+        rows.push([co, Number(year), "Soldes de gestion", l.label, l.value, l.share ?? null, variation(l.value, p), "", ""]);
+      }
+      const b = bilanFonctionnelComplet(v);
+      for (const l of [...b.actif, ...b.passif]) rows.push([co, Number(year), "Bilan", l.label, l.value, l.share ?? null, null, "", ""]);
+      for (const l of b.analyse) {
+        const p = prev ? (bilanFonctionnelComplet(prev).analyse.find((x) => x.label === l.label)?.value ?? null) : null;
+        rows.push([co, Number(year), "Analyse fonctionnelle", l.label, l.value, null, variation(l.value, p), "", ""]);
+      }
+      for (const r of computeRatios(v)) {
+        rows.push([co, Number(year), r.family, r.label, r.value, null, null, r.norm || null, r.verdict]);
+      }
+    }
+
+    add("Analyse financière",
+      ["Société", "Exercice", "Famille", "Indicateur", "Valeur", "Part", "Variation", "Norme", "Lecture"],
+      rows, [24, 10, 22, 40, 18, 10, 12, 16, 14]);
+
+    // Ce que le modèle prévoit pour les banques et les assurances n'est pas calculable
+    // depuis le plan OHADA général : on le dit plutôt que de produire des chiffres faux.
+    add("Ratios sectoriels à venir", ["Secteur", "Ratio attendu"],
+      SECTOR_RATIOS_PENDING.flatMap((s) => s.ratios.map((r) => [s.sector, r] as CellValue[])), [34, 44]);
   }
 
   // --- Suivi --------------------------------------------------------------
