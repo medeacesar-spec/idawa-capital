@@ -25,9 +25,17 @@ export type ActiveSession = {
   lastSeen: string;
 };
 
+export type AuthEvent = {
+  user_id: string | null; at: string; kind: string;
+  email: string | null; ip: string | null; user_agent: string | null;
+};
+
 export type ActivityData = {
   users: UserActivity[];
   sessions: ActiveSession[];
+  /** Journal d'accès brut : connexions, échecs, déconnexions, expirations. */
+  events: (AuthEvent & { name: string | null })[];
+  failures: number;
   /** Fenêtre d'observation, en jours. */
   windowDays: number;
 };
@@ -41,12 +49,14 @@ export async function getActivity(windowDays = 30): Promise<ActivityData> {
 
   const [profRes, loginRes, auditRes, sessRes] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, roles(name)"),
-    supabase.from("login_events").select("user_id, at").gte("at", since),
+    supabase.from("auth_events").select("user_id, at, kind, email, ip, user_agent").gte("at", since).order("at", { ascending: false }),
     supabase.from("audit_log").select("actor_id, at").gte("at", since),
     supabase.rpc("active_sessions"),
   ]);
 
-  const logins = loginRes.data ?? [];
+  const events = (loginRes.data ?? []) as AuthEvent[];
+  // Seules les connexions réussies comptent comme « venue » ; les échecs se lisent à part.
+  const logins = events.filter((e) => e.kind === "connexion");
   const audits = auditRes.data ?? [];
   const rawSessions = (sessRes.data ?? []) as { user_id: string; email: string; started: string; last_seen: string }[];
 
@@ -86,5 +96,10 @@ export async function getActivity(windowDays = 30): Promise<ActivityData> {
       lastSeen: s.last_seen,
     }));
 
-  return { users, sessions, windowDays };
+  const nameById = new Map(users.map((u) => [u.id, u.name]));
+  return {
+    users, sessions, windowDays,
+    events: events.map((e) => ({ ...e, name: e.user_id ? nameById.get(e.user_id) ?? null : null })),
+    failures: events.filter((e) => e.kind === "échec").length,
+  };
 }

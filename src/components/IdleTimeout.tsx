@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { recordAuthEvent } from "@/app/auth-events";
 
 const TIMEOUT_MS = 30 * 60 * 1000; // déconnexion après 30 min d'inactivité
 const WARN_MS = 60 * 1000; // avertissement 1 min avant
@@ -30,6 +31,7 @@ export default function IdleTimeout() {
       if (loggingOut.current) return;
       loggingOut.current = true;
       try { localStorage.setItem(LOGOUT_KEY, String(Date.now())); } catch {}
+      await recordAuthEvent("expiration");
       await createClient().auth.signOut({ scope: "local" });
       router.push(reason ? "/login?raison=inactivite" : "/login");
     };

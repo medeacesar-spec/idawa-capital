@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { recordAuthEvent } from "@/app/auth-events";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,17 +27,17 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      // Une série d'échecs sur un compte est le premier signe d'une tentative d'intrusion.
+      // Sans trace, elle serait totalement invisible.
+      await recordAuthEvent("échec", { email });
       setError("Email ou mot de passe incorrect.");
       setLoading(false);
       return;
     }
     // Supabase ne conserve que la DERNIÈRE connexion : sans cet enregistrement, on ne
-    // saurait jamais qui est venu et à quelle fréquence. Un échec ici ne doit pas
-    // empêcher d'entrer — la connexion prime sur sa trace.
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await supabase.from("login_events").insert({ user_id: user.id, user_agent: navigator.userAgent.slice(0, 200) });
-    } catch { /* la trace est utile, pas indispensable */ }
+    // saurait jamais qui est venu ni à quelle fréquence.
+    const { data: { user } } = await supabase.auth.getUser();
+    await recordAuthEvent("connexion", { userId: user?.id ?? null, email });
     router.push("/dashboard");
     router.refresh();
   }

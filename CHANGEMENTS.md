@@ -86,7 +86,9 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | **Suivi des connexions** : historique par personne sur 30 jours, dernière venue, comptes dormants | à tester | 0031 |
 | **Employés connectés à l'instant** (session active vue dans les 20 dernières minutes) | à tester | 0031 |
 | Rapprocher connexions et modifications par personne (qui vient, qui agit) | à tester | non |
-| Historique de connexion par appareil et adresse (enregistré, pas encore affiché) | à faire | non |
+| Journal d'accès élargi : connexions, **échecs**, déconnexions, expirations, appareil et adresse | à tester | 0032 |
+| Alerte sur tentatives répétées d'accès à un même compte | à tester | non |
+| Journal en trois onglets : activité, modifications, accès & sécurité | à tester | non |
 | Alerte sur compte dormant ou accès jamais utilisé | à faire | non |
 | Emails aux personnes assignées à une action | à tester | non |
 | Verrouillage RLS par rôle en base | à faire | oui |
