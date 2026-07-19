@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { COMMITTEE_TYPES, COMMITTEE_DECISIONS, COMMITTEE_OUTCOME_NONE, DEAL_ADVANCED_FROM } from "@/lib/ui-constants";
+import { notifyPendingValidation } from "@/app/(app)/notify-actions";
 
 type PassageInput = {
   id: string;
@@ -68,6 +69,13 @@ export default function CommitteeFormModal({
         note_date: f.sessionDate || new Date().toISOString().slice(0, 10),
         participants: f.participants || null,
         summary: parts.join(" — "),
+      });
+      // La décision est « Proposée » : prévenir par email les personnes qui peuvent la valider.
+      await notifyPendingValidation({
+        committeeType: f.committeeType,
+        decision: f.decision || null,
+        entityType: dealId ? "deal" : "company",
+        entityId: (dealId ?? companyId) as string,
       });
     }
 

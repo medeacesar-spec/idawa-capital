@@ -12,7 +12,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, assignmentEmail, decisionEmail, digestEmail } from "@/lib/email/resend";
+import { sendEmail, assignmentEmail, decisionEmail, digestEmail, pendingValidationEmail } from "@/lib/email/resend";
 
 export type AssignmentKind = "Action de suivi" | "Action E&S" | "Initiative de création de valeur" | "Point de due diligence";
 
@@ -96,6 +96,56 @@ export async function sendTestDigest(): Promise<{ ok: boolean; skipped?: boolean
   });
   const res = await sendEmail({ to: prof.email as string, subject: `[Test] ${subject}`, html });
   return { ok: res.ok, skipped: res.skipped, error: res.error };
+}
+
+// Prévenir les personnes habilitées à VALIDER qu'une décision de comité (dossier OU
+// société) attend leur validation. Symétrique pipeline/portefeuille : appelé depuis le
+// modal de comité partagé, donc identique des deux côtés.
+export async function notifyPendingValidation(input: {
+  committeeType: string;
+  decision: string | null;
+  entityType: "deal" | "company";
+  entityId: string;
+}): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const actorId = user?.id ?? null;
+
+  const admin = createAdminClient();
+  const [{ data: roles }, { data: people }] = await Promise.all([
+    admin.from("roles").select("id, permissions"),
+    admin.from("profiles").select("id, email, full_name, role_id").not("email", "is", null),
+  ]);
+  // Un valideur = rôle dont le niveau « comités » est V (validation) ou E (édition).
+  const validatorRoles = new Set(
+    (roles ?? []).filter((r) => { const lvl = (r.permissions as Record<string, string> | null)?.comites; return lvl === "V" || lvl === "E"; }).map((r) => r.id)
+  );
+  // On inclut aussi un profil sans rôle : l'app lui accorde les droits admin (amorçage).
+  const recipients = (people ?? []).filter((p) => p.id !== actorId && (p.role_id == null || validatorRoles.has(p.role_id)));
+  if (recipients.length === 0) return;
+
+  const table = input.entityType === "company" ? "portfolio_companies" : "deals";
+  const column = input.entityType === "company" ? "name" : "company_name";
+  const [{ data: entity }, { data: actor }] = await Promise.all([
+    admin.from(table).select(column).eq("id", input.entityId).single(),
+    actorId ? admin.from("profiles").select("full_name").eq("id", actorId).single() : Promise.resolve({ data: null }),
+  ]);
+  const entityName = (entity as Record<string, string> | null)?.[column] ?? "—";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://idawa-capital.vercel.app";
+  const path = input.entityType === "company" ? `/portefeuille/${input.entityId}` : `/pipeline/${input.entityId}`;
+  const link = `${base}${path}`;
+
+  for (const v of recipients) {
+    const { subject, html } = pendingValidationEmail({
+      fullName: v.full_name as string | null,
+      committeeType: input.committeeType,
+      decision: input.decision,
+      entityName,
+      proposedBy: (actor?.full_name as string | null) ?? null,
+      link,
+    });
+    await sendEmail({ to: v.email as string, subject, html });
+  }
 }
 
 // Prévenir l'ÉQUIPE qu'une décision de comité vient d'être validée (investissement,

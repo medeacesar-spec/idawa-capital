@@ -117,6 +117,21 @@ export function reminderEmail({ fullName, title, entityName, dueDate, link, over
   return { subject: `${overdue ? "Action en retard" : "Échéance proche"} — ${entityName}`, html: shell(overdue ? "Action en retard" : "Échéance proche", inner) };
 }
 
+/** Une décision de comité attend une validation : on prévient les personnes qui peuvent valider. */
+export function pendingValidationEmail({ fullName, committeeType, decision, entityName, proposedBy, link }: {
+  fullName?: string | null; committeeType: string; decision: string | null;
+  entityName: string; proposedBy: string | null; link: string;
+}): { subject: string; html: string } {
+  const hello = fullName ? `Bonjour ${fullName},` : "Bonjour,";
+  const by = proposedBy ? `${proposedBy} a enregistré` : "Une décision a été enregistrée :";
+  const inner = `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;">${hello}</p>
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#5A4636;">${by} une décision en <b>${committeeType}</b> sur <b>${entityName}</b> qui attend votre validation.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF7F1;border-radius:11px;border:1px solid #F0E8DC;margin:0 0 22px;"><tr><td style="padding:14px 16px;">
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#33200F;line-height:1.5;">${decision || "Décision proposée"}</p>
+    </td></tr></table>${ctaButton(link, "Examiner et valider")}`;
+  return { subject: `Décision à valider — ${entityName}`, html: shell("Décision en attente de validation", inner) };
+}
+
 /** Décision de comité validée : information de l'équipe. */
 export function decisionEmail({ fullName, committeeType, outcome, decision, entityName, validatedBy, link }: {
   fullName?: string | null; committeeType: string; outcome: string | null; decision: string | null;

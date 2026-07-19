@@ -21,7 +21,7 @@ export async function getTodoItems(): Promise<TodoData> {
     supabase.from("tasks").select("entity_type, entity_id, title, due_date, status, assignee_id").neq("status", "Fait"),
     supabase.from("dd_items").select("entity_type, entity_id, item, status, assignee_id").eq("status", "Point d'attention"),
     supabase.from("value_creation").select("entity_type, entity_id, initiative, target_date, status, assignee_id"),
-    supabase.from("committee_passages").select("id, deal_id, committee_type, decision").eq("status", "Proposée"),
+    supabase.from("committee_passages").select("id, deal_id, company_id, committee_type, decision").eq("status", "Proposée"),
   ]);
   const coMap = new Map((coRes.data ?? []).map((c) => [c.id, c.name]));
   const dealMap = new Map((dealRes.data ?? []).map((d) => [d.id, d.company_name]));
@@ -49,8 +49,12 @@ export async function getTodoItems(): Promise<TodoData> {
     }
   }
 
+  // Décisions à valider — pipeline ET portefeuille (un passage porte soit deal_id, soit company_id).
   for (const c of comRes.data ?? []) {
-    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${dealMap.get(c.deal_id) ?? "—"}${c.decision ? ` · ${c.decision}` : ""}`, href: c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline", severity: "high", assigneeId: null, validation: true, dueDate: null });
+    const isCompany = !!c.company_id;
+    const entityName = isCompany ? (coMap.get(c.company_id) ?? "—") : (dealMap.get(c.deal_id) ?? "—");
+    const href = isCompany ? `/portefeuille/${c.company_id}` : (c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline");
+    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${entityName}${c.decision ? ` · ${c.decision}` : ""}`, href, severity: "high", assigneeId: null, validation: true, dueDate: null });
   }
 
   // À gravité égale, le plus ancien retard passe devant : c'est celui qui coûte le plus.
