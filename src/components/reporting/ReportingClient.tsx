@@ -7,6 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import { REPORTING_STATUS } from "@/lib/ui-constants";
 import type { ReportingData } from "@/lib/data/reporting";
 import ExtractionPicker, { type ExtractionSet } from "./ExtractionPicker";
+import ExcelBridgeClient from "./ExcelBridgeClient";
+
+type Company = { id: string; name: string; tracking: string; programId: string | null };
+type Dataset = { key: string; label: string; hint: string; editable: string[] };
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Validé": "badge-green" };
 function nf(n: number) { return new Intl.NumberFormat("fr-FR").format(Math.round(n)); }
@@ -22,9 +26,12 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data, canEdit = true, extractionSets, programs }: { data: ReportingData; canEdit?: boolean; extractionSets: ExtractionSet[]; programs: { id: string; name: string }[] }) {
+export default function ReportingClient({ data, canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
+  data: ReportingData; canEdit?: boolean; extractionSets: ExtractionSet[];
+  programs: { id: string; name: string }[]; companies: Company[]; datasets: Dataset[]; excelCanEdit: boolean;
+}) {
   const router = useRouter();
-  const [tab, setTab] = useState<"collecte" | "extraction">("collecte");
+  const [tab, setTab] = useState<"collecte" | "extraction" | "fiches">("collecte");
   const [period, setPeriod] = useState(data.periods[0] ?? "2026-T2");
 
   const statusFor = (companyId: string) => data.statuses.find((s) => s.companyId === companyId && s.period === period)?.status ?? "À faire";
@@ -40,18 +47,18 @@ export default function ReportingClient({ data, canEdit = true, extractionSets, 
   return (
     <div>
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
-        {([["collecte", "Collecte"], ["extraction", "Extraction"]] as const).map(([k, label]) => (
+        {([
+          ["collecte", "Collecte trimestrielle"],
+          ["extraction", "Extraire des données"],
+          ["fiches", "Rapports & fiches I&P"],
+        ] as const).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} style={{ padding: "9px 14px", border: "none", background: "none", cursor: "pointer", fontSize: 13, fontWeight: tab === k ? 600 : 500, color: tab === k ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${tab === k ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{label}</button>
         ))}
-        {/* La passerelle est une page à part : l'aller-retour Excel a ses propres étapes. */}
-        <Link href="/reporting/excel" className="btn btn-ghost" style={{ marginLeft: "auto", marginBottom: 6, textDecoration: "none" }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16M10 4v16" /></svg>
-          Passerelle Excel
-        </Link>
       </div>
 
       {tab === "collecte" && (
         <div>
+          <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>Où en est la remontée des chiffres, société par société, pour un trimestre.</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
             <label style={{ fontSize: 12, color: "var(--text-2)" }}>Période</label>
             <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
@@ -86,6 +93,7 @@ export default function ReportingClient({ data, canEdit = true, extractionSets, 
 
       {tab === "extraction" && (
         <>
+          <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>Sortir les données de l&apos;outil vers un tableur — brut, à la carte.</p>
           <ExtractionPicker extractionSets={extractionSets} programs={programs} />
           <details style={{ marginTop: 4 }}>
             <summary style={{ fontSize: 12.5, color: "var(--text-2)", cursor: "pointer", padding: "6px 0" }}>
@@ -93,6 +101,15 @@ export default function ReportingClient({ data, canEdit = true, extractionSets, 
             </summary>
             <div style={{ marginTop: 10 }}><Extraction data={data} /></div>
           </details>
+        </>
+      )}
+
+      {tab === "fiches" && (
+        <>
+          <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>
+            Produire les rapports au format des modèles I&amp;P, et réinjecter un fichier retravaillé sous Excel.
+          </p>
+          <ExcelBridgeClient datasets={datasets} canEdit={excelCanEdit} companies={companies} programs={programs} />
         </>
       )}
     </div>

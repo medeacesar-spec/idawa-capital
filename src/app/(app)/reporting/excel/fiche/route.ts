@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { getMyPermissions, can } from "@/lib/auth/permissions";
 import { buildWorkbook, zipFiles } from "@/lib/export/xlsx";
-import { buildIpFicheWorkbook, buildOneCompany, resolveSelection, MAX_COMPANIES, type FicheSelection } from "@/lib/export/ipFicheEntreprise";
+import { buildIpFicheWorkbook, buildFicheFill, resolveSelection, MAX_COMPANIES, type FicheSelection } from "@/lib/export/ipFicheEntreprise";
+import { fillTemplate } from "@/lib/export/fillTemplate";
+import path from "node:path";
+
+// Le modèle d'origine, versionné dans le dépôt : on le REMPLIT plutôt que de le
+// régénérer, pour conserver sa mise en page, ses pages « Fiche entreprise » et ses
+// graphiques.
+const TEMPLATE = path.join(process.cwd(), "src/assets/templates/fiche-entreprise-ip.xlsx");
 
 const slugify = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -43,11 +50,11 @@ export async function GET(req: Request) {
     // empilés reste disponible (`forme=comparaison`) pour lire les sociétés côte à côte.
     const forme = p.get("forme") === "comparaison" ? "comparaison" : "modele";
 
-    if (companies.length === 1 || forme === "comparaison") {
+    // Comparaison : le classeur régénéré à blocs empilés, qui n'a pas de modèle à préserver.
+    if (forme === "comparaison" && companies.length > 1) {
       const { sheets } = await buildIpFicheWorkbook(companies, year, quarter, count);
       const buf = buildWorkbook(sheets);
-      const label = companies.length === 1 ? slugify(companies[0].name) : `${companies.length}-societes-comparaison`;
-      const name = `Fiche entreprise - ${label} - ${year}-T${quarter}.xlsx`;
+      const name = `Fiche entreprise - ${companies.length}-societes-comparaison - ${year}-T${quarter}.xlsx`;
       return new NextResponse(new Uint8Array(buf), {
         headers: {
           "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -61,12 +68,30 @@ export async function GET(req: Request) {
       return new NextResponse(`Sélection trop large (${companies.length} sociétés, maximum ${MAX_COMPANIES}).`, { status: 400 });
     }
 
+    // Le MODÈLE est rempli, un fichier par société. Une seule société : le fichier
+    // directement. Plusieurs : l'archive.
+    const remplir = async (companyId: string) => {
+      const { fill } = await buildFicheFill(companyId, year, quarter, count);
+      return fillTemplate(TEMPLATE, fill);
+    };
+
+    if (companies.length === 1) {
+      const buf = await remplir(companies[0].id);
+      const name = `Fiche entreprise - ${slugify(companies[0].name)} - ${year}-T${quarter}.xlsx`;
+      return new NextResponse(new Uint8Array(buf), {
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${name}"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+
     const files: { name: string; data: Buffer }[] = [];
     for (const co of companies) {
-      const { sheets } = await buildOneCompany(co.id, year, quarter, count);
       files.push({
         name: `Fiche entreprise - ${slugify(co.name)} - ${year}-T${quarter}.xlsx`,
-        data: buildWorkbook(sheets),
+        data: await remplir(co.id),
       });
     }
 

@@ -433,3 +433,69 @@ export async function buildIpFicheWorkbook(
 
   return { sheets: merged, quarters };
 }
+
+// ---------------------------------------------------------------------------
+// Remplissage du MODÈLE d'origine plutôt que régénération.
+//
+// buildOneCompany encode dans chaque ligne (élément d'index 3) son numéro de ligne dans
+// le modèle : on peut donc viser la cellule exacte, sans dépendre d'une position.
+
+const A1 = "A".charCodeAt(0);
+function colLetter(index0: number): string {
+  let n = index0 + 1, s = "";
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(A1 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
+/** Date ISO -> numéro de série Excel, pour que la cellule datée s'affiche en date. */
+function excelSerial(iso: string): number | null {
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : Math.round((t - EXCEL_EPOCH) / 86_400_000);
+}
+
+// La première colonne de valeurs du modèle est E (5e colonne, index 4).
+const FIRST_VALUE_COL = 4;
+// Feuilles à structure de LIGNES FIXE, où l'index encodé = le numéro de ligne du modèle.
+const FIXED_SHEETS = new Set(["Capital", "Performance", "Impact", "Couts suivi"]);
+
+/**
+ * Construit les valeurs à injecter dans le modèle, feuille par feuille et cellule par
+ * cellule. Les feuilles ajoutées par l'application (Actionnariat, À collecter) et le Prêt
+ * — dont la structure du modèle diffère de la nôtre — sont laissées telles quelles.
+ */
+export async function buildFicheFill(companyId: string, endYear: number, endQ: number, quarterCount = 12) {
+  const { sheets, context } = await buildOneCompany(companyId, endYear, endQ, quarterCount);
+  const fill: Record<string, Record<string, string | number | null>> = {};
+
+  for (const sheet of sheets) {
+    if (sheet.name === "Donnees figees") {
+      // Deux colonnes [libellé, valeur] : la valeur va en B, à la ligne de position.
+      const cells: Record<string, string | number | null> = {};
+      sheet.rows.forEach((row, i) => {
+        const v = row[1];
+        if (v != null && v !== "") cells[`B${i + 1}`] = v;
+      });
+      fill[sheet.name] = cells;
+      continue;
+    }
+
+    if (!FIXED_SHEETS.has(sheet.name)) continue;
+
+    const cells: Record<string, string | number | null> = {};
+    for (const row of sheet.rows) {
+      const modelRow = Number(row[3]);
+      if (!modelRow) continue;
+      const values = row.slice(FIRST_VALUE_COL);
+      values.forEach((v, k) => {
+        if (v == null || v === "") return;
+        const ref = `${colLetter(FIRST_VALUE_COL + k)}${modelRow}`;
+        // Ligne 1 = dates : converties en série pour rester des dates à l'écran.
+        cells[ref] = modelRow === 1 && typeof v === "string" ? (excelSerial(v) ?? v) : v;
+      });
+    }
+    fill[sheet.name] = cells;
+  }
+
+  return { fill, context };
+}

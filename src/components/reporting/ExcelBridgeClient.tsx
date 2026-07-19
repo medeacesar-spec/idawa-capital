@@ -77,12 +77,6 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
 
   return (
     <div style={{ maxWidth: 980 }}>
-      <div style={{ marginBottom: 16 }}>
-        <h1 className="serif" style={{ fontSize: 20, fontWeight: 600, color: "var(--ink)", margin: 0 }}>Passerelle Excel</h1>
-        <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-          Sortir les données pour les présenter, puis réinjecter ce qui a été retravaillé. Rien n&apos;est enregistré sans votre validation.
-        </div>
-      </div>
 
       {error && (
         <div className="card" style={{ padding: "12px 16px", marginBottom: 14, background: "var(--red-bg)", color: "var(--red-fg)", fontSize: 13 }}>{error}</div>
