@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { recordAuthEvent } from "@/app/auth-events";
+import { traceAuth } from "@/lib/auth/trace";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,24 +11,27 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("raison") === "inactivite") {
       setNotice("Vous avez été déconnecté après 30 minutes d'inactivité. Reconnectez-vous pour continuer.");
     }
-  }, []);
 
-  /** Une trace d'accès ne doit jamais retarder — ni bloquer — une connexion. */
-  async function trace(kind: "connexion" | "échec", input: { userId?: string | null; email?: string | null }) {
-    try {
-      await Promise.race([
-        recordAuthEvent(kind, input),
-        new Promise((resolve) => setTimeout(resolve, 2500)),
-      ]);
-    } catch {
-      // Journalisation indisponible : on continue.
-    }
-  }
+    // Sortie de boucle : si une session valide existe déjà alors qu'on se trouve sur la
+    // page de connexion, c'est que la navigation précédente n'a pas abouti — un cookie
+    // abîmé, un retour arrière, une redirection perdue. Plutôt que de laisser
+    // l'utilisateur ressaisir ses identifiants sans effet, on ouvre l'application.
+    createClient().auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setOpening(true);
+        window.location.assign("/dashboard");
+      }
+    }).catch(() => {
+      // Session illisible : on laisse le formulaire faire son travail.
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +43,7 @@ export default function LoginPage() {
       if (error) {
         // Une série d'échecs sur un compte est le premier signe d'une tentative d'intrusion.
         // Sans trace, elle serait totalement invisible.
-        await trace("échec", { email });
+        traceAuth("échec", { email });
         setError("Email ou mot de passe incorrect.");
         setLoading(false);
         return;
@@ -49,7 +52,12 @@ export default function LoginPage() {
       // Supabase ne conserve que la DERNIÈRE connexion : sans cet enregistrement, on ne
       // saurait jamais qui est venu ni à quelle fréquence. L'utilisateur est déjà dans la
       // réponse de connexion — inutile de redemander au serveur qui vient de répondre.
-      await trace("connexion", { userId: data.user?.id ?? null, email });
+      // Appel NON ATTENDU : la trace part, la navigation aussi.
+      traceAuth("connexion", { userId: data.user?.id ?? null, email });
+
+      // L'ouverture du tableau de bord prend une à deux secondes : on le dit, plutôt que
+      // de laisser un bouton « Connexion… » que l'on finit par croire figé.
+      setOpening(true);
 
       // NAVIGATION PAR RECHARGEMENT COMPLET, et non router.push.
       //
@@ -60,12 +68,9 @@ export default function LoginPage() {
       // Un rechargement complet part avec les cookies posés : le middleware voit la session.
       window.location.assign("/dashboard");
 
-      // Si la navigation n'a pas eu lieu au bout de quelques secondes, on rend la main
-      // plutôt que de laisser un bouton mort.
-      setTimeout(() => {
-        setLoading(false);
-        setError("La connexion a abouti mais la page n'a pas pu s'ouvrir. Cliquez sur « Se connecter » à nouveau, ou ouvrez directement le tableau de bord.");
-      }, 8000);
+      // Filet de sécurité très large : si la page n'est toujours pas ouverte, on propose
+      // un lien direct plutôt que de laisser l'écran en suspens.
+      setTimeout(() => setSlow(true), 15000);
     } catch {
       setError("La connexion n'a pas pu aboutir. Vérifiez votre accès à Internet et réessayez.");
       setLoading(false);
@@ -114,8 +119,20 @@ export default function LoginPage() {
           )}
 
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px", fontSize: 14, opacity: loading ? 0.6 : 1 }}>
-            {loading ? "Connexion…" : "Se connecter"}
+            {opening ? "Ouverture du tableau de bord…" : loading ? "Connexion…" : "Se connecter"}
           </button>
+
+          {opening && (
+            <div style={{ fontSize: 12, color: "var(--text-2)", textAlign: "center", marginTop: 12, lineHeight: 1.6 }}>
+              Connexion réussie. La page s&apos;ouvre.
+              {slow && (
+                <>
+                  {" "}Cela prend plus longtemps que prévu —{" "}
+                  <a href="/dashboard" style={{ color: "var(--camel)", fontWeight: 600 }}>ouvrir le tableau de bord</a>.
+                </>
+              )}
+            </div>
+          )}
         </form>
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <a href="/mot-de-passe-oublie" style={{ fontSize: 12.5, color: "var(--camel)", fontWeight: 600, textDecoration: "none" }}>Mot de passe oublié ?</a>

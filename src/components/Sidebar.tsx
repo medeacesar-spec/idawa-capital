@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/client";
-import { recordAuthEvent } from "@/app/auth-events";
+import { traceAuth } from "@/lib/auth/trace";
 
 function initials(name: string): string {
   const parts = name.replace(/@.*/, "").split(/[\s.]+/).filter(Boolean);
@@ -48,7 +48,7 @@ export default function Sidebar({
 
   async function signOut() {
     const supabase = createClient();
-    await recordAuthEvent("déconnexion");
+    traceAuth("déconnexion");
     await supabase.auth.signOut();
     // Rechargement complet : la déconnexion doit repartir d'une page vierge, sans état
     // client conservé, et sans dépendre d'une navigation qui traverse le middleware.
