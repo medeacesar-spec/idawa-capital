@@ -59,7 +59,7 @@ function sheetFrom(title: string, name: string, quarters: string[], lines: (Line
 
 export type FicheContext = { companyName: string; quarters: string[] };
 
-async function buildOneCompany(companyId: string, endYear: number, endQ: number, quarterCount = 12): Promise<{ sheets: Sheet[]; context: FicheContext }> {
+export async function buildOneCompany(companyId: string, endYear: number, endQ: number, quarterCount = 12): Promise<{ sheets: Sheet[]; context: FicheContext }> {
   const supabase = await createClient();
   const quarters = quarterColumns(endYear, endQ, quarterCount);
 
@@ -374,8 +374,10 @@ export const MAX_COMPANIES = 30;
  *
  * Une seule société : l'ossature EXACTE du modèle I&P, feuille pour feuille.
  * Plusieurs : les mêmes feuilles, chacune empilant un bloc par société précédé de son
- * nom. On garde ainsi la lecture par indicateur — comparer douze sociétés sur une même
- * ligne de CA est justement ce qu'un classeur par société interdit.
+ * nom. Cette forme sert à COMPARER — voir douze sociétés sur une même ligne de CA.
+ * Pour le reporting trimestriel du portefeuille, c'est l'archive d'un fichier par
+ * société qu'il faut (`buildOneCompany` + `zipFiles`) : le modèle est une fiche par
+ * entreprise, et l'exercice couvre tout le portefeuille.
  */
 export async function buildIpFicheWorkbook(
   companies: { id: string; name: string }[],

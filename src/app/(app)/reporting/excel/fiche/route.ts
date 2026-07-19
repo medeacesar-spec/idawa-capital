@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMyPermissions, can } from "@/lib/auth/permissions";
-import { buildWorkbook } from "@/lib/export/xlsx";
-import { buildIpFicheWorkbook, resolveSelection, type FicheSelection } from "@/lib/export/ipFicheEntreprise";
+import { buildWorkbook, zipFiles } from "@/lib/export/xlsx";
+import { buildIpFicheWorkbook, buildOneCompany, resolveSelection, MAX_COMPANIES, type FicheSelection } from "@/lib/export/ipFicheEntreprise";
 
 const slugify = (s: string) =>
   s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -37,15 +37,45 @@ export async function GET(req: Request) {
     const companies = await resolveSelection(selection);
     if (!companies.length) return new NextResponse("Aucune société ne correspond à la sélection.", { status: 400 });
 
-    const { sheets } = await buildIpFicheWorkbook(companies, year, quarter, count);
-    const buf = buildWorkbook(sheets);
-    const label = companies.length === 1 ? slugify(companies[0].name) : `${companies.length}-societes`;
-    const name = `Fiche entreprise - ${label} - ${year}-T${quarter}.xlsx`;
+    // Le reporting trimestriel couvre TOUT LE PORTEFEUILLE, mais le modèle I&P est une
+    // fiche PAR ENTREPRISE. La sortie normale est donc une archive contenant un fichier
+    // par société, chacun à l'ossature exacte du modèle. Le classeur unique à blocs
+    // empilés reste disponible (`forme=comparaison`) pour lire les sociétés côte à côte.
+    const forme = p.get("forme") === "comparaison" ? "comparaison" : "modele";
 
-    return new NextResponse(new Uint8Array(buf), {
+    if (companies.length === 1 || forme === "comparaison") {
+      const { sheets } = await buildIpFicheWorkbook(companies, year, quarter, count);
+      const buf = buildWorkbook(sheets);
+      const label = companies.length === 1 ? slugify(companies[0].name) : `${companies.length}-societes-comparaison`;
+      const name = `Fiche entreprise - ${label} - ${year}-T${quarter}.xlsx`;
+      return new NextResponse(new Uint8Array(buf), {
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${name}"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+
+    if (companies.length > MAX_COMPANIES) {
+      return new NextResponse(`Sélection trop large (${companies.length} sociétés, maximum ${MAX_COMPANIES}).`, { status: 400 });
+    }
+
+    const files: { name: string; data: Buffer }[] = [];
+    for (const co of companies) {
+      const { sheets } = await buildOneCompany(co.id, year, quarter, count);
+      files.push({
+        name: `Fiche entreprise - ${slugify(co.name)} - ${year}-T${quarter}.xlsx`,
+        data: buildWorkbook(sheets),
+      });
+    }
+
+    const zip = zipFiles(files);
+    const archive = `Reporting trimestriel ${year}-T${quarter} - ${companies.length} fiches.zip`;
+    return new NextResponse(new Uint8Array(zip), {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${name}"`,
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${archive}"`,
         "Cache-Control": "no-store",
       },
     });

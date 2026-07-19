@@ -38,9 +38,18 @@ function crc32(buf: Buffer): number {
 
 type Entry = { name: string; data: Buffer; deflated: Buffer; crc: number };
 
-function zip(files: { name: string; content: string }[]): Buffer {
+/**
+ * Fabrique une archive ZIP. Sert deux usages : le classeur .xlsx lui-même, et le
+ * regroupement de plusieurs classeurs en un seul téléchargement — le reporting
+ * trimestriel couvre tout le portefeuille, mais le modèle est une fiche PAR entreprise.
+ */
+export function zipFiles(files: { name: string; data: Buffer }[]): Buffer {
+  return zip(files.map((f) => ({ name: f.name, content: f.data })));
+}
+
+function zip(files: { name: string; content: string | Buffer }[]): Buffer {
   const entries: Entry[] = files.map((f) => {
-    const data = Buffer.from(f.content, "utf8");
+    const data = typeof f.content === "string" ? Buffer.from(f.content, "utf8") : f.content;
     return { name: f.name, data, deflated: deflateRawSync(data), crc: crc32(data) };
   });
 

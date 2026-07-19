@@ -1,7 +1,6 @@
 import { requirePerm, getMyPermissions, can } from "@/lib/auth/permissions";
 import { DATASETS } from "@/lib/export/datasets";
 import { createClient } from "@/lib/supabase/server";
-import { EXTRACTION_SETS } from "@/lib/export/extraction";
 import ExcelBridgeClient from "@/components/reporting/ExcelBridgeClient";
 
 export default async function ExcelBridgePage() {
@@ -25,7 +24,6 @@ export default async function ExcelBridgePage() {
     <ExcelBridgeClient
       canEdit={canEdit}
       companies={(cos ?? []).map((c) => ({ id: c.id as string, name: c.name as string, tracking: (c.tracking_type as string) ?? "equity", programId: (c.program_id as string) ?? null }))}
-      extractionSets={EXTRACTION_SETS}
       programs={(progs ?? []).filter((p) => p.status !== "Clos").map((p) => ({ id: p.id as string, name: p.name as string }))}
       datasets={visible.map((d) => ({
         key: d.key,

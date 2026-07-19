@@ -6,19 +6,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/form";
-import ExtractionPicker from "./ExtractionPicker";
 import { readReinjection, applyReinjection, type ReadResult } from "@/app/(app)/reporting/excel/actions";
 import type { Change } from "@/lib/export/datasets";
 
 type Dataset = { key: string; label: string; hint: string; editable: string[] };
 type Company = { id: string; name: string; tracking: string; programId: string | null };
 type Program = { id: string; name: string };
-type ExtractionSet = { key: string; label: string; group: string; hint: string };
 
 const DASH = "—";
 
-export default function ExcelBridgeClient({ datasets, canEdit, companies, programs, extractionSets }: {
-  datasets: Dataset[]; canEdit: boolean; companies: Company[]; programs: Program[]; extractionSets: ExtractionSet[];
+export default function ExcelBridgeClient({ datasets, canEdit, companies, programs }: {
+  datasets: Dataset[]; canEdit: boolean; companies: Company[]; programs: Program[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -30,13 +28,14 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
 
   // Sélection de la fiche I&P : une société, plusieurs, ou un portefeuille entier.
   const now = new Date();
-  const [mode, setMode] = useState<"societes" | "programme" | "portefeuille">("societes");
+  const [mode, setMode] = useState<"societes" | "programme" | "portefeuille">("portefeuille");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [programId, setProgramId] = useState(programs[0]?.id ?? "");
   const [tracking, setTracking] = useState<"" | "equity" | "accompagnement">("");
   const [year, setYear] = useState(now.getFullYear());
   const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
   const [depth, setDepth] = useState(12);
+  const [forme, setForme] = useState<"modele" | "comparaison">("modele");
 
   const targeted =
     mode === "societes" ? companies.filter((c) => picked.has(c.id))
@@ -48,6 +47,7 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
     if (mode === "societes") p.set("ids", [...picked].join(","));
     if (mode === "programme") p.set("programme", programId);
     if (mode === "portefeuille" && tracking) p.set("suivi", tracking);
+    if (forme === "comparaison") p.set("forme", "comparaison");
     return `/reporting/excel/fiche?${p.toString()}`;
   })();
 
@@ -121,15 +121,15 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
         </a>
       </section>
 
-      <ExtractionPicker extractionSets={extractionSets} programs={programs} />
-
       {/* Fiche entreprise au format I&P — le rapport qu'on veut cesser de remplir à la main */}
       <section className="card" style={{ padding: "18px 20px", marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Fiche entreprise — modèle I&amp;P</div>
         <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 12 }}>
-          Le classeur trimestriel d&apos;I&amp;P, rempli depuis l&apos;outil : Données figées, Capital, Prêt,
-          Performance, Impact, Coûts de suivi. Ce qui n&apos;est pas encore collecté reste vide et la
-          feuille « À collecter » dit pourquoi.
+          Le reporting trimestriel du portefeuille, au format d&apos;I&amp;P : Données figées, Capital,
+          Prêt, Performance, Impact, Coûts de suivi. Le modèle étant une fiche <strong>par
+          entreprise</strong>, plusieurs sociétés donnent une <strong>archive d&apos;un fichier
+          chacune</strong>. Ce qui n&apos;est pas encore collecté reste vide et la feuille
+          « À collecter » dit pourquoi.
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
@@ -208,6 +208,13 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
               {[4, 8, 12, 16, 20, 24].map((n) => <option key={n} value={n}>{n} trimestres</option>)}
             </Select>
           </div>
+          <div style={{ width: 210 }}>
+            <label style={{ display: "block", fontSize: 11.5, color: "var(--text-2)", marginBottom: 4 }}>Forme</label>
+            <Select value={forme} onChange={(e) => setForme(e.target.value as "modele" | "comparaison")}>
+              <option value="modele">Une fiche par société (modèle)</option>
+              <option value="comparaison">Un classeur pour comparer</option>
+            </Select>
+          </div>
           <a href={targeted.length ? ficheUrl : undefined} className="btn btn-primary"
             style={{ textDecoration: "none", display: "inline-flex", opacity: targeted.length ? 1 : 0.45, pointerEvents: targeted.length ? "auto" : "none" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><path d="M7 10l5 5 5-5" /><path d="M12 15V3" /></svg>
@@ -215,8 +222,10 @@ export default function ExcelBridgeClient({ datasets, canEdit, companies, progra
           </a>
           <span style={{ fontSize: 11.5, color: targeted.length > 30 ? "var(--red-fg)" : "var(--text-2)" }}>
             {targeted.length === 0 ? "Sélectionnez au moins une société."
-              : targeted.length === 1 ? `1 société — ossature exacte du modèle.`
-              : `${targeted.length} sociétés — un bloc par société dans chaque feuille${targeted.length > 30 ? " (maximum 30)" : ""}.`}
+              : targeted.length === 1 ? "1 société — un fichier à l'ossature exacte du modèle."
+              : forme === "modele"
+                ? `${targeted.length} sociétés — une archive de ${targeted.length} fiches, chacune au format du modèle${targeted.length > 30 ? " (maximum 30)" : ""}.`
+                : `${targeted.length} sociétés empilées dans un seul classeur, pour les comparer.`}
           </span>
         </div>
       </section>
