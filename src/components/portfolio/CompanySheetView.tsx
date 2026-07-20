@@ -257,6 +257,14 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
             ["Notation d'impact IPDEV2", sheet.esg.impactScore != null ? `${sheet.esg.impactScore} / ${sheet.esg.impactMax}` : DASH],
             ["Plan d'action E&S", sheet.esg.actionsTotal ? `${sheet.esg.actionsDone} / ${sheet.esg.actionsTotal} réalisées` : DASH],
           ]} />
+          {sheet.esg.impactFigures.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)", margin: "10px 0 4px" }}>
+                Indicateurs d&apos;impact — questionnaire {sheet.esg.impactYear}
+              </div>
+              <Facts items={sheet.esg.impactFigures.map((fg) => [fg.label, fg.value] as [string, string])} />
+            </>
+          )}
           {sheet.esg.actionsLate.length > 0 && (
             <>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--red-fg)", margin: "10px 0 4px" }}>Actions E&S en retard</div>

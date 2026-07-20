@@ -9,7 +9,7 @@ import { useCanEdit } from "@/components/shared/WriteAccess";
 import Modal from "@/components/ui/Modal";
 import { Field, Input } from "@/components/ui/form";
 import QuestionnaireForm from "@/components/impact/QuestionnaireForm";
-import { totalEmplois, type QData } from "@/lib/impact/questionnaire";
+import { totalEmplois, impactCues, type QData } from "@/lib/impact/questionnaire";
 import { createQuestionnaire, sendQuestionnaire, setQuestionnaireContact, saveQuestionnaireData, validateQuestionnaire } from "@/app/(app)/impact-actions";
 
 type Row = { id: string; year: number; status: string; contact_name: string | null; contact_email: string | null; token: string; submitted_at: string | null; validated_at: string | null; data: QData };
@@ -80,8 +80,44 @@ export default function ImpactQuestionnaireSection({ entityType, entityId }: { e
       )}
       {msg && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 8 }}>{msg}</div>}
 
+      <TrendTable rows={rows} />
+
       {newOpen && <NewExerciseModal entityType={entityType} entityId={entityId} onClose={() => setNewOpen(false)} onCreated={() => { setNewOpen(false); load(); }} />}
       {review && <ReviewModal row={review} canEdit={canEdit} onClose={() => { setReview(null); load(); }} />}
+    </div>
+  );
+}
+
+// Suivi pluriannuel : les repères d'impact, exercice par exercice, dès qu'au moins deux
+// questionnaires ont été renseignés.
+function TrendTable({ rows }: { rows: Row[] }) {
+  const withData = rows.filter((r) => r.status === "Reçu" || r.status === "Validé");
+  if (withData.length < 2) return null;
+  const byYear = withData.map((r) => ({ year: r.year, cues: impactCues(r.data ?? {}) })).sort((a, b) => a.year - b.year);
+  const labels: string[] = [];
+  byYear.forEach((y) => y.cues.forEach((c) => { if (!labels.includes(c.label)) labels.push(c.label); }));
+  const val = (year: number, label: string) => byYear.find((y) => y.year === year)?.cues.find((c) => c.label === label)?.value ?? "—";
+  const th: React.CSSProperties = { padding: "6px 10px", fontSize: 11, color: "var(--text-2)", textAlign: "right", borderBottom: "1px solid var(--border-strong)" };
+  const td: React.CSSProperties = { padding: "5px 10px", fontSize: 12, textAlign: "right", borderBottom: "1px solid var(--sep)" };
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Suivi pluriannuel</div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 360 }}>
+          <thead><tr>
+            <th style={{ ...th, textAlign: "left" }}>Indicateur</th>
+            {byYear.map((y) => <th key={y.year} style={th}>{y.year}</th>)}
+          </tr></thead>
+          <tbody>
+            {labels.map((lb) => (
+              <tr key={lb}>
+                <td style={{ ...td, textAlign: "left", color: "var(--text-2)" }}>{lb}</td>
+                {byYear.map((y) => <td key={y.year} className="tnum" style={{ ...td, fontWeight: 600, color: "var(--ink)" }}>{val(y.year, lb)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

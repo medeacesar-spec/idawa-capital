@@ -11,10 +11,11 @@
 // toucher au schéma pendant la période de tests. Le jour où une table dédiée existera,
 // `decodeAnswers` restera le seul point à déplacer.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import { createClient } from "@/lib/supabase/client";
+import { impactCues, type ImpactCue, type QData } from "@/lib/impact/questionnaire";
 import {
   IMPACT_DIMENSIONS, BONUS_CRITERIA, BONUS_LABEL, BASE_MAX,
   dimensionScore, baseScore, bonusScore, answeredCount, noteOnThree,
@@ -69,6 +70,23 @@ export default function ImpactRatingModal({
 
   const [answers, setAnswers] = useState<Answers>(initial);
   const [busy, setBusy] = useState(false);
+
+  // Repères tirés du dernier questionnaire d'impact rempli par l'entrepreneur (validé de
+  // préférence, sinon reçu) : ils éclairent la notation sans avoir à les ressaisir.
+  const [cues, setCues] = useState<{ year: number; status: string; cues: ImpactCue[] } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await createClient()
+        .from("impact_questionnaires")
+        .select("year, status, data")
+        .eq("entity_type", entityType).eq("entity_id", entityId)
+        .in("status", ["Reçu", "Validé"])
+        .order("year", { ascending: false }).limit(1).maybeSingle();
+      if (alive && data) setCues({ year: data.year, status: data.status, cues: impactCues((data.data as QData) ?? {}) });
+    })();
+    return () => { alive = false; };
+  }, [entityType, entityId]);
   const set = (key: string, v: number) => setAnswers((a) => ({ ...a, [key]: v }));
 
   const base = baseScore(answers);
@@ -109,6 +127,23 @@ export default function ImpactRatingModal({
         Grille reprise de l&apos;outil d&apos;analyse ESG d&apos;I&amp;P. Le total se calcule ;
         les bonus s&apos;ajoutent par-dessus les {BASE_MAX} points et ne relèvent pas le maximum.
       </div>
+
+      {cues && cues.cues.length > 0 && (
+        <div style={{ border: "1px solid var(--border-strong)", borderRadius: 11, padding: "11px 14px", marginBottom: 14, background: "var(--surface-cream)" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>
+            Repères du questionnaire d&apos;impact {cues.year}{cues.status !== "Validé" ? " (réponses reçues, non encore validées)" : ""}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "6px 14px" }}>
+            {cues.cues.map((c) => (
+              <div key={c.label} style={{ fontSize: 11.5 }}>
+                <span style={{ color: "var(--text-2)" }}>{c.label} : </span>
+                <b className="tnum" style={{ color: "var(--ink)" }}>{c.value}</b>
+                {c.flag && <div style={{ fontSize: 10.5, color: "var(--green-fg)", marginTop: 1 }}>{c.flag}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Total, toujours visible pendant la saisie */}
       <div style={{

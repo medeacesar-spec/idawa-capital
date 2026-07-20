@@ -177,3 +177,42 @@ export function totalEmplois(data: QData): number {
 
 export const Q_STATUS = ["Brouillon", "Envoyé", "Reçu", "Validé"] as const;
 export type QStatus = (typeof Q_STATUS)[number];
+
+const nf0 = (n: number) => new Intl.NumberFormat("fr-FR").format(Math.round(n));
+
+/** Femmes, tous types d'emploi confondus (somme des F des « total » de chaque catégorie). */
+export function femmesTotal(data: QData): number {
+  return EMP_CATEGORIES.reduce((s, c) => s + (hfOf(data, `${c}_total`).f ?? 0), 0);
+}
+
+/** Repères chiffrés tirés du questionnaire, pour éclairer la notation d'impact et la fiche. */
+export type ImpactCue = { label: string; value: string; flag?: string };
+export function impactCues(data: QData): ImpactCue[] {
+  const c: ImpactCue[] = [];
+  const total = totalEmplois(data);
+  const f = femmesTotal(data);
+  const pctF = total > 0 ? Math.round((f / total) * 100) : null;
+  const jan = data.effectif_jan as number | undefined;
+  const dec = data.effectif_dec as number | undefined;
+  const crees = jan != null && dec != null ? dec - jan : null;
+  const permTotal = hfTotal(hfOf(data, "perm_total"));
+  const pctFormels = permTotal ? Math.round(((hfTotal(hfOf(data, "perm_formels2")) ?? 0) / permTotal) * 100) : null;
+  const pctBas = permTotal ? Math.round(((hfTotal(hfOf(data, "perm_bas")) ?? 0) / permTotal) * 100) : null;
+  const caM = data.ca_membres as number | undefined;
+  const caF = data.ca_femmes as number | undefined;
+  const pctFemmesCA = caM ? Math.round(((caF ?? 0) / caM) * 100) : null;
+  const ca = data.ca as number | undefined;
+  const va = data.valeur_ajoutee as number | undefined;
+
+  if (total > 0) c.push({ label: "Emplois déclarés (total)", value: nf0(total) });
+  if (pctF != null) c.push({ label: "Part de femmes", value: `${pctF} %`, flag: pctF >= 30 ? "≥ 30 % — critère « part significative de femmes » atteint" : undefined });
+  if (crees != null) c.push({ label: "Emplois permanents créés (net)", value: nf0(crees) });
+  if (pctFormels != null) c.push({ label: "Permanents formalisés (2 caisses)", value: `${pctFormels} %` });
+  if (pctBas != null) c.push({ label: "Permanents à bas revenus", value: `${pctBas} %` });
+  if (pctFemmesCA != null) c.push({ label: "Femmes au conseil", value: `${pctFemmesCA} %` });
+  if (data.certif) c.push({ label: "Certification", value: String(data.certif), flag: data.certif === "Oui" ? "→ bonus certification" : undefined });
+  if (data.energies) c.push({ label: "Énergies renouvelables", value: String(data.energies) + (data.energies_part ? ` (${data.energies_part} %)` : "") });
+  if (ca != null) c.push({ label: "Chiffre d'affaires", value: `${nf0(ca)} FCFA` });
+  if (va != null) c.push({ label: "Valeur ajoutée", value: `${nf0(va)} FCFA` });
+  return c;
+}

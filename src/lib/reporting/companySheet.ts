@@ -13,6 +13,7 @@ import type { CompanyDetail } from "@/lib/data/companyDetail";
 import { computeOhada } from "@/lib/finance/ohada";
 import { computeSchedule, paymentBehaviour } from "@/lib/finance/amortization";
 import { instrumentKind, INSTRUMENT_TYPES } from "@/lib/ui-constants";
+import { impactCues } from "@/lib/impact/questionnaire";
 
 const CA_LABEL = "Chiffre d'affaires";
 const EBE_LABEL = "Excédent brut d'exploitation (EBE)";
@@ -87,6 +88,9 @@ export type CompanySheet = {
     actionsTotal: number;
     actionsDone: number;
     actionsLate: SheetEvent[];
+    /** Chiffres d'impact issus du questionnaire rempli par l'entrepreneur. */
+    impactYear: number | null;
+    impactFigures: { label: string; value: string }[];
   };
 
   kpis: SheetKpi[];
@@ -282,6 +286,8 @@ export function buildCompanySheet(company: CompanyDetail, period: string): Compa
       ehsSector: company.structuration.ehsSector ?? company.esg.assessment?.ehsSector ?? null,
       exclusionOk: company.esg.assessment?.exclusionOk ?? null,
       impactScore, impactMax,
+      impactYear: company.impactQuestionnaire?.year ?? null,
+      impactFigures: company.impactQuestionnaire ? impactCues(company.impactQuestionnaire.data) : [],
       actionsTotal: (company.esg.actions ?? []).length,
       actionsDone: (company.esg.actions ?? []).filter((a) => a.status === "Réalisée").length,
       actionsLate,

@@ -10,6 +10,7 @@ import { getInstruments, type Instrument } from "./instruments";
 import { getFinancialStatements, type StatementValues } from "./financialStatements";
 import { getFundUsers, type FundUser } from "./users";
 import type { PromoterEval } from "@/components/shared/PromoterEvalModal";
+import type { QData } from "@/lib/impact/questionnaire";
 
 export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
@@ -65,6 +66,8 @@ export type CompanyDetail = {
     } };
   /** Bilan de sortie : pendant du post-mortem, sur une société sortie ou radiée. */
   exitReview: string | null;
+  /** Dernier questionnaire d'impact rempli par l'entrepreneur (chiffres pour la fiche). */
+  impactQuestionnaire: { year: number; status: string; data: QData } | null;
   esg: EsgData;
   finance: CompanyFinance;
   support: CompanySupport;
@@ -95,9 +98,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
   ]);
 
-  const [ocRes, onRes] = await Promise.all([
+  const [ocRes, onRes, qRes] = await Promise.all([
     c.origin_deal_id ? supabase.from("committee_passages").select("id, committee_type, session_date, decision, conditions").eq("deal_id", c.origin_deal_id).order("session_date") : Promise.resolve({ data: [] }),
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
+    // Dernier questionnaire d'impact rempli par l'entrepreneur (validé de préférence, sinon reçu).
+    supabase.from("impact_questionnaires").select("year, status, data").eq("entity_type", "company").eq("entity_id", id).in("status", ["Reçu", "Validé"]).order("year", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, users, support] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements(id), getFundUsers(), getCompanySupport(id)]);
@@ -169,6 +174,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       },
     },
     exitReview: (c.exit_review as string) ?? null,
+    impactQuestionnaire: qRes.data ? { year: (qRes.data as { year: number }).year, status: (qRes.data as { status: string }).status, data: ((qRes.data as { data: QData }).data ?? {}) } : null,
     esg, finance, valueCreation, instruments, statements, support,
     structuration: {
       ehsSector: c.ehs_sector ?? null,
