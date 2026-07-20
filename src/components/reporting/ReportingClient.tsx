@@ -39,7 +39,9 @@ export default function ReportingClient({ data, cadence = "trimestrielle", canEd
     const gen = rollingPeriods(currentPeriod(cadence), cadence === "mensuelle" ? 18 : 8);
     return Array.from(new Set([...gen, ...data.periods])).sort().reverse();
   }, [cadence, data.periods]);
-  const [period, setPeriod] = useState(periodOptions[0] ?? currentPeriod(cadence));
+  // On atterrit sur la période courante dans la cadence du fonds (le mois en cours), pas sur
+  // une ancienne période trimestrielle restée en tête du tri.
+  const [period, setPeriod] = useState(currentPeriod(cadence));
 
   const statusFor = (companyId: string) => data.statuses.find((s) => s.companyId === companyId && s.period === period)?.status ?? "À faire";
   const done = data.companies.filter((c) => statusFor(c.id) === "Validé").length;

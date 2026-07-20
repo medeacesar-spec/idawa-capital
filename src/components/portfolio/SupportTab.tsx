@@ -21,8 +21,11 @@ export default function SupportTab({ companyId, data, cadence = "trimestrielle" 
   const router = useRouter();
   const canEdit = useCanEdit();
 
-  // Fenêtre glissante à partir du plus récent renseigné, ou de la période courante (dans la cadence du fonds).
-  const [anchor, setAnchor] = useState<string>(data.periods[0] ?? currentPeriod(cadence));
+  // Fenêtre glissante : on ancre sur la période la plus récente QUI CORRESPOND à la cadence du
+  // fonds (pour ne pas rester bloqué sur d'anciens trimestres quand on est passé au mensuel),
+  // sinon sur la période courante. Les anciennes données restent atteignables via les flèches.
+  const cadRe = cadence === "mensuelle" ? /-M\d\d$/ : /-T[1-4]$/;
+  const [anchor, setAnchor] = useState<string>(data.periods.find((p) => cadRe.test(p)) ?? currentPeriod(cadence));
   const periods: string[] = [];
   for (let p = anchor, i = 0; i < PERIODS_SHOWN; i++, p = previousPeriod(p)) periods.push(p);
 
