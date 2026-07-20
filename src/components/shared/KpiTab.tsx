@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { KPI_DIMENSIONS, KPI_DIM_LABEL, KPI_DIM_COLOR, KPI_DIRECTIONS } from "@/lib/ui-constants";
+import { currentPeriod, rollingPeriods, formatPeriod, type Cadence } from "@/lib/periods";
 import type { KpiSeries, LibraryKpi } from "@/lib/data/kpis";
 import { derive, budgetTarget, sourceFor, OHADA_KPIS, type BudgetRow } from "@/lib/finance/kpiSources";
 import KpiAutoFillModal from "./KpiAutoFillModal";
@@ -33,11 +34,13 @@ function Chart({ k }: { k: KpiSeries }) {
   );
 }
 
-export default function KpiTab({ entityType, entityId, kpis, library, statements, budget }: {
+export default function KpiTab({ entityType, entityId, kpis, library, statements, budget, cadence = "trimestrielle" }: {
   entityType: "deal" | "company";
   entityId: string;
   kpis: KpiSeries[];
   library: LibraryKpi[];
+  /** Cadence de saisie (mensuelle/trimestrielle) selon le réglage du fonds. */
+  cadence?: Cadence;
   /** États financiers OHADA de la société, quand ils existent : ils permettent de reprendre
    *  les KPIs financiers sans les ressaisir. Absents sur un dossier. */
   statements?: Record<number, Record<string, number>>;
@@ -46,6 +49,15 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
 }) {
   const router = useRouter();
   const canEdit = useCanEdit();
+  // Périodes proposées à la saisie : fenêtre glissante dans la cadence du fonds, + 2 exercices
+  // annuels récents (certains KPIs sont annuels). Toute période déjà saisie reste sélectionnable.
+  const kpiPeriodOptions = (() => {
+    const y = Number(currentPeriod("trimestrielle").slice(0, 4));
+    const gen = rollingPeriods(currentPeriod(cadence), cadence === "mensuelle" ? 18 : 8);
+    const years = [String(y), String(y - 1)];
+    const existing = kpis.flatMap((k) => k.series.map((s) => s.period));
+    return Array.from(new Set([...gen, ...years, ...existing])).sort().reverse();
+  })();
   const present = Array.from(new Set(kpis.map((k) => k.category)));
   const dims = [...KPI_DIMENSIONS, ...present.filter((p) => !KPI_DIMENSIONS.includes(p))];
   const firstWithData = dims.find((d) => kpis.some((k) => k.category === d)) ?? dims[0];
@@ -265,7 +277,7 @@ export default function KpiTab({ entityType, entityId, kpis, library, statements
       <Modal title={`Saisir une valeur — ${kpi.name}`} onClose={onClose}
         footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !period.trim() || value === ""} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Période"><Input list="kpi-periods" value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="Ex : 2026-T2" /><datalist id="kpi-periods"><option value="2026-T1" /><option value="2026-T2" /><option value="2026-T3" /><option value="2026-T4" /><option value="2025" /></datalist></Field>
+          <Field label="Période"><Select value={period} onChange={(e) => setPeriod(e.target.value)}><option value="">— Choisir —</option>{kpiPeriodOptions.map((p) => <option key={p} value={p}>{formatPeriod(p)}</option>)}</Select></Field>
           <Field label={`Valeur${kpi.unit ? ` (${kpi.unit})` : ""}`}><Input type="number" value={value} onChange={(e) => setValue(e.target.value)} /></Field>
         </div>
         {kpi.series.length > 0 && <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>Dernière : {kpi.series[kpi.series.length - 1].value} ({kpi.series[kpi.series.length - 1].period}). Saisir la même période remplace la valeur.</div>}

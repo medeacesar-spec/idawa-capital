@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { REPORTING_STATUS } from "@/lib/ui-constants";
+import { currentPeriod, rollingPeriods, formatPeriod, type Cadence } from "@/lib/periods";
 import type { ReportingData } from "@/lib/data/reporting";
 import ExtractionPicker, { type ExtractionSet } from "./ExtractionPicker";
 import ExcelBridgeClient from "./ExcelBridgeClient";
@@ -26,13 +27,19 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data, canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
-  data: ReportingData; canEdit?: boolean; extractionSets: ExtractionSet[];
+export default function ReportingClient({ data, cadence = "trimestrielle", canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
+  data: ReportingData; cadence?: Cadence; canEdit?: boolean; extractionSets: ExtractionSet[];
   programs: { id: string; name: string }[]; companies: Company[]; datasets: Dataset[]; excelCanEdit: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"collecte" | "extraction" | "fiches">("collecte");
-  const [period, setPeriod] = useState(data.periods[0] ?? "2026-T2");
+  // Périodes proposées : une fenêtre glissante dans la cadence du fonds, + celles déjà
+  // renseignées (pour rester capable d'ouvrir une ancienne période trimestrielle).
+  const periodOptions = useMemo(() => {
+    const gen = rollingPeriods(currentPeriod(cadence), cadence === "mensuelle" ? 18 : 8);
+    return Array.from(new Set([...gen, ...data.periods])).sort().reverse();
+  }, [cadence, data.periods]);
+  const [period, setPeriod] = useState(periodOptions[0] ?? currentPeriod(cadence));
 
   const statusFor = (companyId: string) => data.statuses.find((s) => s.companyId === companyId && s.period === period)?.status ?? "À faire";
   const done = data.companies.filter((c) => statusFor(c.id) === "Validé").length;
@@ -48,7 +55,7 @@ export default function ReportingClient({ data, canEdit = true, extractionSets, 
     <div>
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
         {([
-          ["collecte", "Collecte trimestrielle"],
+          ["collecte", cadence === "mensuelle" ? "Collecte mensuelle" : "Collecte trimestrielle"],
           ["extraction", "Extraire des données"],
           ["fiches", "Rapports & fiches I&P"],
         ] as const).map(([k, label]) => (
@@ -58,11 +65,11 @@ export default function ReportingClient({ data, canEdit = true, extractionSets, 
 
       {tab === "collecte" && (
         <div>
-          <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>Où en est la remontée des chiffres, société par société, pour un trimestre.</p>
+          <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>Où en est la remontée des chiffres, société par société, pour {cadence === "mensuelle" ? "un mois" : "un trimestre"}.</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
             <label style={{ fontSize: 12, color: "var(--text-2)" }}>Période</label>
             <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
-              {data.periods.map((p) => <option key={p} value={p}>{p}</option>)}
+              {periodOptions.map((p) => <option key={p} value={p}>{formatPeriod(p)}</option>)}
             </select>
             <span className="badge badge-green" style={{ marginLeft: "auto" }}>{done} / {data.companies.length} validés</span>
           </div>
@@ -155,7 +162,7 @@ function Extraction({ data }: { data: ReportingData }) {
             <div>
               <div style={{ fontSize: 11, color: "var(--text-2)", marginBottom: 4 }}>Période</div>
               <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: "8px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
-                {data.periods.map((p) => <option key={p} value={p}>{p}</option>)}
+                {data.periods.map((p) => <option key={p} value={p}>{formatPeriod(p)}</option>)}
               </select>
             </div>
           )}

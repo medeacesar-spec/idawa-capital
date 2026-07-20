@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +8,7 @@ import type { ProgramRow } from "@/lib/data/params";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { PROGRAM_NATURES, PROGRAM_STATUS, PROGRAM_COLORS } from "@/lib/ui-constants";
+import { CADENCE_DATA_TYPES, CADENCES, type CadenceSettings } from "@/lib/cadence";
 
 const NATURE_NOTE: Record<string, string> = {
   invest: "Métriques financières : investi, valeur, TVPI, TRI, cap table.",
@@ -18,11 +19,19 @@ const NATURE_NOTE: Record<string, string> = {
 type Draft = { id?: string; name: string; color: string; nature: string; status: string };
 const EMPTY: Draft = { name: "", color: PROGRAM_COLORS[0], nature: "invest", status: "Actif" };
 
-export default function ParametresClient({ programs }: { programs: ProgramRow[] }) {
+export default function ParametresClient({ programs, fundId, cadence }: { programs: ProgramRow[]; fundId: string | null; cadence: CadenceSettings }) {
   const router = useRouter();
   const [rows, setRows] = useState(programs);
   const [modal, setModal] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [cad, setCad] = useState<CadenceSettings>(cadence);
+  async function saveCadence(next: CadenceSettings) {
+    setCad(next);
+    if (!fundId) return;
+    await createClient().from("funds").update({ reporting_cadence: next }).eq("id", fundId);
+    router.refresh();
+  }
 
   async function saveNature(id: string, nature: string) {
     setRows((r) => r.map((p) => (p.id === id ? { ...p, nature: nature as ProgramRow["nature"] } : p)));
@@ -64,6 +73,28 @@ export default function ParametresClient({ programs }: { programs: ProgramRow[] 
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Nouveau programme
         </button>
+      </div>
+
+      <div className="card" style={{ padding: "16px 18px", marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Cadence de reporting</div>
+        <div style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 14, maxWidth: 620 }}>
+          Le rythme de collecte des données d&apos;entreprise. <b>Mensuel par défaut</b> ; vous pouvez repasser un type de donnée en trimestriel, ou changer le défaut global. Les états financiers OHADA complets restent annuels par nature.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "10px 16px", alignItems: "center", maxWidth: 560 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Cadence par défaut</label>
+          <Select value={cad.default} onChange={(e) => saveCadence({ ...cad, default: e.target.value as CadenceSettings["default"] })} style={{ maxWidth: 240 }}>
+            {CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </Select>
+          {CADENCE_DATA_TYPES.map((t) => (
+            <Fragment key={t.key}>
+              <label style={{ fontSize: 12.5, color: "var(--text-2)" }}>{t.label}</label>
+              <Select value={cad[t.key] ?? ""} onChange={(e) => saveCadence({ ...cad, [t.key]: e.target.value ? (e.target.value as CadenceSettings["default"]) : null })} style={{ maxWidth: 240 }}>
+                <option value="">Suivre le défaut ({CADENCES.find((c) => c.value === cad.default)?.label})</option>
+                {CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </Select>
+            </Fragment>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ padding: "4px 18px" }}>

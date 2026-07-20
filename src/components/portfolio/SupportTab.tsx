@@ -11,18 +11,18 @@ import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCanEdit } from "@/components/shared/WriteAccess";
-import { currentPeriod, previousPeriod, nextPeriod } from "@/lib/periods";
+import { currentPeriod, previousPeriod, nextPeriod, formatPeriod, type Cadence } from "@/lib/periods";
 import type { CompanySupport } from "@/lib/data/companySupport";
 
 const nf = (v: number | null) => (v == null ? "" : new Intl.NumberFormat("fr-FR").format(v));
 const PERIODS_SHOWN = 4;
 
-export default function SupportTab({ companyId, data }: { companyId: string; data: CompanySupport }) {
+export default function SupportTab({ companyId, data, cadence = "trimestrielle" }: { companyId: string; data: CompanySupport; cadence?: Cadence }) {
   const router = useRouter();
   const canEdit = useCanEdit();
 
-  // Quatre trimestres glissants à partir du plus récent renseigné, ou du trimestre courant.
-  const [anchor, setAnchor] = useState<string>(data.periods[0] ?? currentPeriod());
+  // Fenêtre glissante à partir du plus récent renseigné, ou de la période courante (dans la cadence du fonds).
+  const [anchor, setAnchor] = useState<string>(data.periods[0] ?? currentPeriod(cadence));
   const periods: string[] = [];
   for (let p = anchor, i = 0; i < PERIODS_SHOWN; i++, p = previousPeriod(p)) periods.push(p);
 
@@ -72,11 +72,11 @@ export default function SupportTab({ companyId, data }: { companyId: string; dat
           Accompagnement <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— programme {data.programName}, saisie trimestrielle</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn" onClick={() => setAnchor(previousPeriod(anchor))} title="Trimestres précédents">
+          <button className="btn" onClick={() => setAnchor(previousPeriod(anchor))} title="Périodes précédentes">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
           </button>
           <span style={{ fontSize: 11.5, color: "var(--text-2)", whiteSpace: "nowrap" }}>{periods[periods.length - 1]} → {periods[0]}</span>
-          <button className="btn" onClick={() => setAnchor(nextPeriod(anchor))} title="Trimestres suivants">
+          <button className="btn" onClick={() => setAnchor(nextPeriod(anchor))} title="Périodes suivantes">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function SupportTab({ companyId, data }: { companyId: string; dat
           <thead>
             <tr>
               <th style={{ ...th, textAlign: "left", width: "auto", minWidth: 240 }}>Indicateur</th>
-              {periods.map((p) => <th key={p} style={{ ...th, color: "var(--camel)", fontSize: 11.5 }}>{p.replace("-", " ")}</th>)}
+              {periods.map((p) => <th key={p} style={{ ...th, color: "var(--camel)", fontSize: 11.5 }}>{formatPeriod(p)}</th>)}
               <th style={{ ...th, borderLeft: "1px solid var(--border)" }}>Cumul</th>
             </tr>
           </thead>

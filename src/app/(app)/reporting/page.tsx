@@ -1,4 +1,6 @@
 import { getReportingData } from "@/lib/data/reporting";
+import { getFundSettings } from "@/lib/data/fundSettings";
+import { resolveCadence } from "@/lib/cadence";
 import ReportingClient from "@/components/reporting/ReportingClient";
 import { requirePerm, getMyPermissions, can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -8,12 +10,14 @@ import { DATASETS } from "@/lib/export/datasets";
 export default async function ReportingPage() {
   await requirePerm("reporting");
   const supabase = await createClient();
-  const [data, { perms }, { data: progs }, { data: cos }] = await Promise.all([
+  const [data, { perms }, { data: progs }, { data: cos }, settings] = await Promise.all([
     getReportingData(),
     getMyPermissions(),
     supabase.from("programs").select("id, name, status").order("position"),
     supabase.from("portfolio_companies").select("id, name, tracking_type, program_id").order("name"),
+    getFundSettings(),
   ]);
+  const cadence = resolveCadence(settings.cadence, "reporting");
 
   // La réinjection ne s'affiche que si l'on peut écrire quelque part.
   const visibleDatasets = DATASETS.filter((d) => can(perms, d.key === "pipeline" ? "pipeline" : "portefeuille", "L"));
@@ -22,6 +26,7 @@ export default async function ReportingPage() {
   return (
     <ReportingClient
       data={data}
+      cadence={cadence}
       canEdit={can(perms, "reporting", "E")}
       excelCanEdit={excelCanEdit}
       extractionSets={EXTRACTION_SETS}

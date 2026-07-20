@@ -25,6 +25,7 @@ import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
 import SupportTab from "./SupportTab";
+import type { Cadence } from "@/lib/periods";
 import ProgramMemberships from "./ProgramMemberships";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -76,7 +77,7 @@ function EmptyTab({ title, desc }: { title: string; desc: string }) {
   );
 }
 
-export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false, canEdit = true }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean }) {
+export default function CompanyDetailClient({ company, canEditComites = true, canValidateComites = false, canEdit = true, supportCadence = "trimestrielle", kpisCadence = "trimestrielle" }: { company: CompanyDetail; canEditComites?: boolean; canValidateComites?: boolean; canEdit?: boolean; supportCadence?: Cadence; kpisCadence?: Cadence }) {
   const router = useRouter();
   // On ouvre sur la Présentation, comme un dossier : d'abord qui est l'entreprise.
   const [tab, setTab] = useState(company.trackingType === "equity" ? "Présentation" : company.support.indicators.length > 0 ? "Accompagnement" : "Présentation");
@@ -201,7 +202,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       {tab === "États financiers" && <FinancialStatementsTab companyId={company.id} values={company.statements} />}
 
-      {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} statements={company.statements} budget={company.finance.financials} />}
+      {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} statements={company.statements} budget={company.finance.financials} cadence={kpisCadence} />}
 
       {tab === "Présentation" && (
         <CompanyPresentationTab
@@ -282,7 +283,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       {tab === "ESG" && <EsgTab entityType="company" entityId={company.id} data={company.esg} users={company.users} ehsSector={company.structuration.ehsSector} companyId={company.id} />}
       {tab === "Budget & BP" && <BudgetTab companyId={company.id} rows={company.finance.financials} />}
       {tab === "Création de valeur" && <ValueCreationTab entityType="company" entityId={company.id} items={company.valueCreation} contacts={company.contacts} users={company.users} />}
-      {tab === "Accompagnement" && <SupportTab companyId={company.id} data={company.support} />}
+      {tab === "Accompagnement" && <SupportTab companyId={company.id} data={company.support} cadence={supportCadence} />}
 
       {tab === "Valorisation" && <ValuationTab companyId={company.id} rows={company.finance.flows} canValidate={canValidateComites} />}
       {tab === "Flux financiers" && <FlowsTab companyId={company.id} rows={company.finance.flows} />}
