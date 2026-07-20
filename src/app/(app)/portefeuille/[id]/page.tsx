@@ -16,8 +16,8 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
       canEditComites={comites === "E" || comites === "V"}
       canValidateComites={comites === "V"}
       canEdit={can(perms, "portefeuille", "E")}
-      supportCadence={resolveCadence(settings.cadence, "support")}
-      kpisCadence={resolveCadence(settings.cadence, "kpis")}
+      supportCadence={resolveCadence(settings.cadence, "support", company.programId)}
+      kpisCadence={resolveCadence(settings.cadence, "kpis", company.programId)}
     />
   );
 }

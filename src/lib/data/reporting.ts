@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type RepCompany = { id: string; name: string; programName: string | null };
+export type RepCompany = { id: string; name: string; programName: string | null; programId: string | null };
 export type RepStatus = { companyId: string; period: string; status: string; assigneeLabel: string | null };
 export type SummaryRow = { name: string; sector: string | null; program: string | null; invested: number; valuation: number; tvpi: number | null; tri: number | null; ownership: number | null; status: string };
 export type FinRow = { company: string; period: string; label: string; budget: number | null; actual: number | null };
@@ -32,7 +32,7 @@ export async function getReportingData(): Promise<ReportingData> {
 
   const companies: RepCompany[] = companiesRaw
     .filter((c) => c.tracking_type === "equity")
-    .map((c) => ({ id: c.id, name: c.name, programName: c.program_id ? progMap.get(c.program_id) ?? null : null }));
+    .map((c) => ({ id: c.id, name: c.name, programName: c.program_id ? progMap.get(c.program_id) ?? null : null, programId: c.program_id ?? null }));
 
   const statuses: RepStatus[] = (statusRes.data ?? []).map((s) => ({ companyId: s.company_id, period: s.period, status: s.status, assigneeLabel: s.assignee_label }));
 

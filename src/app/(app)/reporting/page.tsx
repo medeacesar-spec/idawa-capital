@@ -1,6 +1,5 @@
 import { getReportingData } from "@/lib/data/reporting";
 import { getFundSettings } from "@/lib/data/fundSettings";
-import { resolveCadence } from "@/lib/cadence";
 import ReportingClient from "@/components/reporting/ReportingClient";
 import { requirePerm, getMyPermissions, can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +16,6 @@ export default async function ReportingPage() {
     supabase.from("portfolio_companies").select("id, name, tracking_type, program_id").order("name"),
     getFundSettings(),
   ]);
-  const cadence = resolveCadence(settings.cadence, "reporting");
 
   // La réinjection ne s'affiche que si l'on peut écrire quelque part.
   const visibleDatasets = DATASETS.filter((d) => can(perms, d.key === "pipeline" ? "pipeline" : "portefeuille", "L"));
@@ -26,7 +24,7 @@ export default async function ReportingPage() {
   return (
     <ReportingClient
       data={data}
-      cadence={cadence}
+      cadenceSettings={settings.cadence}
       canEdit={can(perms, "reporting", "E")}
       excelCanEdit={excelCanEdit}
       extractionSets={EXTRACTION_SETS}

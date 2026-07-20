@@ -8,7 +8,8 @@ import type { ProgramRow } from "@/lib/data/params";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select } from "@/components/ui/form";
 import { PROGRAM_NATURES, PROGRAM_STATUS, PROGRAM_COLORS } from "@/lib/ui-constants";
-import { CADENCE_DATA_TYPES, CADENCES, type CadenceSettings } from "@/lib/cadence";
+import { CADENCE_DATA_TYPES, CADENCES, type CadenceSettings, type CadenceProgram, resolveCadence } from "@/lib/cadence";
+import type { Cadence } from "@/lib/periods";
 
 const NATURE_NOTE: Record<string, string> = {
   invest: "Métriques financières : investi, valeur, TVPI, TRI, cap table.",
@@ -32,6 +33,17 @@ export default function ParametresClient({ programs, fundId, cadence }: { progra
     await createClient().from("funds").update({ reporting_cadence: next }).eq("id", fundId);
     router.refresh();
   }
+
+  const [openProg, setOpenProg] = useState<string | null>(null);
+  function setProgCad(pid: string, patch: Partial<CadenceProgram>) {
+    const merged: CadenceProgram = { ...(cad.byProgram?.[pid] ?? {}), ...patch };
+    const cleaned: CadenceProgram = {};
+    (Object.keys(merged) as (keyof CadenceProgram)[]).forEach((k) => { if (merged[k]) cleaned[k] = merged[k] as Cadence; });
+    const byProgram = { ...(cad.byProgram ?? {}) };
+    if (Object.keys(cleaned).length) byProgram[pid] = cleaned; else delete byProgram[pid];
+    saveCadence({ ...cad, byProgram });
+  }
+  const cadLabel = (c: Cadence) => CADENCES.find((x) => x.value === c)?.label ?? c;
 
   async function saveNature(id: string, nature: string) {
     setRows((r) => r.map((p) => (p.id === id ? { ...p, nature: nature as ProgramRow["nature"] } : p)));
@@ -94,6 +106,48 @@ export default function ParametresClient({ programs, fundId, cadence }: { progra
               </Select>
             </Fragment>
           ))}
+        </div>
+
+        {/* Surcharge par programme : chaque programme peut avoir sa propre cadence. */}
+        <div style={{ marginTop: 16, borderTop: "1px solid var(--sep)", paddingTop: 12 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 2 }}>Par programme</div>
+          <div style={{ fontSize: 11.5, color: "var(--text-2)", marginBottom: 8 }}>Un programme peut suivre son propre rythme (ex. le véhicule de Saint-André en mensuel, les autres au trimestre). Vide = suit le défaut du fonds.</div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {rows.filter((p) => p.status !== "Clos").map((p) => {
+              const prog = cad.byProgram?.[p.id] ?? {};
+              const open = openProg === p.id;
+              const progDefault = prog.default || cad.default;
+              return (
+                <div key={p.id} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{p.name}</span>
+                    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11.5, color: "var(--text-2)" }}>Défaut</span>
+                      <Select value={prog.default ?? ""} onChange={(e) => setProgCad(p.id, { default: e.target.value ? (e.target.value as Cadence) : null })} style={{ maxWidth: 210 }}>
+                        <option value="">Suivre le fonds ({cadLabel(cad.default)})</option>
+                        {CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </Select>
+                      <button type="button" onClick={() => setOpenProg(open ? null : p.id)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: "var(--camel)" }}>{open ? "− par type" : "+ par type"}</button>
+                    </div>
+                  </div>
+                  {open && (
+                    <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "8px 16px", alignItems: "center", marginTop: 10, maxWidth: 520 }}>
+                      {CADENCE_DATA_TYPES.map((t) => (
+                        <Fragment key={t.key}>
+                          <label style={{ fontSize: 12, color: "var(--text-2)" }}>{t.label}</label>
+                          <Select value={prog[t.key] ?? ""} onChange={(e) => setProgCad(p.id, { [t.key]: e.target.value ? (e.target.value as Cadence) : null })} style={{ maxWidth: 210 }}>
+                            <option value="">Suivre le programme ({cadLabel(progDefault)})</option>
+                            {CADENCES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                          </Select>
+                        </Fragment>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

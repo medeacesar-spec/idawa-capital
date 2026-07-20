@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { REPORTING_STATUS } from "@/lib/ui-constants";
-import { currentPeriod, rollingPeriods, formatPeriod, type Cadence } from "@/lib/periods";
+import { currentPeriod, rollingPeriods, formatPeriod } from "@/lib/periods";
+import { resolveCadence, type CadenceSettings } from "@/lib/cadence";
 import type { ReportingData } from "@/lib/data/reporting";
 import ExtractionPicker, { type ExtractionSet } from "./ExtractionPicker";
 import ExcelBridgeClient from "./ExcelBridgeClient";
@@ -27,24 +28,29 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data, cadence = "trimestrielle", canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
-  data: ReportingData; cadence?: Cadence; canEdit?: boolean; extractionSets: ExtractionSet[];
+export default function ReportingClient({ data, cadenceSettings, canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
+  data: ReportingData; cadenceSettings?: CadenceSettings; canEdit?: boolean; extractionSets: ExtractionSet[];
   programs: { id: string; name: string }[]; companies: Company[]; datasets: Dataset[]; excelCanEdit: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"collecte" | "extraction" | "fiches">("collecte");
-  // Périodes proposées : une fenêtre glissante dans la cadence du fonds, + celles déjà
-  // renseignées (pour rester capable d'ouvrir une ancienne période trimestrielle).
+  // La cadence peut différer par programme : on la résout selon le programme filtré.
+  const [progFilter, setProgFilter] = useState<string>("all");
+  const cadence = resolveCadence(cadenceSettings, "reporting", progFilter === "all" ? null : progFilter);
+  // Périodes proposées : une fenêtre glissante dans la cadence, + celles déjà renseignées.
   const periodOptions = useMemo(() => {
     const gen = rollingPeriods(currentPeriod(cadence), cadence === "mensuelle" ? 18 : 8);
     return Array.from(new Set([...gen, ...data.periods])).sort().reverse();
   }, [cadence, data.periods]);
-  // On atterrit sur la période courante dans la cadence du fonds (le mois en cours), pas sur
-  // une ancienne période trimestrielle restée en tête du tri.
-  const [period, setPeriod] = useState(currentPeriod(cadence));
+  const [period, setPeriod] = useState(() => currentPeriod(resolveCadence(cadenceSettings, "reporting")));
+  function changeProg(pid: string) {
+    setProgFilter(pid);
+    setPeriod(currentPeriod(resolveCadence(cadenceSettings, "reporting", pid === "all" ? null : pid)));
+  }
+  const shownCompanies = progFilter === "all" ? data.companies : data.companies.filter((c) => c.programId === progFilter);
 
   const statusFor = (companyId: string) => data.statuses.find((s) => s.companyId === companyId && s.period === period)?.status ?? "À faire";
-  const done = data.companies.filter((c) => statusFor(c.id) === "Validé").length;
+  const done = shownCompanies.filter((c) => statusFor(c.id) === "Validé").length;
 
   async function cycle(companyId: string) {
     const cur = statusFor(companyId);
@@ -69,17 +75,26 @@ export default function ReportingClient({ data, cadence = "trimestrielle", canEd
         <div>
           <p style={{ fontSize: 12.5, color: "var(--text-2)", margin: "0 0 14px" }}>Où en est la remontée des chiffres, société par société, pour {cadence === "mensuelle" ? "un mois" : "un trimestre"}.</p>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+            {programs.length > 0 && (
+              <>
+                <label style={{ fontSize: 12, color: "var(--text-2)" }}>Programme</label>
+                <select value={progFilter} onChange={(e) => changeProg(e.target.value)} style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
+                  <option value="all">Tous les programmes</option>
+                  {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </>
+            )}
             <label style={{ fontSize: 12, color: "var(--text-2)" }}>Période</label>
             <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
               {periodOptions.map((p) => <option key={p} value={p}>{formatPeriod(p)}</option>)}
             </select>
-            <span className="badge badge-green" style={{ marginLeft: "auto" }}>{done} / {data.companies.length} validés</span>
+            <span className="badge badge-green" style={{ marginLeft: "auto" }}>{done} / {shownCompanies.length} validés</span>
           </div>
-          {data.companies.length === 0 ? (
-            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucune participation à collecter.</div>
+          {shownCompanies.length === 0 ? (
+            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucune participation à collecter{progFilter !== "all" ? " pour ce programme" : ""}.</div>
           ) : (
             <div className="card" style={{ padding: "4px 18px" }}>
-              {data.companies.map((c, i) => {
+              {shownCompanies.map((c, i) => {
                 const st = statusFor(c.id);
                 return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
