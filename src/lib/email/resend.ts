@@ -117,6 +117,19 @@ export function reminderEmail({ fullName, title, entityName, dueDate, link, over
   return { subject: `${overdue ? "Action en retard" : "Échéance proche"} — ${entityName}`, html: shell(overdue ? "Action en retard" : "Échéance proche", inner) };
 }
 
+/** Invitation à l'entrepreneur à remplir le questionnaire d'impact annuel via un lien. */
+export function impactQuestionnaireEmail({ contactName, entityName, year, link }: {
+  contactName?: string | null; entityName: string; year: number; link: string;
+}): { subject: string; html: string } {
+  const hello = contactName ? `Bonjour ${contactName},` : "Bonjour,";
+  const inner = `<p style="margin:0 0 8px;font-size:14px;line-height:1.6;">${hello}</p>
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#5A4636;">Dans le cadre du suivi de <b>${entityName}</b>, merci de renseigner le questionnaire d'impact pour l'exercice <b>${year}</b> (année civile ${year}). Cela nous prend quelques minutes et ne nécessite aucun compte.</p>
+    ${ctaButton(link, "Remplir le questionnaire")}
+    <p style="margin:22px 0 6px;font-size:12px;color:#7A6552;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
+    <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${link}" style="color:#A9714B;">${link}</a></p>`;
+  return { subject: `Questionnaire d'impact ${year} — ${entityName}`, html: shell("Questionnaire d'impact", inner) };
+}
+
 /** Une décision de comité attend une validation : on prévient les personnes qui peuvent valider. */
 export function pendingValidationEmail({ fullName, committeeType, decision, entityName, proposedBy, link }: {
   fullName?: string | null; committeeType: string; decision: string | null;

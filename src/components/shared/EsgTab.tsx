@@ -8,6 +8,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { EHS_SECTORS, ESG_RISK_LEVELS, ESG_RISK_LABEL, ESG_ACTION_CATEGORIES, ESG_CATEGORY_LABEL, ESG_ACTION_STATUS, ESG_IMPACT_DIMENSIONS } from "@/lib/ui-constants";
 import type { EsgData, EsgAssessment, EsgAction, EsgImpact } from "@/lib/data/esg";
 import ImpactRatingModal from "./ImpactRatingModal";
+import ImpactQuestionnaireSection from "@/components/impact/ImpactQuestionnaireSection";
 import { BASE_MAX, BONUS_LABEL, noteOnThree } from "@/lib/esg/impactRating";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
@@ -163,6 +164,8 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
           </div>
         )}
       </section>
+
+      <ImpactQuestionnaireSection entityType={entityType} entityId={entityId} />
 
       {diagOpen && <DiagModal entityType={entityType} entityId={entityId} assessment={a} onClose={() => setDiagOpen(false)} />}
       {actModal.open && <ActionModal entityType={entityType} entityId={entityId} action={actModal.action} users={users} onClose={() => setActModal({ open: false, action: null })} />}
