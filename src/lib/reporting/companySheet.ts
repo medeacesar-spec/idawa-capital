@@ -110,14 +110,24 @@ export type CompanySheet = {
 };
 
 /** Bornes ISO d'un trimestre « 2026-T2 ». */
+// Bornes d'une période, quelle que soit sa cadence : mensuelle (« 2026-M07 »),
+// trimestrielle (« 2026-T2 ») ou annuelle (« 2025 »). `year` sert à l'exercice financier.
 export function quarterBounds(period: string): { year: number; quarter: number; from: string; to: string } {
+  const mm = period.match(/^(\d{4})-M(\d{2})$/);
+  if (mm) {
+    const year = Number(mm[1]), mo = Number(mm[2]) - 1;
+    return { year, quarter: Math.floor(mo / 3) + 1, from: new Date(Date.UTC(year, mo, 1)).toISOString().slice(0, 10), to: new Date(Date.UTC(year, mo + 1, 0)).toISOString().slice(0, 10) };
+  }
+  const yy = period.match(/^(\d{4})$/);
+  if (yy) {
+    const year = Number(yy[1]);
+    return { year, quarter: 0, from: `${year}-01-01`, to: `${year}-12-31` };
+  }
   const m = period.match(/^(\d{4})-T([1-4])$/);
   const year = m ? Number(m[1]) : new Date().getFullYear();
   const quarter = m ? Number(m[2]) : Math.floor(new Date().getMonth() / 3) + 1;
   const startMonth = (quarter - 1) * 3;
-  const from = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
-  const to = new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10);
-  return { year, quarter, from, to };
+  return { year, quarter, from: new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10), to: new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10) };
 }
 
 const inRange = (d: string | null, from: string, to: string) => !!d && d.slice(0, 10) >= from && d.slice(0, 10) <= to;

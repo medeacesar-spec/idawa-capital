@@ -6,7 +6,7 @@
 
 import { useRouter } from "next/navigation";
 import { fmtFCFA, fmtInt, fmtMult, fmtPct } from "@/lib/format";
-import { nextPeriod, previousPeriod } from "@/lib/periods";
+import { nextPeriod, previousPeriod, formatPeriod } from "@/lib/periods";
 import type { CompanySheet, SheetLine } from "@/lib/reporting/companySheet";
 
 const DASH = "—";
@@ -85,9 +85,9 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
       <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <button className="btn btn-ghost" onClick={() => router.back()}>← Retour à la fiche</button>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
-          <button className="btn btn-ghost" onClick={() => go(previousPeriod(sheet.period))} aria-label="Trimestre précédent">‹</button>
-          <span className="serif tnum" style={{ fontSize: 14, fontWeight: 600, minWidth: 78, textAlign: "center" }}>{sheet.period}</span>
-          <button className="btn btn-ghost" onClick={() => go(nextPeriod(sheet.period))} aria-label="Trimestre suivant">›</button>
+          <button className="btn btn-ghost" onClick={() => go(previousPeriod(sheet.period))} aria-label="Période précédente">‹</button>
+          <span className="serif tnum" style={{ fontSize: 14, fontWeight: 600, minWidth: 90, textAlign: "center" }}>{formatPeriod(sheet.period)}</span>
+          <button className="btn btn-ghost" onClick={() => go(nextPeriod(sheet.period))} aria-label="Période suivante">›</button>
         </div>
         <button className="btn" onClick={() => window.print()}>Imprimer / enregistrer en PDF</button>
       </div>
@@ -105,7 +105,7 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
             </div>
           </div>
           <div style={{ textAlign: "right", fontSize: 11, color: "var(--text-2)", lineHeight: 1.6 }}>
-            <div className="serif tnum" style={{ fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>{sheet.period}</div>
+            <div className="serif tnum" style={{ fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>{formatPeriod(sheet.period)}</div>
             <div>{fmtDate(sheet.from)} → {fmtDate(sheet.to)}</div>
             <div>Idawa Capital</div>
             <div>Édité le {new Date().toLocaleDateString("fr-FR")} par {editedBy}</div>
@@ -201,7 +201,7 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
           )}
         </Section>
 
-        <Section num={no()} title="Indicateurs de suivi" note={`Dernière valeur connue au ${sheet.period}.`}>
+        <Section num={no()} title="Indicateurs de suivi" note={`Dernière valeur connue au ${formatPeriod(sheet.period)}.`}>
           {sheet.kpis.length ? (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead><tr><th style={th}>Indicateur</th><th style={th}>Famille</th><th style={{ ...th, textAlign: "right" }}>Valeur</th><th style={{ ...th, textAlign: "right" }}>Cible</th><th style={th}>Période</th></tr></thead>
@@ -223,13 +223,13 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
         </Section>
 
         {sheet.support && sheet.support.rows.length > 0 && (
-          <Section num={no()} title="Accompagnement" note={`${sheet.support.programName ?? "Programme"} — valeurs du trimestre. Le cumul ne porte que sur ce qui s'additionne.`}>
+          <Section num={no()} title="Accompagnement" note={`${sheet.support.programName ?? "Programme"} — valeurs de la période. Le cumul ne porte que sur ce qui s'additionne.`}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
                   <th style={th}>Indicateur</th><th style={th}>Catégorie</th>
-                  <th style={{ ...th, textAlign: "right" }}>{sheet.period}</th>
-                  <th style={{ ...th, textAlign: "right" }}>Trimestre précédent</th>
+                  <th style={{ ...th, textAlign: "right" }}>{formatPeriod(sheet.period)}</th>
+                  <th style={{ ...th, textAlign: "right" }}>Période précédente</th>
                   <th style={{ ...th, textAlign: "right" }}>Cumul</th>
                   <th style={{ ...th, textAlign: "right" }}>Cible</th>
                 </tr>
@@ -284,7 +284,7 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
           )}
         </Section>
 
-        <Section num={no()} title="Faits marquants du trimestre" note="Décisions de comité et comptes rendus datés dans la période.">
+        <Section num={no()} title="Faits marquants de la période" note="Décisions de comité et comptes rendus datés dans la période.">
           {sheet.events.length ? (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
@@ -297,7 +297,7 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
                 ))}
               </tbody>
             </table>
-          ) : <Empty>Aucun événement enregistré sur ce trimestre.</Empty>}
+          ) : <Empty>Aucun événement enregistré sur cette période.</Empty>}
         </Section>
 
         <Section num={no()} title="Actions ouvertes et création de valeur">

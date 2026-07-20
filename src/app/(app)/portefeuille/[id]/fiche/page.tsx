@@ -4,7 +4,12 @@ import { requirePerm } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { buildCompanySheet } from "@/lib/reporting/companySheet";
 import { currentPeriod } from "@/lib/periods";
+import { getFundSettings } from "@/lib/data/fundSettings";
+import { resolveCadence } from "@/lib/cadence";
 import CompanySheetView from "@/components/portfolio/CompanySheetView";
+
+// Accepte une période mensuelle, trimestrielle ou annuelle.
+const VALID_PERIOD = /^\d{4}(-M(0[1-9]|1[0-2])|-T[1-4])?$/;
 
 export default async function CompanySheetPage({
   params, searchParams,
@@ -25,6 +30,9 @@ export default async function CompanySheetPage({
     : { data: null };
   const editedBy = profile?.full_name || profile?.email || user?.email || "—";
 
-  const period = /^\d{4}-T[1-4]$/.test(t ?? "") ? (t as string) : currentPeriod();
+  // Par défaut : la période courante dans la cadence de reporting de la société (via son programme).
+  const settings = await getFundSettings();
+  const cadence = resolveCadence(settings.cadence, "reporting", company.programId);
+  const period = VALID_PERIOD.test(t ?? "") ? (t as string) : currentPeriod(cadence);
   return <CompanySheetView sheet={buildCompanySheet(company, period)} editedBy={editedBy} />;
 }
