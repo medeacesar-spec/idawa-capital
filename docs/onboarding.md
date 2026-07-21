@@ -128,7 +128,7 @@ Une **société** a beaucoup plus d'onglets qu'un dossier : ils sont donc rangé
 ### Famille **Accompagnement** *(si la société est dans un programme d'accélération)*
 | Onglet | Format attendu |
 |---|---|
-| **Accompagnement** | Les **indicateurs d'accompagnement** de l'entreprise, saisis **par trimestre** (avec le cumul depuis l'origine). |
+| **Accompagnement** | Les **indicateurs d'accompagnement** de l'entreprise, saisis **selon la cadence de reporting** (mensuelle ou trimestrielle — c'est le même réglage que le reste du reporting), sur une **fenêtre glissante** de périodes, avec une colonne **cumul** sur les périodes affichées. |
 
 > Une société peut relever de **plusieurs programmes** à la fois, et un programme **mixte** (investissement **et** accompagnement) fait apparaître à la fois les familles Investissement/Valorisation **et** Accompagnement.
 
