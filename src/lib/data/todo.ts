@@ -10,6 +10,20 @@ export type TodoData = { items: TodoItem[]; total: number };
 
 function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
+// Délai par défaut de validation d'un comité : 3 jours OUVRABLES après la proposition ;
+// au-delà, la décision à valider est « en retard ».
+function addBusinessDays(iso: string, n: number): string {
+  const d = new Date(iso.slice(0, 10) + "T00:00:00");
+  let added = 0;
+  while (added < n) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d.toISOString().slice(0, 10);
+}
+const COMMITTEE_VALIDATION_BUSINESS_DAYS = 3;
+
 export async function getTodoItems(): Promise<TodoData> {
   const supabase = await createClient();
   const today = todayISO();
@@ -19,9 +33,9 @@ export async function getTodoItems(): Promise<TodoData> {
     supabase.from("deals").select("id, company_name"),
     supabase.from("esg_actions").select("entity_type, entity_id, action, date_end_plan, status, assignee_id").neq("status", "Réalisée"),
     supabase.from("tasks").select("entity_type, entity_id, title, due_date, status, assignee_id").neq("status", "Fait"),
-    supabase.from("dd_items").select("entity_type, entity_id, item, status, assignee_id").eq("status", "Point d'attention"),
+    supabase.from("dd_items").select("entity_type, entity_id, item, status, assignee_id, due_date"),
     supabase.from("value_creation").select("entity_type, entity_id, initiative, target_date, status, assignee_id"),
-    supabase.from("committee_passages").select("id, deal_id, company_id, committee_type, decision").eq("status", "Proposée"),
+    supabase.from("committee_passages").select("id, deal_id, company_id, committee_type, decision, created_at").eq("status", "Proposée"),
   ]);
   const coMap = new Map((coRes.data ?? []).map((c) => [c.id, c.name]));
   const dealMap = new Map((dealRes.data ?? []).map((d) => [d.id, d.company_name]));
@@ -41,7 +55,10 @@ export async function getTodoItems(): Promise<TodoData> {
     }
   }
   for (const d of ddRes.data ?? []) {
-    items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)} · point d'attention`, href: hrefOf(d.entity_type, d.entity_id), severity: "high", assigneeId: d.assignee_id ?? null, dueDate: null });
+    if (d.status !== "Terminé" && d.due_date && d.due_date < today) {
+      const flagged = d.status === "Point d'attention";
+      items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)}${flagged ? " · point d'attention" : ""}`, href: hrefOf(d.entity_type, d.entity_id), severity: flagged ? "high" : "medium", assigneeId: d.assignee_id ?? null, dueDate: d.due_date });
+    }
   }
   for (const v of vcRes.data ?? []) {
     if (v.target_date && v.target_date < today && v.status !== "Réalisée" && v.status !== "En pause") {
@@ -50,11 +67,16 @@ export async function getTodoItems(): Promise<TodoData> {
   }
 
   // Décisions à valider — pipeline ET portefeuille (un passage porte soit deal_id, soit company_id).
+  // Délai par défaut : 3 jours ouvrables après la proposition ; on ne la fait remonter qu'AU-DELÀ,
+  // quand elle est en retard (avant, la Direction est dans les temps — elle a été prévenue par e-mail).
   for (const c of comRes.data ?? []) {
+    if (!c.created_at) continue;
+    const deadline = addBusinessDays(c.created_at, COMMITTEE_VALIDATION_BUSINESS_DAYS);
+    if (deadline >= today) continue;
     const isCompany = !!c.company_id;
     const entityName = isCompany ? (coMap.get(c.company_id) ?? "—") : (dealMap.get(c.deal_id) ?? "—");
     const href = isCompany ? `/portefeuille/${c.company_id}` : (c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline");
-    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${entityName}${c.decision ? ` · ${c.decision}` : ""}`, href, severity: "high", assigneeId: null, validation: true, dueDate: null });
+    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${entityName}${c.decision ? ` · ${c.decision}` : ""}`, href, severity: "high", assigneeId: null, validation: true, dueDate: deadline });
   }
 
   // À gravité égale, le plus ancien retard passe devant : c'est celui qui coûte le plus.

@@ -13,6 +13,7 @@ import { BASE_MAX, BONUS_LABEL, noteOnThree } from "@/lib/esg/impactRating";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
 import { notifyAssignment } from "@/app/(app)/notify-actions";
+import { logDueChange } from "@/lib/suivi-log";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return "—"; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
@@ -104,7 +105,7 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
                 <span title={ESG_CATEGORY_LABEL[ac.category ?? ""] ?? ""} style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, background: `${CAT_COLOR[ac.category ?? ""] ?? "#6B5744"}1a`, color: CAT_COLOR[ac.category ?? ""] ?? "#6B5744", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{ac.category ?? "?"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, color: "var(--ink)" }}>{ac.action}</div>
-                  <div style={{ fontSize: 11, color: isOverdue(ac) ? "var(--red-fg)" : "var(--text-3)" }}>{ac.responsibleCode ? ac.responsibleCode : "Non assignée"}{ac.dateEndPlan ? ` · échéance ${frDate(ac.dateEndPlan)}` : ac.createdAt ? ` · ajoutée le ${frDate(ac.createdAt)}` : ""}{isOverdue(ac) ? " · en retard" : ""}</div>
+                  <div style={{ fontSize: 11, color: isOverdue(ac) || !ac.dateEndPlan ? "var(--red-fg)" : "var(--text-3)" }}>{ac.responsibleCode ? ac.responsibleCode : "Non assignée"}{ac.dateEndPlan ? ` · échéance ${frDate(ac.dateEndPlan)}${isOverdue(ac) ? " · en retard" : ""}` : <span style={{ fontWeight: 600 }}> · échéance à définir</span>}</div>
                 </div>
                 {ac.status && <span className={`badge ${STATUS_COLOR[ac.status] ?? "badge-neutral"}`}>{ac.status}</span>}
                 <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
@@ -206,34 +207,48 @@ export default function EsgTab({ entityType, entityId, data, users, ehsSector, c
     const [assigneeId, setAssigneeId] = useState(action?.assigneeId ?? "");
     const [due, setDue] = useState(action?.dateEndPlan ?? "");
     const [status, setStatus] = useState(action?.status ?? ESG_ACTION_STATUS[0]);
+    const [dueReason, setDueReason] = useState("");
+    const originalDue = action?.dateEndPlan ?? null;
+    const dueChanged = !!action && !!originalDue && !!due && due !== originalDue;
+    const canSave = !!text.trim() && !!due && !(dueChanged && !dueReason.trim());
     async function save() {
-      if (!text.trim()) return;
+      if (!canSave) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, category: cat, action: text.trim(), responsible_code: resp.trim() || null, assignee_id: assigneeId || null, date_end_plan: due || null, status };
-      if (action) await supabase.from("esg_actions").update(payload).eq("id", action.id);
-      else await supabase.from("esg_actions").insert(payload);
+      const payload = { entity_type: entityType, entity_id: entityId, category: cat, action: text.trim(), responsible_code: resp.trim() || null, assignee_id: assigneeId || null, date_end_plan: due, status };
+      if (action) {
+        await supabase.from("esg_actions").update(payload).eq("id", action.id);
+        if (due !== originalDue) await logDueChange({ entityType, entityId, kind: "de l'action E&S", label: text.trim(), oldDue: originalDue, newDue: due, reason: dueReason });
+      } else {
+        await supabase.from("esg_actions").insert(payload);
+      }
       // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
       // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
       if (assigneeId && assigneeId !== (action?.assigneeId ?? "")) {
         await notifyAssignment({
           kind: "Action E&S", title: text.trim(), assigneeId,
-          dueDate: due || null, entityType, entityId,
+          dueDate: due, entityType, entityId,
         });
       }
       onClose(); router.refresh();
     }
     return (
       <Modal title={action ? "Modifier l'action E&S" : "Ajouter une action E&S"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !text.trim()} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
+        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !canSave} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
         <Field label="Action"><Textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex : Formaliser la politique E&S" /></Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Domaine"><Select value={cat} onChange={(e) => setCat(e.target.value)}>{ESG_ACTION_CATEGORIES.map((c) => <option key={c} value={c}>{ESG_CATEGORY_LABEL[c]}</option>)}</Select></Field>
           <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{ESG_ACTION_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
           <Field label="Responsable"><Input value={resp} onChange={(e) => setResp(e.target.value)} placeholder="Ex : Direction, la société…" /></Field>
-          <Field label="Échéance"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
+          <Field label="Échéance (obligatoire)"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
+        {!due && <div style={{ fontSize: 11.5, color: "var(--red-fg)", margin: "-6px 0 4px" }}>Une échéance est requise : chaque action E&S doit avoir une date de réalisation prévue.</div>}
         <Field label="Suivi par (équipe Idawa)" hint="Reçoit le rappel dans « À faire »"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
+        {dueChanged && (
+          <Field label="Motif du changement d'échéance">
+            <Textarea rows={2} value={dueReason} onChange={(e) => setDueReason(e.target.value)} placeholder="Pourquoi l'échéance est-elle déplacée ? (consigné dans le journal du Suivi)" />
+          </Field>
+        )}
       </Modal>
     );
   }

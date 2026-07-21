@@ -10,10 +10,12 @@ import type { DdItem } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
 import { notifyAssignment } from "@/app/(app)/notify-actions";
+import { logDueChange, todayISO } from "@/lib/suivi-log";
 
 const STATUS_BADGE: Record<string, string> = { "À faire": "badge-neutral", "En cours": "badge-amber", "Terminé": "badge-green", "Point d'attention": "badge-red" };
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return ""; return `${d.slice(8, 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
+function isDdOverdue(it: { status: string; dueDate: string | null }) { return it.status !== "Terminé" && !!it.dueDate && it.dueDate < todayISO(); }
 
 export default function DueDiligenceTab({ entityType, entityId, items, users }: { entityType: "deal" | "company"; entityId: string; items: DdItem[]; users: FundUser[] }) {
   const canEdit = useCanEdit();
@@ -56,7 +58,12 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
                     <span className={`badge ${STATUS_BADGE[it.status] ?? "badge-neutral"}`} style={{ cursor: "pointer", minWidth: 92, textAlign: "center" }}>{it.status}</span>
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{it.item}{it.createdAt ? <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 400 }}> · ajouté le {frDate(it.createdAt)}</span> : null}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{it.item}</div>
+                    <div style={{ fontSize: 11, color: isDdOverdue(it) ? "var(--red-fg)" : "var(--text-3)", fontWeight: 400, marginTop: 2 }}>
+                      {it.dueDate
+                        ? <>échéance {frDate(it.dueDate)}{isDdOverdue(it) ? " · en retard" : ""}</>
+                        : <span style={{ color: "var(--red-fg)", fontWeight: 600 }}>échéance à définir</span>}
+                    </div>
                     {it.note && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 2, lineHeight: 1.5 }}>{it.note}</div>}
                   </div>
                   <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
@@ -82,33 +89,49 @@ export default function DueDiligenceTab({ entityType, entityId, items, users }: 
     const [status, setStatus] = useState(item?.status ?? DD_STATUS[0]);
     const [note, setNote] = useState(item?.note ?? "");
     const [assigneeId, setAssigneeId] = useState(item?.assigneeId ?? "");
+    const [due, setDue] = useState(item?.dueDate ?? "");
+    const [dueReason, setDueReason] = useState("");
+    const originalDue = item?.dueDate ?? null;
+    const dueChanged = !!item && !!originalDue && !!due && due !== originalDue;
+    const canSave = !!text.trim() && !!due && !(dueChanged && !dueReason.trim());
     async function save() {
-      if (!text.trim()) return;
+      if (!canSave) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, domain, item: text.trim(), status, note: note.trim() || null, assignee_id: assigneeId || null };
-      if (item) await supabase.from("dd_items").update(payload).eq("id", item.id);
-      else await supabase.from("dd_items").insert(payload);
+      const payload = { entity_type: entityType, entity_id: entityId, domain, item: text.trim(), status, note: note.trim() || null, assignee_id: assigneeId || null, due_date: due };
+      if (item) {
+        await supabase.from("dd_items").update(payload).eq("id", item.id);
+        if (due !== originalDue) await logDueChange({ entityType, entityId, kind: "du point de due diligence", label: text.trim(), oldDue: originalDue, newDue: due, reason: dueReason });
+      } else {
+        await supabase.from("dd_items").insert(payload);
+      }
       // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
       // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
       if (assigneeId && assigneeId !== (item?.assigneeId ?? "")) {
         await notifyAssignment({
           kind: "Point de due diligence", title: text.trim(), assigneeId,
-          dueDate: null, entityType, entityId,
+          dueDate: due, entityType, entityId,
         });
       }
       onClose(); router.refresh();
     }
     return (
       <Modal title={item ? "Modifier le point" : "Ajouter un point de due diligence"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !text.trim()} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
+        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !canSave} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
         <Field label="Point à vérifier"><Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex : Audit des comptes 2024" /></Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Domaine"><Select value={domain} onChange={(e) => setDomain(e.target.value)}>{DD_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</Select></Field>
           <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{DD_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
+          <Field label="Assigné à"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
+          <Field label="Échéance (obligatoire)"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
-        <Field label="Assigné à"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
+        {!due && <div style={{ fontSize: 11.5, color: "var(--red-fg)", margin: "-6px 0 4px" }}>Une échéance est requise dès la constitution de la liste.</div>}
         <Field label="Constat / note"><Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Conclusions, réserves, documents demandés…" /></Field>
+        {dueChanged && (
+          <Field label="Motif du changement d'échéance">
+            <Textarea rows={2} value={dueReason} onChange={(e) => setDueReason(e.target.value)} placeholder="Pourquoi l'échéance est-elle déplacée ? (consigné dans le journal du Suivi)" />
+          </Field>
+        )}
       </Modal>
     );
   }

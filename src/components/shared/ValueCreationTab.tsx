@@ -10,9 +10,11 @@ import type { ValueInitiative } from "@/lib/data/planning";
 import type { FundUser } from "@/lib/data/users";
 import { useCanEdit } from "./WriteAccess";
 import { notifyAssignment } from "@/app/(app)/notify-actions";
+import { logDueChange, todayISO } from "@/lib/suivi-log";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return null; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(0, 4)}`; }
+function isVcOverdue(it: { status: string; targetDate: string | null }) { return it.status !== "Réalisée" && it.status !== "En pause" && !!it.targetDate && it.targetDate < todayISO(); }
 const STATUS_BADGE: Record<string, string> = { "Planifiée": "badge-neutral", "En cours": "badge-amber", "Réalisée": "badge-green", "En pause": "badge-red" };
 
 type ContactOpt = { id: string; name: string };
@@ -50,8 +52,11 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{it.initiative}</div>
-                <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>
-                  {it.lever ?? "—"}{it.owner ? ` · ${it.owner}` : ""}{frDate(it.targetDate) ? ` · échéance ${frDate(it.targetDate)}` : frDate(it.createdAt) ? ` · ajoutée le ${frDate(it.createdAt)}` : ""}
+                <div style={{ fontSize: 11, color: isVcOverdue(it) ? "var(--red-fg)" : "var(--text-3)", marginTop: 2 }}>
+                  {it.lever ?? "—"}{it.owner ? ` · ${it.owner}` : ""}
+                  {it.targetDate
+                    ? ` · échéance ${frDate(it.targetDate)}${isVcOverdue(it) ? " · en retard" : ""}`
+                    : <span style={{ color: "var(--red-fg)", fontWeight: 600 }}> · échéance à définir</span>}
                 </div>
                 {it.impact && <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 4, lineHeight: 1.5 }}>Impact visé : {it.impact}</div>}
               </div>
@@ -77,13 +82,21 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
     const [status, setStatus] = useState(item?.status ?? VALUE_STATUS[0]);
     const [target, setTarget] = useState(item?.targetDate ?? "");
     const [impact, setImpact] = useState(item?.impact ?? "");
+    const [dueReason, setDueReason] = useState("");
+    const originalDue = item?.targetDate ?? null;
+    const dueChanged = !!item && !!originalDue && !!target && target !== originalDue;
+    const canSave = !!initiative.trim() && !!target && !(dueChanged && !dueReason.trim());
     async function save() {
-      if (!initiative.trim()) return;
+      if (!canSave) return;
       setBusy(true);
       const supabase = createClient();
-      const payload = { entity_type: entityType, entity_id: entityId, lever, initiative: initiative.trim(), owner: owner.trim() || null, assignee_id: assigneeId || null, status, target_date: target || null, impact: impact.trim() || null };
-      if (item) await supabase.from("value_creation").update(payload).eq("id", item.id);
-      else await supabase.from("value_creation").insert(payload);
+      const payload = { entity_type: entityType, entity_id: entityId, lever, initiative: initiative.trim(), owner: owner.trim() || null, assignee_id: assigneeId || null, status, target_date: target, impact: impact.trim() || null };
+      if (item) {
+        await supabase.from("value_creation").update(payload).eq("id", item.id);
+        if (target !== originalDue) await logDueChange({ entityType, entityId, kind: "de l'initiative", label: initiative.trim(), oldDue: originalDue, newDue: target, reason: dueReason });
+      } else {
+        await supabase.from("value_creation").insert(payload);
+      }
       // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
       // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
       if (assigneeId && assigneeId !== (item?.assigneeId ?? "")) {
@@ -96,7 +109,7 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
     }
     return (
       <Modal title={item ? "Modifier l'initiative" : "Ajouter une initiative"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !initiative.trim()} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
+        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !canSave} onClick={save}>{busy ? "…" : "Enregistrer"}</button></>}>
         <Field label="Initiative"><Input value={initiative} onChange={(e) => setInitiative(e.target.value)} placeholder="Ex : Ouvrir 2 nouvelles agences" /></Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Levier"><Select value={lever} onChange={(e) => setLever(e.target.value)}>{VALUE_LEVERS.map((l) => <option key={l} value={l}>{l}</option>)}</Select></Field>
@@ -112,10 +125,16 @@ export default function ValueCreationTab({ entityType, entityId, items, contacts
               </Select>
             )}
           </Field>
-          <Field label="Échéance"><Input type="date" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
+          <Field label="Échéance (obligatoire)"><Input type="date" value={target} onChange={(e) => setTarget(e.target.value)} /></Field>
         </div>
+        {!target && <div style={{ fontSize: 11.5, color: "var(--red-fg)", margin: "-6px 0 4px" }}>Une échéance est requise : chaque initiative doit avoir une date cible.</div>}
         <Field label="Suivi par (équipe Idawa)" hint="Reçoit le rappel dans « À faire »"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
         <Field label="Impact visé"><Textarea rows={2} value={impact} onChange={(e) => setImpact(e.target.value)} placeholder="Ex : +30% de CA, création de 15 emplois…" /></Field>
+        {dueChanged && (
+          <Field label="Motif du changement d'échéance">
+            <Textarea rows={2} value={dueReason} onChange={(e) => setDueReason(e.target.value)} placeholder="Pourquoi l'échéance est-elle déplacée ? (consigné dans le journal du Suivi)" />
+          </Field>
+        )}
       </Modal>
     );
   }
