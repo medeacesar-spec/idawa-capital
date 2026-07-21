@@ -206,14 +206,8 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap", marginBottom: 14, padding: "11px 14px", borderRadius: 11, border: "1px solid var(--border-strong)", background: "var(--surface-cream)" }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
           <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55, flex: 1, minWidth: 200 }}>
-            <b style={{ color: "var(--ink)" }}>Dossier archivé.</b> Ce dossier a été converti en participation : il est <b>conservé tel quel</b> et <b>n'est plus modifiable</b>. Toute mise à jour se fait désormais sur la fiche de la participation.
+            <b style={{ color: "var(--ink)" }}>Dossier archivé.</b> Ce dossier a été converti en participation : il est <b>conservé tel quel</b> et <b>n'est plus modifiable</b>. Toute mise à jour se fait désormais sur la fiche de la participation (bouton <b>« Voir la participation »</b> en haut).
           </div>
-          {deal.convertedCompanyId && (
-            <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => router.push(`/portefeuille/${deal.convertedCompanyId}`)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-              Voir la participation
-            </button>
-          )}
         </div>
       )}
 
