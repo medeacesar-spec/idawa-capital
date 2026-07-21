@@ -48,6 +48,9 @@ Quelques mots reviennent tout le temps. Voici la traduction :
 | **KPI** | Un indicateur qu'on suit dans le temps (chiffre d'affaires, emplois créés, taux d'EBE…). |
 | **ESG & Impact** | Ce que l'entreprise change autour d'elle : emplois, genre, gouvernance, formalisation, environnement. |
 | **Reporting / extraction** | Sortir les données de l'outil (souvent vers Excel) pour les présenter à un bailleur, un LP, un entrepreneur. |
+| **Échéance** | La date « pour quand ? » d'une action. Elle est **obligatoire** : on n'enregistre pas une action sans échéance. La déplacer se justifie (un motif est demandé et consigné). |
+| **À faire** (tableau de bord) | Ta liste d'**actions à prendre** : ce qui est en retard ou dû sous 7 jours s'affiche d'emblée ; le reste est sous un bouton « + … plus tard ». « Mes actions » = les tiennes ; « Tout le fonds » = celles de toute l'équipe. |
+| **Archivé** | Un dossier converti en participation devient **archivé** : conservé tel quel, **non modifiable**. La suite se passe sur la fiche de la société. |
 
 ---
 
@@ -71,6 +74,7 @@ Pas besoin de tout maîtriser d'un coup. Voici un ordre de découverte qui a du 
 
 - **Saisir une fois, au bon endroit.** L'outil déteste la double saisie : une information n'a qu'un seul foyer. Les KPIs financiers, par exemple, se **remplissent tout seuls** depuis les états financiers — inutile de les retaper.
 - **Vide n'est pas zéro.** Un champ laissé vide veut dire « on ne sait pas encore ». Un `0` veut dire « on sait, et c'est zéro » (par exemple un impayé). L'outil fait la différence, alors sois précis.
+- **Toute action a une échéance.** L'outil te force à répondre à « pour quand ? » dès la création — c'est ce qui évite que le suivi dérape. Si tu dois repousser une échéance, dis **pourquoi** : le motif est consigné automatiquement dans le journal du Suivi. Regarde ta liste « À faire » chaque matin : ce qui est urgent est déjà en haut.
 - **Une note datée vaut mieux qu'un souvenir.** Quand tu écartes un dossier, quand tu mets une entreprise sous surveillance, écris **pourquoi**. Dans six mois, ce motif t'évitera de refaire le même chemin.
 - **Le Journal d'audit ne juge personne.** Il note qui a modifié quoi et quand. C'est un filet de sécurité, pas un mouchard : quand deux personnes travaillent en même temps, il permet de comprendre ce qui a changé.
 - **Un mot de passe = une personne.** On ne partage pas de compte. Chaque trace doit correspondre à quelqu'un.

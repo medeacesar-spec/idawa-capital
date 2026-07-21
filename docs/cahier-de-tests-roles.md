@@ -1,7 +1,7 @@
 # Cahier de tests — rôles **Analyste** et **Chargé d'investissement**
 
 _Idawa Capital · outil de pilotage pipeline & portefeuille_
-_Version du 21/07/2026 · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
+_Version du 21/07/2026 (màj : échéances obligatoires, to-do « actions à prendre », archivage des dossiers convertis, visibilité « Tout le fonds ») · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
 
 ---
 
@@ -187,6 +187,13 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 | T-01 ⛔ | **Contournement par URL directe** : taper l'URL d'un écran interdit (`/performance`, `/parametres`, `/journal`, `/partenaires`, `/utilisateurs`) | Renvoi systématique au tableau de bord — jamais la page | ☐ | ☐ |
 | T-02 ✅ | **Traçabilité** : une action d'écriture apparaît au Journal d'audit sous le **bon auteur** (à vérifier avec un compte Admin après coup) | L'entrée cite l'auteur, l'entité et l'avant/après | ☐ | ☐ |
 | T-03 ✅ | **Notifications** : l'utilisateur reçoit son récap / ses relances (si `CRON_SECRET` posé dans Vercel) | E-mail reçu ; sinon inerte (attendu) | ☐ | ☐ |
+| T-04 ✅ | **Échéance obligatoire** : ajouter une action de suivi (idem action ESG, Création de valeur, point de due diligence) **sans** échéance | Bouton **Enregistrer bloqué** + message rouge « échéance requise » ; impossible d'enregistrer sans date | ☐ | ☐ |
+| T-05 ✅ | **Motif au changement d'échéance** : modifier l'échéance d'une action existante | Un champ **« Motif du changement »** apparaît (obligatoire) ; à l'enregistrement, une **note datée** est écrite au journal du Suivi (ancienne → nouvelle date + motif) | ☐ | ☐ |
+| T-06 ✅ | **Repère « sans date »** : une activité encore sans échéance | Affiche en rouge **« échéance à définir »** dans sa liste | ☐ | ☐ |
+| T-07 ✅ | **To-do « actions à prendre »** (tableau de bord) | Groupe **urgent** (en retard ou échéance < 7 jours) affiché ; le reste replié sous **« + N actions plus tard »** ; les décisions de comité remontent avec un délai par défaut de **3 jours ouvrables** | ☐ | ☐ |
+| T-08 ✅ | **Vue « Tout le fonds »** : le sélecteur « Mes actions / Tout le fonds » de la to-do | **Visible** pour Analyste et Chargé (rôles internes) ; il serait **absent** pour un rôle externe (Auditeur, Observateur / LP) | ☐ | ☐ |
+| T-09 ✅⛔ | **Conversion → archivage** : convertir un dossier (nécessite une décision d'investissement validée en comité) | Une **confirmation** s'affiche (« la fiche sera archivée, non modifiable — Voulez-vous continuer ? Oui / Non ») ; après conversion, le dossier porte le badge **« Archivé »**, un bandeau d'avertissement, et **n'est plus modifiable** (tous les onglets ET les comités verrouillés), même pour un administrateur | ☐ | ☐ |
+| T-10 ✅ | **Fiche de suivi** (bouton « Fiche de suivi » sur une société) | S'ouvre, imprimable / PDF, titrée selon la cadence : **« Fiche de suivi mensuelle / trimestrielle / annuelle »** cohérente avec la période affichée | ☐ | ☐ |
 
 > ℹ️ **T-01 est le test le plus important.** Masquer un bouton ne suffit pas : l'écran doit refuser l'accès **même en tapant l'URL**. C'est ce que garantissent les gardes `requirePerm` côté serveur. (Rappel : le verrou base de données par rôle — RLS — reste « à voir éventuellement » ; tant qu'il n'est pas posé, une personne qui contournerait complètement l'interface pourrait encore écrire. Les gardes testés ici couvrent l'usage par l'interface.)
 
@@ -198,7 +205,7 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 |---|---|---|---|---|---|
 | Analyste | ___ / 20 | ___ / 9 | | | |
 | Chargé d'investissement | ___ / 17 | ___ / 8 | | | |
-| Transverses | ___ / 3 | ___ / 5 | | | |
+| Transverses (T-01 → T-10) | ___ / 10 (positifs + négatifs) | — | | | |
 
 **Anomalies relevées** (n° du test, écran, ce qui s'est passé, gravité) :
 
