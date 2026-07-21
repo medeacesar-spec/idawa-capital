@@ -78,6 +78,13 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   const currentTab = tabs.includes(tab) ? tab : tabs[0];
   const stageBadge = STAGE_BADGE[deal.stage] ?? STAGE_BADGE["Sourcing"];
   const converted = !!deal.convertedCompanyId || deal.status === "investi";
+  // Un dossier converti est ARCHIVÉ : conservé tel quel, plus modifiable par personne,
+  // quel que soit le rôle. On coupe l'écriture partout (onglets + comités) pour figer
+  // l'historique et éviter qu'une retouche ici altère la fiche portefeuille (comités
+  // partagés, notes et due diligence lues en transparence depuis le dossier).
+  const writable = canEdit && !converted;
+  const comitesWritable = canEditComites && !converted;
+  const comitesValidatable = canValidateComites && !converted;
 
   async function changeState(next: string) {
     setStateBusy(true);
@@ -144,7 +151,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   ];
 
   return (
-    <WriteAccessProvider canEdit={canEdit}>
+    <WriteAccessProvider canEdit={writable}>
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <button onClick={() => router.push("/pipeline")} aria-label="Retour" style={{ width: 34, height: 34, borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -155,6 +162,10 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
             <span className="serif" style={{ fontSize: 21, fontWeight: 600, color: "var(--ink)" }}>{deal.companyName}</span>
             <span className="badge" style={{ background: stageBadge.bg, color: stageBadge.fg }}>{deal.stage}</span>
+            {converted && <span className="badge" style={{ background: "var(--espresso)", color: "#fff", display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              Archivé
+            </span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
             {deal.sector && <span style={{ fontSize: 12, color: "var(--text-2)" }}>{deal.sector}</span>}
@@ -190,6 +201,21 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
           </div>
         )}
       </div>
+
+      {converted && (
+        <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap", marginBottom: 14, padding: "11px 14px", borderRadius: 11, border: "1px solid var(--border-strong)", background: "var(--surface-cream)" }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--espresso)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55, flex: 1, minWidth: 200 }}>
+            <b style={{ color: "var(--ink)" }}>Dossier archivé.</b> Ce dossier a été converti en participation : il est <b>conservé tel quel</b> et <b>n'est plus modifiable</b>. Toute mise à jour se fait désormais sur la fiche de la participation.
+          </div>
+          {deal.convertedCompanyId && (
+            <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={() => router.push(`/portefeuille/${deal.convertedCompanyId}`)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              Voir la participation
+            </button>
+          )}
+        </div>
+      )}
 
       {!converted && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14, padding: "9px 12px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface-cream)" }}>
@@ -238,7 +264,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem} postMortemAt={deal.postMortemAt} rejectionReason={deal.rejectionReason}
         rejected={deal.dealState === "Écarté"} onOpenSuivi={() => setTab("Suivi")} />
 
-      <ReadOnlyNotice what="ce dossier" />
+      {!converted && <ReadOnlyNotice what="ce dossier" />}
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", borderBottom: "1px solid var(--border)", marginBottom: 16 }}>
         {tabs.map((t) => {
@@ -258,7 +284,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>Passages en comité <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— un dossier peut repasser plusieurs fois</span></div>
-            {canEditComites && (
+            {comitesWritable && (
               <button className="btn btn-primary" onClick={() => setComModal({ open: true, passage: null })}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 Enregistrer un passage
@@ -266,7 +292,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
             )}
           </div>
           {deal.committees.length === 0 ? (
-            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun passage en comité{canEditComites ? ". Cliquez « Enregistrer un passage » pour ajouter un comité et son compte-rendu." : "."}</div>
+            <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun passage en comité{comitesWritable ? ". Cliquez « Enregistrer un passage » pour ajouter un comité et son compte-rendu." : "."}</div>
           ) : (
             <div className="card" style={{ padding: "18px 20px" }}>
               {deal.committees.map((c, i) => {
@@ -288,14 +314,14 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
                           {validated ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>Décision validée</> : "Proposée"}
                         </span>
                         <span className="row-actions" style={{ marginLeft: "auto" }}>
-                          {canEditComites && !validated && <button onClick={() => setComModal({ open: true, passage: c })} aria-label="Modifier" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>}
-                          {canEditComites && !validated && <button onClick={() => removeCommittee(c.id)} aria-label="Supprimer" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>}
+                          {comitesWritable && !validated && <button onClick={() => setComModal({ open: true, passage: c })} aria-label="Modifier" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>}
+                          {comitesWritable && !validated && <button onClick={() => removeCommittee(c.id)} aria-label="Supprimer" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg></button>}
                         </span>
                       </div>
                       <div style={{ fontSize: 11, color: "var(--text-3)", margin: "2px 0 4px" }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}{validated && c.validatedBy ? ` · validée par ${c.validatedBy}${c.validatedAt ? " le " + frMonth(c.validatedAt.slice(0, 10)) : ""}` : ""}</div>
                       {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.conditions}</div>}
                       <CommitteeDocs dealId={deal.id} committeeId={c.id} docs={c.docs} />
-                      {canValidateComites && (
+                      {comitesValidatable && (
                         <div style={{ marginTop: 8 }}>
                           {validated ? (
                             <button className="btn btn-ghost" style={{ fontSize: 11.5, padding: "5px 11px" }} disabled={comBusy === c.id} onClick={() => toggleValidation(c.id, false)}>{comBusy === c.id ? "…" : "Annuler la validation"}</button>
