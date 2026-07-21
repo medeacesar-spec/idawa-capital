@@ -67,6 +67,10 @@ const OUTCOME_BADGE: Record<string, string> = {
   "Admission au programme": "badge-green", "Prolongation de l'accompagnement": "badge-green",
   "Sortie du programme": "badge-neutral", "Exclusion du programme": "badge-red",
 };
+// Statut d'un point de due diligence repris de l'instruction (lecture seule).
+const DD_STATUS_BADGE: Record<string, string> = {
+  "Terminé": "badge-green", "En cours": "badge-amber", "À faire": "badge-neutral", "Point d'attention": "badge-red",
+};
 
 function EmptyTab({ title, desc }: { title: string; desc: string }) {
   return (
@@ -297,21 +301,30 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
           </div>
 
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Passages en comité</div>
-            {company.originCommittees.length === 0 ? (
-              <div className="card" style={{ padding: "20px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun passage en comité enregistré pendant l'instruction.</div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Due diligence réalisée</div>
+              <div style={{ fontSize: 11, color: "var(--text-3)" }}>Les passages en comité de l'instruction sont repris dans l'onglet <b style={{ color: "var(--text-2)" }}>Décisions</b>.</div>
+            </div>
+            {company.originDueDiligence.length === 0 ? (
+              <div className="card" style={{ padding: "20px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun élément de due diligence repris de l'instruction.</div>
             ) : (
-              <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 12 }}>
-                {company.originCommittees.map((c) => (
-                  <div key={c.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--camel)", marginTop: 5, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
-                        {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
-                        <span style={{ fontSize: 11, color: "var(--text-3)" }}>{frMonth(c.sessionDate)}</span>
-                      </div>
-                      {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 2 }}>{c.conditions}</div>}
+              <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 14 }}>
+                {[...new Set(company.originDueDiligence.map((x) => x.domain))].map((dom) => (
+                  <div key={dom}>
+                    <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--camel)", marginBottom: 6 }}>{dom}</div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {company.originDueDiligence.filter((x) => x.domain === dom).map((x) => (
+                        <div key={x.id} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--camel)", marginTop: 5, flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 12.5, color: "var(--ink)" }}>{x.item}</span>
+                              {x.status && <span className={`badge ${DD_STATUS_BADGE[x.status] ?? "badge-neutral"}`}>{x.status}</span>}
+                            </div>
+                            {x.note && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 2 }}>{x.note}</div>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
