@@ -68,6 +68,8 @@ Un **dossier** avance par **étapes** : Sourcing → Analyse → **Pipeline avan
 
 On appelle **« stade avancé »** le moment où le dossier atteint l'étape **Pipeline avancé** — et tout ce qui suit (Pipeline avancé, Due diligence, Négociation, Closing, Investi). C'est à ce stade que deux onglets — **ESG** et **Création de valeur** — apparaissent : inutile de les remplir sur un projet qu'on vient juste de sourcer.
 
+**Ce qui fait passer un dossier en Pipeline avancé** : enregistrer un **« Comité d'ouverture de dossier »** (dans l'onglet **Comités**) — le dossier y bascule alors **automatiquement**. C'est le signal qu'on l'engage vraiment. On peut aussi l'y placer à la main en changeant son **étape** (formulaire du dossier).
+
 En haut de chaque dossier, la **« prochaine étape »** est déduite automatiquement de la tâche ouverte à l'échéance la plus proche — tu vois d'un coup d'œil ce qui bloque l'avancement.
 
 | Onglet | À quoi il sert | Ce qu'on y saisit / le format attendu |
