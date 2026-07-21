@@ -9,14 +9,17 @@ const KIND_COLOR: Record<string, string> = { ESG: "#7C7A3A", Action: "#8A5A18", 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 const frDay = (d: string) => `${parseInt(d.slice(8, 10), 10)} ${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""}`;
 
-/** « En retard » ne dit rien : trois jours ou six mois n'appellent pas la même réaction. */
-function lateBy(due: string): string {
+/** Échéance située dans le temps : ni « en retard » ni « à venir » n'appellent la même réaction. */
+function dueStatus(due: string): { text: string; overdue: boolean; soon: boolean } {
   const days = Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(due)) / 86_400_000);
-  if (days <= 0) return frDay(due);
-  if (days === 1) return `${frDay(due)} · 1 jour de retard`;
-  if (days < 31) return `${frDay(due)} · ${days} jours de retard`;
-  const months = Math.round(days / 30);
-  return `${frDay(due)} · ${months} mois de retard`;
+  if (days > 0) {
+    const late = days === 1 ? "1 jour de retard" : days < 31 ? `${days} jours de retard` : `${Math.round(days / 30)} mois de retard`;
+    return { text: `${frDay(due)} · ${late}`, overdue: true, soon: false };
+  }
+  if (days === 0) return { text: `${frDay(due)} · aujourd'hui`, overdue: false, soon: true };
+  const ahead = -days;
+  const dans = ahead === 1 ? "demain" : ahead < 31 ? `dans ${ahead} jours` : `dans ${Math.round(ahead / 30)} mois`;
+  return { text: `${frDay(due)} · ${dans}`, overdue: false, soon: ahead <= 3 };
 }
 
 export default function TodoBanner({ data, currentUserId, canSeeAll, canValidateComites = false }: { data: TodoData; currentUserId: string; canSeeAll: boolean; canValidateComites?: boolean }) {
@@ -40,7 +43,7 @@ export default function TodoBanner({ data, currentUserId, canSeeAll, canValidate
         <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--green-bg)", color: "var(--green-fg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
         </span>
-        <span style={{ fontSize: 13, color: "var(--text-2)" }}>{effScope === "mine" ? "Aucune action en retard qui vous est assignée." : "Rien en retard. Tout est à jour."}</span>
+        <span style={{ fontSize: 13, color: "var(--text-2)" }}>{effScope === "mine" ? "Aucune action à prendre qui vous est assignée." : "Aucune action à prendre. Tout est à jour."}</span>
         {Toggle}
       </div>
     );
@@ -60,13 +63,19 @@ export default function TodoBanner({ data, currentUserId, canSeeAll, canValidate
             <span className="badge" style={{ background: `${KIND_COLOR[it.kind] ?? "#6B5744"}1a`, color: KIND_COLOR[it.kind] ?? "#6B5744", flexShrink: 0 }}>{it.kind}</span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
             <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{it.sub}</span>
-            <span className="tnum" style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: it.dueDate ? "var(--red-fg)" : "var(--text-3)" }}>
-              {it.dueDate ? lateBy(it.dueDate) : "sans échéance"}
-            </span>
+            {(() => {
+              const st = it.dueDate ? dueStatus(it.dueDate) : null;
+              const color = !st ? "var(--text-3)" : st.overdue ? "var(--red-fg)" : st.soon ? "var(--amber-fg)" : "var(--text-3)";
+              return (
+                <span className="tnum" style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color }}>
+                  {st ? st.text : "sans échéance"}
+                </span>
+              );
+            })()}
           </Link>
         ))}
       </div>
-      {effScope === "mine" && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>Vos actions assignées en retard.{canSeeAll ? " Basculez sur « Tout le fonds » pour la vue direction." : ""}</div>}
+      {effScope === "mine" && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>Vos actions à prendre (échéances à venir et retards).{canSeeAll ? " Basculez sur « Tout le fonds » pour la vue direction." : ""}</div>}
     </div>
   );
 }

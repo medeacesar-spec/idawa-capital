@@ -43,40 +43,42 @@ export async function getTodoItems(): Promise<TodoData> {
   const hrefOf = (t: string, id: string) => (t === "company" ? `/portefeuille/${id}` : `/pipeline/${id}`);
 
   const items: TodoItem[] = [];
+  // La to-do RAPPELLE les actions à prendre pour ÉVITER les retards : on liste les activités
+  // ouvertes AVEC leur échéance (à venir comme en retard), pas seulement celles déjà dépassées.
+  // Urgence : en retard = « high » (rouge), à venir = « medium ».
+  const sev = (due: string): "high" | "medium" => (due < today ? "high" : "medium");
 
   for (const a of esgRes.data ?? []) {
-    if (a.date_end_plan && a.date_end_plan < today) {
-      items.push({ kind: "ESG", label: a.action ?? "Action E&S", sub: nameOf(a.entity_type, a.entity_id), href: hrefOf(a.entity_type, a.entity_id), severity: "high", assigneeId: a.assignee_id ?? null, dueDate: a.date_end_plan });
+    if (a.date_end_plan) {
+      items.push({ kind: "ESG", label: a.action ?? "Action E&S", sub: nameOf(a.entity_type, a.entity_id), href: hrefOf(a.entity_type, a.entity_id), severity: sev(a.date_end_plan), assigneeId: a.assignee_id ?? null, dueDate: a.date_end_plan });
     }
   }
   for (const t of taskRes.data ?? []) {
-    if (t.due_date && t.due_date < today) {
-      items.push({ kind: "Action", label: t.title, sub: nameOf(t.entity_type, t.entity_id), href: hrefOf(t.entity_type, t.entity_id), severity: "high", assigneeId: t.assignee_id ?? null, dueDate: t.due_date });
+    if (t.due_date) {
+      items.push({ kind: "Action", label: t.title, sub: nameOf(t.entity_type, t.entity_id), href: hrefOf(t.entity_type, t.entity_id), severity: sev(t.due_date), assigneeId: t.assignee_id ?? null, dueDate: t.due_date });
     }
   }
   for (const d of ddRes.data ?? []) {
-    if (d.status !== "Terminé" && d.due_date && d.due_date < today) {
+    if (d.status !== "Terminé" && d.due_date) {
       const flagged = d.status === "Point d'attention";
-      items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)}${flagged ? " · point d'attention" : ""}`, href: hrefOf(d.entity_type, d.entity_id), severity: flagged ? "high" : "medium", assigneeId: d.assignee_id ?? null, dueDate: d.due_date });
+      items.push({ kind: "Due diligence", label: d.item, sub: `${nameOf(d.entity_type, d.entity_id)}${flagged ? " · point d'attention" : ""}`, href: hrefOf(d.entity_type, d.entity_id), severity: flagged ? "high" : sev(d.due_date), assigneeId: d.assignee_id ?? null, dueDate: d.due_date });
     }
   }
   for (const v of vcRes.data ?? []) {
-    if (v.target_date && v.target_date < today && v.status !== "Réalisée" && v.status !== "En pause") {
-      items.push({ kind: "Création de valeur", label: v.initiative, sub: nameOf(v.entity_type, v.entity_id), href: hrefOf(v.entity_type, v.entity_id), severity: "medium", assigneeId: v.assignee_id ?? null, dueDate: v.target_date });
+    if (v.target_date && v.status !== "Réalisée" && v.status !== "En pause") {
+      items.push({ kind: "Création de valeur", label: v.initiative, sub: nameOf(v.entity_type, v.entity_id), href: hrefOf(v.entity_type, v.entity_id), severity: sev(v.target_date), assigneeId: v.assignee_id ?? null, dueDate: v.target_date });
     }
   }
 
   // Décisions à valider — pipeline ET portefeuille (un passage porte soit deal_id, soit company_id).
-  // Délai par défaut : 3 jours ouvrables après la proposition ; on ne la fait remonter qu'AU-DELÀ,
-  // quand elle est en retard (avant, la Direction est dans les temps — elle a été prévenue par e-mail).
+  // Elles remontent DÈS la proposition, avec le délai par défaut de 3 jours ouvrables comme
+  // échéance ; au-delà elles passent « en retard ». Objectif : valider dans les temps.
   for (const c of comRes.data ?? []) {
-    if (!c.created_at) continue;
-    const deadline = addBusinessDays(c.created_at, COMMITTEE_VALIDATION_BUSINESS_DAYS);
-    if (deadline >= today) continue;
+    const deadline = c.created_at ? addBusinessDays(c.created_at, COMMITTEE_VALIDATION_BUSINESS_DAYS) : today;
     const isCompany = !!c.company_id;
     const entityName = isCompany ? (coMap.get(c.company_id) ?? "—") : (dealMap.get(c.deal_id) ?? "—");
     const href = isCompany ? `/portefeuille/${c.company_id}` : (c.deal_id ? `/pipeline/${c.deal_id}` : "/pipeline");
-    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${entityName}${c.decision ? ` · ${c.decision}` : ""}`, href, severity: "high", assigneeId: null, validation: true, dueDate: deadline });
+    items.push({ kind: "Comité", label: `${c.committee_type} — décision à valider`, sub: `${entityName}${c.decision ? ` · ${c.decision}` : ""}`, href, severity: deadline < today ? "high" : "medium", assigneeId: null, validation: true, dueDate: deadline });
   }
 
   // À gravité égale, le plus ancien retard passe devant : c'est celui qui coûte le plus.
