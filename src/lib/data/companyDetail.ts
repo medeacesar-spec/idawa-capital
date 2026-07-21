@@ -52,6 +52,10 @@ export type CompanyDetail = {
   programId: string | null;
   originDealId: string | null;
   originDealName: string | null;
+  /** Canal d'entrée du dossier, repris de l'instruction (lecture seule). */
+  originSource: { source: string | null; detail: string | null };
+  /** Rationnel / thèse d'investissement, repris du dossier. */
+  originThesis: string | null;
   originDueDiligence: OriginDueDiligence[];
   decisions: CompanyDecision[];
   originNotes: OriginNote[];
@@ -93,7 +97,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const [progRes, subRes, dealRes, contactRes, docRes] = await Promise.all([
     c.program_id ? supabase.from("programs").select("name, color").eq("id", c.program_id).single() : Promise.resolve({ data: null }),
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
-    c.origin_deal_id ? supabase.from("deals").select("company_name, thesis").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
+    c.origin_deal_id ? supabase.from("deals").select("company_name, thesis, deal_source, deal_source_detail").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
     supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("company_id", id),
     supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
   ]);
@@ -156,6 +160,11 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     programId: c.program_id ?? null,
     originDealId: c.origin_deal_id ?? null,
     originDealName: (dealRes.data as { company_name?: string } | null)?.company_name ?? null,
+    originSource: {
+      source: (dealRes.data as { deal_source?: string } | null)?.deal_source ?? null,
+      detail: (dealRes.data as { deal_source_detail?: string } | null)?.deal_source_detail ?? null,
+    },
+    originThesis: (dealRes.data as { thesis?: string } | null)?.thesis ?? null,
     originDueDiligence: (ddRes.data ?? []).map((x) => ({ id: x.id, domain: x.domain, item: x.item, status: x.status ?? null, note: x.note ?? null })),
     decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),

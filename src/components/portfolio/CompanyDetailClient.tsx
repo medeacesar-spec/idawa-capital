@@ -300,6 +300,23 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
             {company.originDealId && <button className="btn btn-ghost" onClick={() => router.push(`/pipeline/${company.originDealId}`)}>Ouvrir le dossier d'origine</button>}
           </div>
 
+          {(company.originSource.source || company.originThesis) && (
+            <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 12 }}>
+              {company.originSource.source && (
+                <div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--camel)", marginBottom: 3 }}>Canal source du dossier</div>
+                  <div style={{ fontSize: 12.5, color: "var(--ink)" }}>{company.originSource.source}{company.originSource.detail ? ` · ${company.originSource.detail}` : ""}</div>
+                </div>
+              )}
+              {company.originThesis && (
+                <div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--camel)", marginBottom: 3 }}>Rationnel / thèse d'investissement</div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{company.originThesis}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
               <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Due diligence réalisée</div>
