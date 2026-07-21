@@ -3,17 +3,19 @@ import { getTodoItems } from "@/lib/data/todo";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import TodoBanner from "@/components/dashboard/TodoBanner";
 import { createClient } from "@/lib/supabase/server";
-import { getMyPermissions, can } from "@/lib/auth/permissions";
+import { getMyPermissions, isExternalRole } from "@/lib/auth/permissions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const [data, todo, { data: { user } }, { perms }] = await Promise.all([
+  const [data, todo, { data: { user } }, { perms, roleName }] = await Promise.all([
     getDashboardData(),
     getTodoItems(),
     supabase.auth.getUser(),
     getMyPermissions(),
   ]);
-  const canSeeAll = can(perms, "consolide");
+  // La liste complète des actions du fonds est visible par TOUS les rôles internes ;
+  // seuls les rôles externes (Auditeur, Observateur / LP) restent limités à « leurs » actions.
+  const canSeeAll = !isExternalRole(roleName);
   const canValidateComites = perms.comites === "V";
   return (
     <>

@@ -7,6 +7,11 @@ export type Permissions = Record<string, string>;
 export const PERM_RANK: Record<string, number> = { "-": 0, "L": 1, "V": 2, "E": 3 };
 export const ADMIN_PERMS: Permissions = { users: "E", config: "E", comites: "E", pipeline: "E", consolide: "E", reporting: "E", portefeuille: "E", contacts: "E", documents: "E" };
 
+// Rôles EXTERNES au fonds : ils ne voient que ce qui les concerne, jamais la vue
+// consolidée « tout le fonds » (liste complète des actions du portefeuille).
+export const EXTERNAL_ROLES = ["Auditeur", "Observateur / LP"];
+export function isExternalRole(roleName: string): boolean { return EXTERNAL_ROLES.includes(roleName); }
+
 export async function getMyPermissions(): Promise<{ perms: Permissions; roleName: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
