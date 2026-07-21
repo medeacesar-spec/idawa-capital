@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import PasswordChecklist from "@/components/shared/PasswordChecklist";
+import { checkPassword } from "@/lib/password-policy";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -73,7 +75,8 @@ export default function ResetPasswordPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (pwd.length < 8) { setError("Le mot de passe doit contenir au moins 8 caractères."); return; }
+    const check = checkPassword(pwd);
+    if (!check.valid) { setError(check.firstError!); return; }
     if (pwd !== pwd2) { setError("Les deux mots de passe ne correspondent pas."); return; }
     setBusy(true); setError(null);
     const supabase = createClient();
@@ -117,11 +120,12 @@ export default function ResetPasswordPage() {
               </div>
             )}
             <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Nouveau mot de passe</label>
-            <input type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" style={{ ...inputStyle, marginBottom: 14 }} />
+            <input type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" style={{ ...inputStyle, marginBottom: 10 }} />
+            <div style={{ marginBottom: 14 }}><PasswordChecklist value={pwd} /></div>
             <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-2)", marginBottom: 6 }}>Confirmer</label>
             <input type="password" required value={pwd2} onChange={(e) => setPwd2(e.target.value)} placeholder="••••••••" style={{ ...inputStyle, marginBottom: 20 }} />
             {error && <div style={{ fontSize: 12.5, color: "var(--red-fg)", background: "var(--red-bg)", borderRadius: 8, padding: "9px 12px", marginBottom: 16 }}>{error}</div>}
-            <button type="submit" disabled={busy} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px", fontSize: 14, opacity: busy ? 0.6 : 1 }}>{busy ? "Enregistrement…" : "Enregistrer le mot de passe"}</button>
+            <button type="submit" disabled={busy || !checkPassword(pwd).valid || !pwd2} className="btn btn-primary" style={{ width: "100%", justifyContent: "center", padding: "12px", fontSize: 14, opacity: (busy || !checkPassword(pwd).valid || !pwd2) ? 0.6 : 1 }}>{busy ? "Enregistrement…" : "Enregistrer le mot de passe"}</button>
           </form>
         ) : null}
       </div>

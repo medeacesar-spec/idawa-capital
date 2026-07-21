@@ -159,7 +159,7 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 
 | Item | Statut | Migration |
 |---|---|---|
-| **Règles de composition du mot de passe** : au premier choix ET au changement (Mon compte + écran `/reinitialiser`), afficher/exiger la composition voulue (longueur, majuscule/chiffre/caractère spécial…). Aujourd'hui seule une longueur ≥ 8 est vérifiée (`AccountClient.changePwd`, `reinitialiser`). | à faire | non |
+| **Règles de composition du mot de passe** : au premier choix (`/reinitialiser`) ET au changement (Mon compte), la composition est affichée sous forme de **checklist qui s'actualise à la frappe** (✓/✗) et **exigée** avant enregistrement (bouton grisé tant que non conforme). Règle : **≥ 10 caractères, minuscule, majuscule, chiffre, caractère spécial** — module partagé `src/lib/password-policy.ts` + `src/components/shared/PasswordChecklist.tsx`. NB : aligner aussi la politique Supabase Auth (tableau de bord) sur cette règle. | **fait** | non |
 | **Cahier de tests complet** pour les rôles **Analyste** et **Chargé d'investissement** : scénarios de bout en bout couvrant leurs droits et parcours (pipeline, saisie, comités, reporting, ESG/questionnaire…). Livrable = document. | à faire | non |
 | **Document d'onboarding** sympa et vivant (prise en main de l'outil pour un nouvel arrivant). Livrable = document. | à faire | non |
 | Contenu qualitatif entreprise (profils, études de cas, témoignages) — reporté de la Phase 5. | à faire | oui |

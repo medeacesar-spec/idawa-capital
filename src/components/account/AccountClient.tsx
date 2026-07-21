@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { sendTestDigest } from "@/app/(app)/notify-actions";
 import { Field, Input } from "@/components/ui/form";
+import PasswordChecklist from "@/components/shared/PasswordChecklist";
+import { checkPassword } from "@/lib/password-policy";
 
 function Msg({ kind, text }: { kind: "ok" | "err"; text: string }) {
   return <div style={{ fontSize: 12.5, marginTop: 10, borderRadius: 8, padding: "9px 12px", color: kind === "ok" ? "var(--green-fg)" : "var(--red-fg)", background: kind === "ok" ? "var(--green-bg)" : "var(--red-bg)" }}>{text}</div>;
@@ -49,7 +51,8 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
   }
 
   async function changePwd() {
-    if (pwd.length < 8) { setPwdMsg({ kind: "err", text: "Le mot de passe doit contenir au moins 8 caractères." }); return; }
+    const check = checkPassword(pwd);
+    if (!check.valid) { setPwdMsg({ kind: "err", text: check.firstError! }); return; }
     if (pwd !== pwd2) { setPwdMsg({ kind: "err", text: "Les deux mots de passe ne correspondent pas." }); return; }
     setPwdBusy(true); setPwdMsg(null);
     const { error } = await createClient().auth.updateUser({ password: pwd });
@@ -76,11 +79,12 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
 
       <div style={card}>
         <h3 style={h3}>Mot de passe</h3>
-        <p style={sub}>Choisissez un nouveau mot de passe (8 caractères minimum).</p>
+        <p style={sub}>Choisissez un nouveau mot de passe respectant les règles ci-dessous.</p>
         <Field label="Nouveau mot de passe"><Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="••••••••" /></Field>
+        <div style={{ margin: "-4px 0 12px" }}><PasswordChecklist value={pwd} /></div>
         <Field label="Confirmer"><Input type="password" value={pwd2} onChange={(e) => setPwd2(e.target.value)} placeholder="••••••••" /></Field>
         <div style={{ marginTop: 12 }}>
-          <button className="btn btn-primary" disabled={pwdBusy || !pwd || !pwd2} onClick={changePwd}>{pwdBusy ? "Modification…" : "Changer le mot de passe"}</button>
+          <button className="btn btn-primary" disabled={pwdBusy || !checkPassword(pwd).valid || !pwd2} onClick={changePwd}>{pwdBusy ? "Modification…" : "Changer le mot de passe"}</button>
         </div>
         {pwdMsg && <Msg kind={pwdMsg.kind} text={pwdMsg.text} />}
       </div>
