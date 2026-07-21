@@ -317,11 +317,37 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
             </div>
           )}
 
-          <div>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Due diligence réalisée</div>
-              <div style={{ fontSize: 11, color: "var(--text-3)" }}>Les passages en comité de l'instruction sont repris dans l'onglet <b style={{ color: "var(--text-2)" }}>Décisions</b>.</div>
+          {company.originCommittees.length > 0 && (
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>Passages en comité (instruction)</div>
+                <div style={{ fontSize: 11, color: "var(--text-3)" }}>L'onglet <b style={{ color: "var(--text-2)" }}>Décisions</b> ne garde que les décisions post-investissement.</div>
+              </div>
+              <div className="card" style={{ padding: "14px 18px", display: "grid", gap: 12 }}>
+                {company.originCommittees.map((c) => {
+                  const validated = c.status === "Validée";
+                  return (
+                    <div key={c.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--camel)", marginTop: 5, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{c.committeeType}</span>
+                          {c.outcome && <span className={`badge ${OUTCOME_BADGE[c.outcome] ?? "badge-neutral"}`}>{c.outcome}</span>}
+                          {c.decision && <span className={`badge ${DECISION_BADGE[c.decision] ?? "badge-neutral"}`}>{c.decision}</span>}
+                          <span className={`badge ${validated ? "badge-green" : "badge-amber"}`}>{validated ? "Décision validée" : "Proposée"}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>{c.sessionDate ? frMonth(c.sessionDate) : ""}{c.participants ? ` · ${c.participants}` : ""}{validated && c.validatedBy ? ` · validée par ${c.validatedBy}` : ""}</div>
+                        {c.conditions && <div style={{ fontSize: 11.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 2 }}>{c.conditions}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          )}
+
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>Due diligence réalisée</div>
             {company.originDueDiligence.length === 0 ? (
               <div className="card" style={{ padding: "20px", textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>Aucun élément de due diligence repris de l'instruction.</div>
             ) : (

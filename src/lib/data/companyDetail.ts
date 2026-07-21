@@ -16,6 +16,7 @@ export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
 export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null; createdAt: string | null };
 export type OriginDueDiligence = { id: string; domain: string; item: string; status: string | null; note: string | null };
+export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; outcome: string | null; conditions: string | null; participants: string | null; status: string; validatedBy: string | null; validatedAt: string | null };
 export type CommitteeDocRef = { id: string; title: string; storagePath: string | null };
 export type CompanyDecision = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDocRef[] };
 export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
@@ -56,6 +57,8 @@ export type CompanyDetail = {
   originSource: { source: string | null; detail: string | null };
   /** Rationnel / thèse d'investissement, repris du dossier. */
   originThesis: string | null;
+  /** Parcours en comité de l'instruction (lecture seule), distinct des décisions post-investissement. */
+  originCommittees: OriginCommittee[];
   originDueDiligence: OriginDueDiligence[];
   decisions: CompanyDecision[];
   originNotes: OriginNote[];
@@ -102,21 +105,27 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
   ]);
 
-  const [ddRes, onRes, qRes] = await Promise.all([
+  const [ddRes, onRes, ocRes, qRes] = await Promise.all([
     // Due diligence réalisée pendant l'instruction : lue EN TRANSPARENCE depuis le dossier
     // d'origine (le dossier reste intact, on ne duplique pas). Affichée en lecture seule.
     c.origin_deal_id ? supabase.from("dd_items").select("id, domain, item, status, note").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("domain") : Promise.resolve({ data: [] }),
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
+    // Parcours en COMITÉ pendant l'instruction (la décision d'entrée) : lu depuis le dossier,
+    // affiché en lecture seule dans « Origine / instruction ». À distinguer des décisions
+    // post-investissement de l'onglet « Décisions ».
+    c.origin_deal_id ? supabase.from("committee_passages").select("id, committee_type, session_date, decision, outcome, conditions, participants, status, validated_by, validated_at").eq("deal_id", c.origin_deal_id).order("session_date") : Promise.resolve({ data: [] }),
     // Dernier questionnaire d'impact rempli par l'entrepreneur (validé de préférence, sinon reçu).
     supabase.from("impact_questionnaires").select("year, status, data").eq("entity_type", "company").eq("entity_id", id).in("status", ["Reçu", "Validé"]).order("year", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, users, support] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements(id), getFundUsers(), getCompanySupport(id)]);
 
-  // Décisions de comité prises sur la société (post-investissement : sortie / radiation).
+  // Décisions de comité prises sur la société APRÈS l'investissement (sortie, radiation,
+  // mise sous surveillance…). Les passages d'INSTRUCTION portent un deal_id ; on les EXCLUT
+  // ici (`deal_id is null`) — ils sont montrés dans l'onglet « Origine / instruction ».
   const { data: decRows } = await supabase.from("committee_passages")
     .select("id, committee_type, session_date, decision, conditions, participants, outcome, status, validated_by, validated_at")
-    .eq("company_id", id).order("session_date");
+    .eq("company_id", id).is("deal_id", null).order("session_date");
   const decIds = (decRows ?? []).map((d) => d.id);
   const { data: decDocs } = decIds.length
     ? await supabase.from("documents").select("id, title, storage_path, committee_id").in("committee_id", decIds)
@@ -165,6 +174,12 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       detail: (dealRes.data as { deal_source_detail?: string } | null)?.deal_source_detail ?? null,
     },
     originThesis: (dealRes.data as { thesis?: string } | null)?.thesis ?? null,
+    originCommittees: (ocRes.data ?? []).map((x) => ({
+      id: x.id, committeeType: x.committee_type, sessionDate: x.session_date, decision: x.decision,
+      outcome: x.outcome ?? null, conditions: x.conditions, participants: x.participants, status: x.status ?? "Proposée",
+      validatedBy: x.validated_by ? (users.find((u) => u.id === x.validated_by)?.name ?? "—") : null,
+      validatedAt: x.validated_at ?? null,
+    })),
     originDueDiligence: (ddRes.data ?? []).map((x) => ({ id: x.id, domain: x.domain, item: x.item, status: x.status ?? null, note: x.note ?? null })),
     decisions,
     originNotes: (onRes.data ?? []).map((x) => ({ id: x.id, type: x.type, noteDate: x.note_date, summary: x.summary })),
