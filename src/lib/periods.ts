@@ -41,6 +41,15 @@ export function nextPeriod(period: string): string {
   return `${p.y + 1}`;
 }
 
+/** Adjectif de cadence déduit du format de la période : « mensuelle », « trimestrielle » ou « annuelle ». */
+export function periodKindLabel(period: string): string {
+  const p = parse(period);
+  if (!p) return "";
+  if (p.kind === "M") return "mensuelle";
+  if (p.kind === "T") return "trimestrielle";
+  return "annuelle";
+}
+
 /** Libellé lisible d'une période : « juil. 2026 », « T2 2026 » ou « 2025 ». */
 export function formatPeriod(period: string): string {
   const p = parse(period);

@@ -6,7 +6,7 @@
 
 import { useRouter } from "next/navigation";
 import { fmtFCFA, fmtInt, fmtMult, fmtPct } from "@/lib/format";
-import { nextPeriod, previousPeriod, formatPeriod } from "@/lib/periods";
+import { nextPeriod, previousPeriod, formatPeriod, periodKindLabel } from "@/lib/periods";
 import type { CompanySheet, SheetLine } from "@/lib/reporting/companySheet";
 
 const DASH = "—";
@@ -97,7 +97,7 @@ export default function CompanySheetView({ sheet, editedBy }: { sheet: CompanySh
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, borderBottom: "2px solid var(--espresso)", paddingBottom: 12, marginBottom: 18 }}>
           <div>
             <div style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--camel)", fontWeight: 600 }}>
-              Fiche de suivi trimestrielle
+              Fiche de suivi {periodKindLabel(sheet.period)}
             </div>
             <h1 className="serif" style={{ fontSize: 24, fontWeight: 600, color: "var(--ink)", margin: "3px 0 4px" }}>{sheet.identity.name}</h1>
             <div style={{ fontSize: 11.5, color: "var(--text-2)" }}>
