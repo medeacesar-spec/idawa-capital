@@ -21,12 +21,12 @@ Tu n'as **rien à installer** : tout se passe dans le navigateur, à l'adresse q
 
 **2. Le tableau de bord** t'accueille. C'est ta page d'atterrissage : ce qui t'attend, les échéances qui approchent, les décisions à traiter. Prends l'habitude d'y jeter un œil chaque matin.
 
-**3. Le menu de gauche** est ta boussole. Il est rangé en trois familles :
-- **PILOTAGE** — le cœur du métier : Tableau de bord, Pipeline, Portefeuille, Performance, ESG & Impact, Reporting.
-- **RELATION** — les gens et les papiers : Contacts, Documents, Partenaires & LPs.
-- **ADMINISTRATION** — les réglages : Mon compte, Utilisateurs, Journal d'audit, Bibliothèque KPIs, Paramètres du fonds.
+**3. Le menu de gauche** est ta boussole. Tes écrans de travail :
+- **PILOTAGE** — ton cœur de métier : **Tableau de bord**, **Pipeline**, **Portefeuille**, **Reporting & extraction**.
+- **RELATION** — les gens et les papiers : **Contacts**, **Documents**.
+- **ADMINISTRATION** — **Mon compte** (ton profil, ton mot de passe, tes notifications).
 
-> Tu ne verras que les écrans auxquels ton rôle donne accès — c'est normal, chacun voit ce qui le concerne. Si un écran te manque pour travailler, parles-en à l'administrateur.
+> Tu ne verras que les écrans auxquels ton rôle donne accès — c'est normal, chacun voit ce qui le concerne. Certains écrans (vues consolidées, réglages du fonds…) sont réservés à la Direction et à l'administrateur ; si un écran te manque pour travailler, parles-en à l'administrateur.
 
 ---
 
@@ -163,15 +163,14 @@ L'écran **Reporting & extraction** est le **pont entre l'outil et l'extérieur*
 - **Vide n'est pas zéro.** Un champ laissé vide veut dire « on ne sait pas encore ». Un `0` veut dire « on sait, et c'est zéro » (par exemple un impayé). L'outil fait la différence, alors sois précis.
 - **Toute action a une échéance.** L'outil te force à répondre à « pour quand ? » dès la création — c'est ce qui évite que le suivi dérape. Si tu dois repousser une échéance, dis **pourquoi** : le motif est consigné automatiquement dans le journal du Suivi. Regarde ta liste « À faire » chaque matin : ce qui est urgent est déjà en haut.
 - **Une note datée vaut mieux qu'un souvenir.** Quand tu écartes un dossier, quand tu mets une entreprise sous surveillance, écris **pourquoi**. Dans six mois, ce motif t'évitera de refaire le même chemin.
-- **Le Journal d'audit ne juge personne.** Il note qui a modifié quoi et quand. C'est un filet de sécurité, pas un mouchard : quand deux personnes travaillent en même temps, il permet de comprendre ce qui a changé.
-- **Un mot de passe = une personne.** On ne partage pas de compte. Chaque trace doit correspondre à quelqu'un.
+- **Un mot de passe = une personne.** On ne partage pas de compte. Chaque action laisse une trace au nom de son auteur.
 
 ---
 
 ## Quand quelque chose cloche
 
 - **Un écran te renvoie au tableau de bord ?** C'est probablement que ton rôle n'y donne pas accès. Rien de cassé — demande à l'administrateur si tu en as besoin.
-- **Un chiffre te paraît faux ?** Regarde d'abord le **Journal d'audit** de l'entité : quelqu'un l'a peut-être modifié récemment. Avant de « corriger », on comprend.
+- **Un chiffre te paraît faux ?** Quelqu'un l'a peut-être modifié récemment. Avant de « corriger », vérifie auprès de l'équipe (chaque modification est tracée et l'administrateur peut la retrouver).
 - **Une notification n'arrive pas ?** Le compte « Mon compte » a un bouton **e-mail de test**. S'il ne part pas, c'est côté configuration du fonds — signale-le, ce n'est pas ton problème à régler seul.
 - **Un doute sur une manip ?** Demande. Personne ici n'est né en sachant tout ça, et une question à voix haute fait gagner du temps à tout le monde.
 
