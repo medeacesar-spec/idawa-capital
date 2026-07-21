@@ -1,7 +1,7 @@
 # Bienvenue chez Idawa Capital 👋
 
 _Guide de prise en main de l'outil de pilotage — pipeline & portefeuille_
-_À lire le premier jour, un café à la main. Comptez 20 minutes._
+_À lire le premier jour, un café à la main — puis à garder comme **référence** : les sections Pipeline, Portefeuille et Reporting détaillent chaque onglet et le format attendu._
 
 ---
 
@@ -54,19 +54,106 @@ Quelques mots reviennent tout le temps. Voici la traduction :
 
 ---
 
-## La semaine 1 — Faire le tour du propriétaire
+## La semaine 1 — le tour du propriétaire
 
-Pas besoin de tout maîtriser d'un coup. Voici un ordre de découverte qui a du sens :
+Pas besoin de tout maîtriser d'un coup. Un bon ordre de découverte : **① le pipeline** (comment on instruit un dossier), **② le portefeuille** (comment on suit une participation), **③ le reporting** (comment on ressort les données). Les trois sections qui suivent te font le détail de chacun, **onglet par onglet, avec le format attendu**. Garde-les sous la main : c'est ta référence quand tu ne sais pas « où » ni « comment » saisir quelque chose.
 
-**① Le pipeline.** Ouvre un dossier. Balade-toi dans ses onglets : la thèse d'investissement, la due diligence, le suivi (les tâches à faire), les comités. Regarde comment un dossier **change d'étape** et comment la « prochaine action » remonte en haut de la fiche. C'est là que se passe l'essentiel du travail d'instruction.
+Et n'oublie pas **Mon compte** : vérifie ton nom, ton e-mail, ton rôle, et envoie-toi un **e-mail de test** pour confirmer que les notifications te parviennent (récap hebdo, relances d'échéance, décisions de comité).
 
-**② Le portefeuille.** Ouvre une société. Sa fiche est rangée en **familles** (Investissement, Valorisation, Performance, Suivi & gouvernance) pour ne pas se perdre. Regarde un **échéancier de prêt** : il se recalcule tout seul quand on saisit un encaissement. Regarde les **états financiers** OHADA et le **budget**.
+---
 
-**③ Le suivi & les décisions.** Chaque entreprise a un **journal de suivi** (des notes datées) et un **historique de décisions**. C'est la mémoire de la relation. Quand une décision se prend en comité, elle laisse une trace ici automatiquement.
+## 1. Le pipeline en détail — le dossier, onglet par onglet
 
-**④ Le reporting.** Essaie une **extraction Excel**. C'est le pont entre l'outil et tes présentations : tu travailles dans l'outil, tu sors un Excel propre quand tu dois présenter.
+Un **dossier** avance par **étapes** : Sourcing → Analyse → **Pipeline avancé** → Due diligence → Négociation → Closing → **Investi** (ou **Perdu**). Deux onglets — **ESG** et **Création de valeur** — n'apparaissent qu'à partir du stade « Pipeline avancé » : inutile de les remplir sur un projet qu'on vient juste de sourcer.
 
-**⑤ Mon compte.** Vérifie ton nom, ton e-mail, ton rôle. C'est ici aussi que tu peux t'envoyer un **e-mail de test** pour vérifier que les notifications te parviennent (récap hebdo, relances d'échéances, décisions de comité).
+En haut de chaque dossier, la **« prochaine étape »** est déduite automatiquement de la tâche ouverte à l'échéance la plus proche — tu vois d'un coup d'œil ce qui bloque l'avancement.
+
+| Onglet | À quoi il sert | Ce qu'on y saisit / le format attendu |
+|---|---|---|
+| **Présentation** | La carte d'identité du projet | **Promoteur** (nom, âge, sexe, plus haut diplôme, bio) + **grille d'évaluation sur 5 critères** notés 0–4 avec justification ; **Identité** (année de création, ville, stade de développement) ; **Profil de l'entreprise** (description libre) ; **Rationnel** (la thèse d'investissement). → surtout du texte + la grille promoteur. |
+| **Suivi** | Le carnet de bord du dossier | Deux blocs. **Actions** : une tâche = intitulé + responsable + **échéance (obligatoire)** + statut (À faire / En cours / Fait). **Journal** : notes datées = type (Réunion / Appel / Email / Note) + date + participants + compte-rendu. → toute action a une date ; déplacer une échéance demande un motif, consigné au journal. |
+| **Due diligence** | La liste des points à vérifier | Un point = intitulé + **domaine** (Financière, Juridique & fiscale, Commerciale, Opérationnelle, RH & social, ESG, Gouvernance) + statut (À faire / En cours / Terminé / **Point d'attention**) + **échéance (obligatoire)** + responsable + constat. → une ligne par point, regroupée par domaine. |
+| **Comités** | Les passages en Comité d'investissement | Un passage = type de comité + date de séance + **décision** (Favorable / Favorable sous conditions / Ajourné / Défavorable) + issue (Investissement…) + conditions + participants + **compte-rendu joint** (document). Puis **validation par la Direction**. → c'est la **décision d'investissement validée** qui débloque la conversion en participation. |
+| **KPIs** | Les indicateurs qu'on suit dans le temps | Un KPI = nom + catégorie + unité + cible + sens (plus haut / plus bas = mieux) ; les **valeurs se saisissent par période**. On l'ajoute depuis la **bibliothèque**, la **norme OHADA**, ou en **personnalisé**. → valeur numérique par période. |
+| **Création de valeur** *(stade avancé)* | Le plan pour faire grandir l'entreprise | Une initiative = intitulé + **levier** + responsable + statut + **date cible (obligatoire)** + impact visé. → une ligne par initiative. |
+| **ESG** *(stade avancé)* | Le risque et l'impact environnemental & social | **Diagnostic** (liste d'exclusion, secteur EHS/IFC, catégorie de risque **A / B / C**) ; **plan d'action E&S** (action + domaine **E/S/G** + priorité + responsable + **échéance obligatoire** + statut) ; **notation d'impact IPDEV2** (score /32) ; **questionnaire d'impact** (rempli par l'entrepreneur via un lien). |
+| **Documents** | Les pièces du dossier | Fichier + titre + catégorie. → dépôt de fichiers rattachés au dossier. |
+| **Contacts** | Les personnes liées au dossier | Nom + fonction + organisation + e-mail / téléphone… → un mini-répertoire propre au dossier. |
+
+> Quand le dossier aboutit, on le **convertit en participation** (bouton en haut, actif une fois la décision d'investissement validée). **Tout l'historique est repris** sur la fiche société, et le dossier d'origine est **archivé** (conservé tel quel, non modifiable).
+
+---
+
+## 2. Le portefeuille en détail — la fiche société, famille par famille
+
+Une **société** a beaucoup plus d'onglets qu'un dossier : ils sont donc rangés en **familles** pour ne pas se perdre. On clique d'abord une famille, puis l'onglet.
+
+**Présentation** — même logique qu'un dossier : promoteur + évaluation, identité, profil.
+
+### Famille **Investissement** — ce que le fonds a engagé et décaissé
+| Onglet | Format attendu |
+|---|---|
+| **Investissement** | Les **instruments** de financement (Capital, Quasi-equity, Prêt de campagne…) : type + montant engagé / décaissé + taux + durée + périodicité. L'**échéancier se calcule tout seul**. |
+| **Remboursements** | Les **encaissements réels** : montant encaissé + **date de paiement**. L'outil en déduit le **comportement de paiement** (à l'heure, en retard, partiel, impayé). Rappel : un champ vide ≠ 0. |
+| **Flux financiers** | **Appels de fonds** et **distributions** (montant + date). |
+| **Cap table** | L'**actionnariat** : actionnaire + pourcentage détenu. |
+
+### Famille **Valorisation** — combien vaut la participation, et la sortie
+| Onglet | Format attendu |
+|---|---|
+| **Valorisation** | La valeur, **arrêtée une fois par exercice** : méthode(s) + montant + statut **Proposée → Validée** (la validation, réservée à la Direction, fait foi). |
+| **Structuration** | Méthodes de valo (entrée / actuelle), **scénarios de sortie**, **multiple** et **TRI cible**, année de sortie visée. |
+
+### Famille **Performance** — ce que fait l'entreprise, exercice après exercice
+| Onglet | Format attendu |
+|---|---|
+| **États financiers** | La compta **OHADA**, poste par poste et par exercice (**code OHADA** + montant en **FCFA**). **Import copier-coller** possible depuis un tableur. Les KPIs financiers s'en **alimentent automatiquement**. |
+| **KPIs** | Comme au pipeline : valeur par période. |
+| **Budget & BP** | La grille **budget vs réalisé**, par poste et par exercice. |
+
+### Famille **Suivi & gouvernance** — la vie du dossier
+| Onglet | Format attendu |
+|---|---|
+| **Suivi** | Journal + actions (mêmes règles qu'au pipeline ; échéance obligatoire). |
+| **Décisions** | Les **décisions de comité post-investissement** (réinvestissement, sortie, radiation, mise sous surveillance…) : décision + validation par la Direction. Le **statut de la société bascule automatiquement** à la validation (Sorti, Radié, En difficulté…). |
+| **ESG** | Comme au pipeline (diagnostic, plan d'action, notation, questionnaire). |
+| **Création de valeur** | Comme au pipeline (initiatives, date cible obligatoire). |
+| **Documents** / **Contacts** | Pièces et personnes rattachées à la société. |
+| **Origine / instruction** | L'**historique repris du dossier d'origine** : la **due diligence réalisée** pendant l'instruction, en lecture seule. |
+
+### Famille **Accompagnement** *(si la société est dans un programme d'accélération)*
+| Onglet | Format attendu |
+|---|---|
+| **Accompagnement** | Les **indicateurs d'accompagnement** de l'entreprise, saisis **par trimestre** (avec le cumul depuis l'origine). |
+
+> Une société peut relever de **plusieurs programmes** à la fois, et un programme **mixte** (investissement **et** accompagnement) fait apparaître à la fois les familles Investissement/Valorisation **et** Accompagnement.
+
+---
+
+## 3. Le reporting — ce qu'on peut en sortir
+
+L'écran **Reporting & extraction** est le **pont entre l'outil et l'extérieur** (bailleurs, LPs, entrepreneurs). Trois onglets :
+
+**① Collecte (mensuelle ou trimestrielle, selon la cadence du fonds)** — une grille pour **saisir les valeurs de reporting** de la période (budget / réalisé) société par société.
+
+**② Extraire des données** — un **classeur Excel à la carte** : tu **coches les jeux** voulus, tu **filtres** (programme, type de suivi, plage de périodes), et tu obtiens **un seul fichier**, **une feuille par jeu**. Les jeux disponibles, par famille :
+
+| Famille | Jeux extractibles |
+|---|---|
+| **Portefeuille** | Sociétés · Instruments de financement · Échéances et encaissements · Actionnariat · Flux et valorisations |
+| **Finances** | États financiers OHADA · Budget & business plan · **Analyse financière** (soldes de gestion, bilan fonctionnel, CAF, ratios avec leur norme) |
+| **Suivi** | Indicateurs suivis (**toutes les périodes**, pas une seule) · Tâches · Comptes rendus · Comités et décisions |
+| **ESG & impact** | Diagnostics E&S · Plans d'action E&S · Notation d'impact IPDEV2 |
+| **Accélération** | Indicateurs par entreprise · Indicateurs de programme |
+| **Instruction** | Due diligence · Création de valeur · Dossiers du pipeline |
+| **Référentiel** | Contacts · Documents · Programmes · Partenaires & LPs |
+
+**③ Rapports & fiches I&P** — les **livrables au format I&P / IPDEV**, prêts à envoyer :
+- la **fiche entreprise** (le modèle I&P est **rempli**, pas réinventé : mise en page, graphiques et formules d'origine conservés) ;
+- depuis la fiche d'une société, la **fiche de suivi** cadencée (**mensuelle / trimestrielle / annuelle** selon la société), **imprimable ou en PDF** ;
+- la **réinjection** : réimporter dans l'outil un Excel travaillé à l'extérieur, avec les **écarts affichés avant → après** validation.
+
+> L'idée directrice : tu **saisis au quotidien dans l'outil**, et au moment de présenter, le rapport n'est qu'un **rendu** de ces données — **pas** une re-saisie sous Excel ou PowerPoint.
 
 ---
 
