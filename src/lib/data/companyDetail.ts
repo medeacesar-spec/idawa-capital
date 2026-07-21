@@ -99,8 +99,9 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   ]);
 
   const [ddRes, onRes, qRes] = await Promise.all([
-    // Due diligence réalisée pendant l'instruction, reprise sur la société (lecture seule).
-    supabase.from("dd_items").select("id, domain, item, status, note").eq("entity_type", "company").eq("entity_id", id).order("domain"),
+    // Due diligence réalisée pendant l'instruction : lue EN TRANSPARENCE depuis le dossier
+    // d'origine (le dossier reste intact, on ne duplique pas). Affichée en lecture seule.
+    c.origin_deal_id ? supabase.from("dd_items").select("id, domain, item, status, note").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("domain") : Promise.resolve({ data: [] }),
     c.origin_deal_id ? supabase.from("notes").select("id, type, note_date, summary").eq("entity_type", "deal").eq("entity_id", c.origin_deal_id).order("note_date", { ascending: false }) : Promise.resolve({ data: [] }),
     // Dernier questionnaire d'impact rempli par l'entrepreneur (validé de préférence, sinon reçu).
     supabase.from("impact_questionnaires").select("year, status, data").eq("entity_type", "company").eq("entity_id", id).in("status", ["Reçu", "Validé"]).order("year", { ascending: false }).limit(1).maybeSingle(),

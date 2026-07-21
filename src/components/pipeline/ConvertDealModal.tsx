@@ -46,7 +46,7 @@ export default function ConvertDealModal({ deal, onClose }: { deal: DealDetail; 
         <button className="btn btn-primary" disabled={busy} onClick={submit}>{busy ? "Conversion…" : "Convertir en participation"}</button>
       </>}>
       <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14, background: "var(--surface-cream)", borderRadius: 8, padding: "10px 12px" }}>
-        <b style={{ color: "var(--ink)" }}>{deal.companyName}</b> entre au portefeuille. <b>Tout le dossier suit</b> : promoteur et évaluation, notes du Suivi, KPIs, ESG, contacts, documents, <b>due diligence</b> (onglet Origine / instruction) et <b>décisions de comité</b> (onglet Décisions). Le dossier reste consultable en historique.
+        <b style={{ color: "var(--ink)" }}>{deal.companyName}</b> entre au portefeuille. <b>Tout l'historique est repris</b> (promoteur et évaluation, KPIs, ESG, notes, due diligence, contacts, documents, décisions de comité), et le <b>dossier d'origine reste archivé intact</b> — consultable via l'onglet <b>Origine / instruction</b>.
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Date d'entrée"><Input type="date" value={investedDate} onChange={(e) => setInvestedDate(e.target.value)} /></Field>
