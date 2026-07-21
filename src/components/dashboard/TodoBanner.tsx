@@ -24,6 +24,7 @@ function dueStatus(due: string): { text: string; overdue: boolean; soon: boolean
 
 export default function TodoBanner({ data, currentUserId, canSeeAll, canValidateComites = false }: { data: TodoData; currentUserId: string; canSeeAll: boolean; canValidateComites?: boolean }) {
   const [scope, setScope] = useState<"mine" | "all">("mine");
+  const [showLater, setShowLater] = useState(false);
   const effScope = canSeeAll ? scope : "mine";
   const items = effScope === "all"
     ? data.items
@@ -48,34 +49,54 @@ export default function TodoBanner({ data, currentUserId, canSeeAll, canValidate
       </div>
     );
   }
+
+  // Deux groupes : ce qui appelle une action MAINTENANT (en retard ou échéance < 1 semaine)
+  // est montré d'emblée ; ce qui vient plus tard est replié derrière un bouton « + ».
+  const weekAhead = new Date(); weekAhead.setDate(weekAhead.getDate() + 7);
+  const threshold = weekAhead.toISOString().slice(0, 10);
+  const isUrgent = (it: TodoData["items"][number]) => !it.dueDate || it.dueDate < threshold;
+  const urgent = items.filter(isUrgent);
+  const later = items.filter((it) => !isUrgent(it));
+
+  const Row = (it: TodoData["items"][number], i: number) => {
+    const st = it.dueDate ? dueStatus(it.dueDate) : null;
+    const color = !st ? "var(--text-3)" : st.overdue ? "var(--red-fg)" : st.soon ? "var(--amber-fg)" : "var(--text-3)";
+    return (
+      <Link key={i} href={it.href} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px", borderRadius: 8, textDecoration: "none" }} className="deal-row-click">
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: it.severity === "high" ? "var(--red-fg)" : "var(--amber-fg)", flexShrink: 0 }} />
+        <span className="badge" style={{ background: `${KIND_COLOR[it.kind] ?? "#6B5744"}1a`, color: KIND_COLOR[it.kind] ?? "#6B5744", flexShrink: 0 }}>{it.kind}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
+        <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{it.sub}</span>
+        <span className="tnum" style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color }}>{st ? st.text : "sans échéance"}</span>
+      </Link>
+    );
+  };
+
   return (
     <div className="card" style={{ padding: "16px 20px", marginBottom: 16, borderLeft: "4px solid var(--camel)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--camel)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
         <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>À faire</span>
-        <span className="badge" style={{ background: "var(--rework-bg)", color: "var(--rework)" }}>{items.length}</span>
+        <span className="badge" style={{ background: "var(--rework-bg)", color: "var(--rework)" }}>{urgent.length}</span>
+        <span style={{ fontSize: 11, color: "var(--text-3)" }}>en retard ou sous 7 jours</span>
         {Toggle}
       </div>
-      <div style={{ display: "grid", gap: 2, maxHeight: 260, overflowY: "auto" }}>
-        {items.map((it, i) => (
-          <Link key={i} href={it.href} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px", borderRadius: 8, textDecoration: "none" }} className="deal-row-click">
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: it.severity === "high" ? "var(--red-fg)" : "var(--amber-fg)", flexShrink: 0 }} />
-            <span className="badge" style={{ background: `${KIND_COLOR[it.kind] ?? "#6B5744"}1a`, color: KIND_COLOR[it.kind] ?? "#6B5744", flexShrink: 0 }}>{it.kind}</span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
-            <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>{it.sub}</span>
-            {(() => {
-              const st = it.dueDate ? dueStatus(it.dueDate) : null;
-              const color = !st ? "var(--text-3)" : st.overdue ? "var(--red-fg)" : st.soon ? "var(--amber-fg)" : "var(--text-3)";
-              return (
-                <span className="tnum" style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color }}>
-                  {st ? st.text : "sans échéance"}
-                </span>
-              );
-            })()}
-          </Link>
-        ))}
-      </div>
-      {effScope === "mine" && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>Vos actions à prendre (échéances à venir et retards).{canSeeAll ? " Basculez sur « Tout le fonds » pour la vue direction." : ""}</div>}
+      {urgent.length > 0 ? (
+        <div style={{ display: "grid", gap: 2, maxHeight: 260, overflowY: "auto" }}>
+          {urgent.map(Row)}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12.5, color: "var(--text-2)", padding: "4px 2px 8px" }}>Rien d'urgent cette semaine.</div>
+      )}
+      {later.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <button onClick={() => setShowLater((s) => !s)} style={{ background: "none", border: "none", padding: "4px 2px", cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: "var(--camel)" }}>
+            {showLater ? "− Masquer" : `+ ${later.length} action${later.length > 1 ? "s" : ""} plus tard`}
+          </button>
+          {showLater && <div style={{ display: "grid", gap: 2, maxHeight: 220, overflowY: "auto", marginTop: 4 }}>{later.map(Row)}</div>}
+        </div>
+      )}
+      {effScope === "mine" && <div style={{ fontSize: 10.5, color: "var(--text-3)", marginTop: 8 }}>Vos actions urgentes (en retard ou sous 7 jours). Le reste est sous « + … plus tard ».{canSeeAll ? " « Tout le fonds » pour la vue direction." : ""}</div>}
     </div>
   );
 }
