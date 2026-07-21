@@ -1,7 +1,7 @@
 # Cahier de tests — rôles **Analyste** et **Chargé d'investissement**
 
 _Idawa Capital · outil de pilotage pipeline & portefeuille_
-_Version du 21/07/2026 (màj : échéances obligatoires, to-do « actions à prendre », archivage des dossiers convertis, visibilité « Tout le fonds ») · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
+_Version du 21/07/2026 (màj : échéances obligatoires, to-do « actions à prendre » en 2 groupes, archivage des dossiers convertis, visibilité « Tout le fonds », onglet Origine/instruction ↔ Décisions, extraction sans Partenaires & LPs) · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
 
 ---
 
@@ -194,6 +194,8 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 | T-08 ✅ | **Vue « Tout le fonds »** : le sélecteur « Mes actions / Tout le fonds » de la to-do | **Visible** pour Analyste et Chargé (rôles internes) ; il serait **absent** pour un rôle externe (Auditeur, Observateur / LP) | ☐ | ☐ |
 | T-09 ✅⛔ | **Conversion → archivage** : convertir un dossier (nécessite une décision d'investissement validée en comité) | Une **confirmation** s'affiche (« la fiche sera archivée, non modifiable — Voulez-vous continuer ? Oui / Non ») ; après conversion, le dossier porte le badge **« Archivé »**, un bandeau d'avertissement, et **n'est plus modifiable** (tous les onglets ET les comités verrouillés), même pour un administrateur | ☐ | ☐ |
 | T-10 ✅ | **Fiche de suivi** (bouton « Fiche de suivi » sur une société) | S'ouvre, imprimable / PDF, titrée selon la cadence : **« Fiche de suivi mensuelle / trimestrielle / annuelle »** cohérente avec la période affichée | ☐ | ☐ |
+| T-11 ✅ | **Origine / instruction vs Décisions** (sur une société **issue d'un dossier**) : ouvrir l'onglet *Origine / instruction*, puis *Décisions* | *Origine / instruction* montre **Canal source du dossier**, **Rationnel / thèse**, **Passages en comité (instruction)** et **Due diligence réalisée** (lecture seule). *Décisions* ne contient QUE les décisions **post-investissement** (vide tant qu'il n'y en a pas) — les comités d'instruction n'y sont plus | ☐ | ☐ |
+| T-12 ⛔ | **Extraction sans Partenaires & LPs** : Reporting → *Extraire des données*, famille **Référentiel** | Propose **Contacts · Documents · Programmes** ; **Partenaires & LPs n'y figure pas** (donnée réservée) | ☐ | ☐ |
 
 > ℹ️ **T-01 est le test le plus important.** Masquer un bouton ne suffit pas : l'écran doit refuser l'accès **même en tapant l'URL**. C'est ce que garantissent les gardes `requirePerm` côté serveur. (Rappel : le verrou base de données par rôle — RLS — reste « à voir éventuellement » ; tant qu'il n'est pas posé, une personne qui contournerait complètement l'interface pourrait encore écrire. Les gardes testés ici couvrent l'usage par l'interface.)
 
@@ -205,7 +207,7 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 |---|---|---|---|---|---|
 | Analyste | ___ / 20 | ___ / 9 | | | |
 | Chargé d'investissement | ___ / 17 | ___ / 8 | | | |
-| Transverses (T-01 → T-10) | ___ / 10 (positifs + négatifs) | — | | | |
+| Transverses (T-01 → T-12) | ___ / 12 (positifs + négatifs) | — | | | |
 
 **Anomalies relevées** (n° du test, écran, ce qui s'est passé, gravité) :
 
