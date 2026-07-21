@@ -64,7 +64,9 @@ Et n'oublie pas **Mon compte** : vérifie ton nom, ton e-mail, ton rôle, et env
 
 ## 1. Le pipeline en détail — le dossier, onglet par onglet
 
-Un **dossier** avance par **étapes** : Sourcing → Analyse → **Pipeline avancé** → Due diligence → Négociation → Closing → **Investi** (ou **Perdu**). Deux onglets — **ESG** et **Création de valeur** — n'apparaissent qu'à partir du stade « Pipeline avancé » : inutile de les remplir sur un projet qu'on vient juste de sourcer.
+Un **dossier** avance par **étapes** : Sourcing → Analyse → **Pipeline avancé** → Due diligence → Négociation → Closing → **Investi** (ou **Perdu**).
+
+On appelle **« stade avancé »** le moment où le dossier atteint l'étape **Pipeline avancé** — et tout ce qui suit (Pipeline avancé, Due diligence, Négociation, Closing, Investi). C'est à ce stade que deux onglets — **ESG** et **Création de valeur** — apparaissent : inutile de les remplir sur un projet qu'on vient juste de sourcer.
 
 En haut de chaque dossier, la **« prochaine étape »** est déduite automatiquement de la tâche ouverte à l'échéance la plus proche — tu vois d'un coup d'œil ce qui bloque l'avancement.
 
