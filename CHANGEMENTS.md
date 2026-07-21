@@ -160,8 +160,8 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 | Item | Statut | Migration |
 |---|---|---|
 | **Règles de composition du mot de passe** : au premier choix (`/reinitialiser`) ET au changement (Mon compte), la composition est affichée sous forme de **checklist qui s'actualise à la frappe** (✓/✗) et **exigée** avant enregistrement (bouton grisé tant que non conforme). Règle : **≥ 10 caractères, minuscule, majuscule, chiffre, caractère spécial** — module partagé `src/lib/password-policy.ts` + `src/components/shared/PasswordChecklist.tsx`. NB : aligner aussi la politique Supabase Auth (tableau de bord) sur cette règle. | **fait** | non |
-| **Cahier de tests complet** pour les rôles **Analyste** et **Chargé d'investissement** : scénarios de bout en bout couvrant leurs droits et parcours (pipeline, saisie, comités, reporting, ESG/questionnaire…). Livrable = document. | à faire | non |
-| **Document d'onboarding** sympa et vivant (prise en main de l'outil pour un nouvel arrivant). Livrable = document. | à faire | non |
+| **Cahier de tests complet** pour les rôles **Analyste** et **Chargé d'investissement** : scénarios de bout en bout, tests positifs ET négatifs, matrice des droits effective, feuille de résultats → `docs/cahier-de-tests-roles.md`. Point non évident capté : comité **E** enregistre mais **ne valide pas** (validation = V, Direction) ; Paramètres du fonds exige config **E** (hors des deux rôles) ; Journal d'audit gouverné par `users`. | **fait** | non |
+| **Document d'onboarding** sympa et vivant (prise en main pour un nouvel arrivant : jour 1, vocabulaire maison, tour en semaine 1, bonnes habitudes, dépannage) → `docs/onboarding.md`. | **fait** | non |
 | Contenu qualitatif entreprise (profils, études de cas, témoignages) — reporté de la Phase 5. | à faire | oui |
 | Vérif visuelle de la **fiche de suivi mensuelle** (faite en code, à confirmer en session connectée). | à faire | non |
 
