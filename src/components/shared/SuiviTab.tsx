@@ -59,7 +59,12 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", textDecoration: t.status === "Fait" ? "line-through" : "none", opacity: t.status === "Fait" ? 0.6 : 1 }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>{t.assigneeLabel ? t.assigneeLabel : "Non assignée"}{t.dueDate ? ` · échéance ${frDate(t.dueDate)}` : t.createdAt ? ` · ajoutée le ${frDate(t.createdAt)}` : ""}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)" }}>
+                    {t.assigneeLabel ? t.assigneeLabel : "Non assignée"}
+                    {t.dueDate
+                      ? ` · échéance ${frDate(t.dueDate)}`
+                      : <span style={{ color: "var(--red-fg)", fontWeight: 600 }}> · échéance à définir</span>}
+                  </div>
                 </div>
                 <div className="row-actions" style={{ display: canEdit ? undefined : "none" }}>
                   <button onClick={() => setTaskModal({ open: true, task: t })} aria-label="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg></button>
@@ -145,33 +150,58 @@ export default function SuiviTab({ entityType, entityId, notes, tasks, users }: 
     const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
     const [due, setDue] = useState(task?.dueDate ?? "");
     const [status, setStatus] = useState(task?.status ?? TASK_STATUS[0]);
+    const [dueReason, setDueReason] = useState("");
+    // Échéance OBLIGATOIRE : impossible d'enregistrer une action sans date — cela force
+    // l'équipe à se poser la question « pour quand ? » dès la création.
+    const originalDue = task?.dueDate ?? null;
+    // « Modification » = une échéance qui EXISTAIT déjà et qu'on change (poser la première
+    // échéance d'une action qui n'en avait pas n'exige pas de motif, c'est juste la définir).
+    const dueChanged = !!task && !!originalDue && !!due && due !== originalDue;
+    const canSave = !!title.trim() && !!due && !(dueChanged && !dueReason.trim());
     async function save() {
-      if (!title.trim()) return;
+      if (!canSave) return;
       setBusy(true);
       const supabase = createClient();
       const label = users.find((u) => u.id === assigneeId)?.name ?? null;
-      const payload = { entity_type: entityType, entity_id: entityId, title: title.trim(), assignee_id: assigneeId || null, assignee_label: label, due_date: due || null, status, source: "manuel" };
-      if (task) await supabase.from("tasks").update(payload).eq("id", task.id);
-      else await supabase.from("tasks").insert(payload);
+      const payload = { entity_type: entityType, entity_id: entityId, title: title.trim(), assignee_id: assigneeId || null, assignee_label: label, due_date: due, status, source: "manuel" };
+      if (task) {
+        await supabase.from("tasks").update(payload).eq("id", task.id);
+        // Tout changement d'échéance est CONSIGNÉ immédiatement dans le Suivi (note datée),
+        // avec le motif saisi quand il s'agit d'une échéance déplacée.
+        if (due !== originalDue) {
+          const msg = originalDue
+            ? `Échéance de l'action « ${title.trim()} » modifiée : ${frDate(originalDue)} → ${frDate(due)}${dueReason.trim() ? ` — ${dueReason.trim()}` : ""}.`
+            : `Échéance de l'action « ${title.trim()} » définie : ${frDate(due)}.`;
+          await supabase.from("notes").insert({ entity_type: entityType, entity_id: entityId, type: "Note", note_date: todayISO(), participants: null, summary: msg });
+        }
+      } else {
+        await supabase.from("tasks").insert(payload);
+      }
       // Prévenir la personne assignée — uniquement si l'affectation a CHANGÉ :
       // la rappeler à chaque retouche ferait ignorer tous les emails suivants.
       if (assigneeId && assigneeId !== (task?.assigneeId ?? "")) {
         await notifyAssignment({
           kind: "Action de suivi", title: title.trim(), assigneeId,
-          dueDate: due || null, entityType, entityId,
+          dueDate: due, entityType, entityId,
         });
       }
       onClose(); router.refresh();
     }
     return (
       <Modal title={task ? "Modifier l'action" : "Ajouter une action"} onClose={onClose}
-        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !title.trim()} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
+        footer={<><button className="btn btn-ghost" onClick={onClose}>Annuler</button><button className="btn btn-primary" disabled={busy || !canSave} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer"}</button></>}>
         <Field label="Action"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex : Finaliser l'audit KYC" /></Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Assigné à"><Select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}><option value="">— Personne —</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
-          <Field label="Échéance"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
+          <Field label="Échéance (obligatoire)"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
         </div>
+        {!due && <div style={{ fontSize: 11.5, color: "var(--red-fg)", margin: "-6px 0 4px" }}>Une échéance est requise : chaque action doit avoir une date « pour quand ? ».</div>}
         <Field label="Statut"><Select value={status} onChange={(e) => setStatus(e.target.value)}>{TASK_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Select></Field>
+        {dueChanged && (
+          <Field label="Motif du changement d'échéance">
+            <Textarea rows={2} value={dueReason} onChange={(e) => setDueReason(e.target.value)} placeholder="Pourquoi l'échéance est-elle déplacée ? (consigné dans le journal du Suivi)" />
+          </Field>
+        )}
       </Modal>
     );
   }
