@@ -155,6 +155,18 @@ Chantiers non prévus au plan initial, ouverts au fil des retours d'usage.
 
 ---
 
+## Phase 6 — prochaine session (demandes du 20/07)
+
+| Item | Statut | Migration |
+|---|---|---|
+| **Règles de composition du mot de passe** : au premier choix ET au changement (Mon compte + écran `/reinitialiser`), afficher/exiger la composition voulue (longueur, majuscule/chiffre/caractère spécial…). Aujourd'hui seule une longueur ≥ 8 est vérifiée (`AccountClient.changePwd`, `reinitialiser`). | à faire | non |
+| **Cahier de tests complet** pour les rôles **Analyste** et **Chargé d'investissement** : scénarios de bout en bout couvrant leurs droits et parcours (pipeline, saisie, comités, reporting, ESG/questionnaire…). Livrable = document. | à faire | non |
+| **Document d'onboarding** sympa et vivant (prise en main de l'outil pour un nouvel arrivant). Livrable = document. | à faire | non |
+| Contenu qualitatif entreprise (profils, études de cas, témoignages) — reporté de la Phase 5. | à faire | oui |
+| Vérif visuelle de la **fiche de suivi mensuelle** (faite en code, à confirmer en session connectée). | à faire | non |
+
+---
+
 ## Ordre de test après chaque déploiement
 
 Le chemin critique de l'application, à dérouler dans cet ordre :
