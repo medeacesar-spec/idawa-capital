@@ -63,7 +63,6 @@ export const EXTRACTION_SETS: ExtractionSet[] = [
   { key: "contacts", group: "Référentiel", label: "Contacts", hint: "Répertoire, avec l'entité rattachée." },
   { key: "documents", group: "Référentiel", label: "Documents", hint: "Titre, catégorie, rattachement, date de dépôt." },
   { key: "programmes", group: "Référentiel", label: "Programmes", hint: "Nature, statut, secteur EHS." },
-  { key: "partenaires", group: "Référentiel", label: "Partenaires & LPs", hint: "Type, engagement, appelé, distribué." },
 ];
 
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -421,14 +420,8 @@ export async function buildExtraction(keys: string[], scope: ExtractionScope): P
       (progs ?? []).map((p) => [p.name as string, (p.nature as string) ?? null, (p.status as string) ?? null, (p.ehs_sector as string) ?? null]),
       [28, 18, 12, 30]);
   }
-  if (wanted.has("partenaires")) {
-    const { data } = await supabase.from("partners").select("*").order("name");
-    add("Partenaires & LPs", ["Partenaire", "Type", "Statut", "Engagé", "En discussion", "Appelé", "Distribué"],
-      (data ?? []).map((p) => [
-        p.name as string, (p.partner_type as string) ?? null, (p.status as string) ?? null,
-        num(p.amount_committed), num(p.amount_discussing), num(p.amount_called), num(p.amount_distributed),
-      ]), [30, 24, 16, 16, 16, 16, 16]);
-  }
+  // NB : les Partenaires & LPs ne sont volontairement PAS extractibles ici — donnée
+  // sensible (relation investisseurs / bailleurs), réservée à l'écran Partenaires.
 
   // Feuille de tête : ce que contient le classeur et sur quel périmètre.
   const scopeLabel = scope.companyIds?.length ? `${companies.length} société(s) choisie(s)`

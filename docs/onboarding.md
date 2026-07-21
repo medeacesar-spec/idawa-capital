@@ -146,7 +146,7 @@ L'écran **Reporting & extraction** est le **pont entre l'outil et l'extérieur*
 | **ESG & impact** | Diagnostics E&S · Plans d'action E&S · Notation d'impact IPDEV2 |
 | **Accélération** | Indicateurs par entreprise · Indicateurs de programme |
 | **Instruction** | Due diligence · Création de valeur · Dossiers du pipeline |
-| **Référentiel** | Contacts · Documents · Programmes · Partenaires & LPs |
+| **Référentiel** | Contacts · Documents · Programmes |
 
 **③ Rapports & fiches I&P** — les **livrables au format I&P / IPDEV**, prêts à envoyer :
 - la **fiche entreprise** (le modèle I&P est **rempli**, pas réinventé : mise en page, graphiques et formules d'origine conservés) ;
