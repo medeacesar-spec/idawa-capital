@@ -161,6 +161,41 @@ L'écran **Reporting & extraction** est le **pont entre l'outil et l'extérieur*
 
 ---
 
+## 4. Nomenclature des documents
+
+Pour **retrouver un document d'un coup d'œil** — et pour qu'ils se **rangent tout seuls par date** —, on nomme chaque document déposé selon **4 éléments**, toujours dans le même ordre :
+
+**`Nature_Nom_Type_AAAA-MM-JJ`**
+
+| # | Élément | Ce qu'il indique | Exemples |
+|---|---|---|---|
+| 1 | **Nature** | À quoi le document est rattaché | `Dossier` (pipeline) ou `Societe` (portefeuille) |
+| 2 | **Nom** | Le nom du dossier ou de la société, sans espace | `AgroSahel`, `BatiPro`, `NafiCouture` |
+| 3 | **Type** | La nature du document | voir la liste ci-dessous |
+| 4 | **Date** | La date du document, au format **AAAA-MM-JJ** | `2026-07-22` |
+
+**Les types de document** (élément 3) — ils reprennent la **Catégorie** demandée au dépôt, enrichie des cas courants :
+
+| Type | Ce qu'il regroupe |
+|---|---|
+| **Comite** | Compte-rendu ou présentation de comité (ouverture, investissement, suivi) |
+| **Suivi** | CR de réunion, d'appel, note de suivi |
+| **Financier** | États financiers, budget, reporting chiffré |
+| **Juridique** | Contrat, pacte d'actionnaires, statuts |
+| **ESG** | Diagnostic E&S, plan d'action, questionnaire d'impact |
+| **DueDiligence** | Rapports et pièces de due diligence |
+| **Valorisation** | Notes et arrêtés de valorisation |
+| **Autre** | Ce qui n'entre dans aucune case |
+
+**Exemples**
+- `Dossier_AgroSahel_Comite_2026-06-15.pdf` — CR du comité d'ouverture du dossier AgroSahel.
+- `Societe_BatiPro_Suivi_2026-07-22.docx` — note de suivi de la participation BatiPro.
+- `Societe_CliniqPlus_Financier_2025.xlsx` — états financiers 2025 de CliniqPlus.
+
+> **Conseils.** Pas d'espaces ni d'accents dans le nom du fichier (ils se perdent d'un système à l'autre : écris `Societe`, `Comite`). Et garde bien le format de date **AAAA-MM-JJ** — c'est lui qui range les documents dans l'ordre chronologique tout seul.
+
+---
+
 ## Les bonnes habitudes qui font gagner du temps
 
 - **Saisir une fois, au bon endroit.** L'outil déteste la double saisie : une information n'a qu'un seul foyer. Les KPIs financiers, par exemple, se **remplissent tout seuls** depuis les états financiers — inutile de les retaper.
