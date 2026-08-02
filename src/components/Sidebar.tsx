@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { NAV_GROUPS } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/client";
 import { traceAuth } from "@/lib/auth/trace";
+import { useMobileNav } from "@/components/MobileNav";
 
 function initials(name: string): string {
   const parts = name.replace(/@.*/, "").split(/[\s.]+/).filter(Boolean);
@@ -43,6 +44,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { open, setOpen } = useMobileNav();
   const allowed = new Set(allowedKeys);
   const groups = NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => allowed.has(i.key)) })).filter((g) => g.items.length > 0);
 
@@ -56,10 +58,11 @@ export default function Sidebar({
   }
 
   return (
+    <>
+    <div className={"app-backdrop" + (open ? " open" : "")} onClick={() => setOpen(false)} aria-hidden />
     <aside
+      className={"app-sidebar" + (open ? " open" : "")}
       style={{
-        width: 238,
-        flexShrink: 0,
         background: "var(--brown)",
         display: "flex",
         flexDirection: "column",
@@ -82,6 +85,7 @@ export default function Sidebar({
                 <Link
                   key={item.key}
                   href={item.href}
+                  onClick={() => setOpen(false)}
                   style={{
                     width: "100%",
                     display: "flex",
@@ -125,5 +129,6 @@ export default function Sidebar({
         </button>
       </div>
     </aside>
+    </>
   );
 }
