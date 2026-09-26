@@ -5,6 +5,7 @@ import { getEsg, type EsgData } from "./esg";
 import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
 import { getDdItems, getValueCreation, type DdItem, type ValueInitiative } from "./planning";
 import { getFundUsers, type FundUser } from "./users";
+import { parseProgramCommittees, type ProgramCommittee } from "@/lib/ui-constants";
 
 export type CommitteeDoc = { id: string; title: string; storagePath: string | null; url: string | null };
 export type CommitteePassage = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDoc[] };
@@ -43,6 +44,8 @@ export type DealDetail = {
   /** Programmes du dossier : le principal en tête, puis les rattachements simultanés. */
   programs: { id: string; name: string; color: string | null; principal: boolean }[];
   programOptions: { id: string; name: string; color: string | null }[];
+  /** Comités propres aux programmes du dossier (ex. Comité d'éligibilité de Catal1.5°T). */
+  programCommittees: ProgramCommittee[];
   officer: string | null;
   analyst: string | null;
   expectedClose: string | null;
@@ -90,7 +93,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   // Rattachements en cours, principal compris — même modèle que les sociétés.
   const [{ data: memRows }, { data: allProgs }] = await Promise.all([
     supabase.from("program_memberships").select("program_id").eq("entity_type", "deal").eq("entity_id", id).is("date_end", null),
-    supabase.from("programs").select("id, name, color, status, position").order("position"),
+    supabase.from("programs").select("id, name, color, status, position, committees").order("position"),
   ]);
   const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
   const progIds = Array.from(new Set([
@@ -101,6 +104,12 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     const p = progById.get(pid);
     return { id: pid, name: (p?.name as string) ?? "—", color: (p?.color as string) ?? null, principal: pid === d.program_id };
   });
+  const programCommittees: ProgramCommittee[] = [];
+  for (const pid of progIds) {
+    for (const c of parseProgramCommittees(progById.get(pid)?.committees)) {
+      if (!programCommittees.some((x) => x.name === c.name)) programCommittees.push(c);
+    }
+  }
   const programOptions = (allProgs ?? [])
     .filter((p) => (p as { status?: string }).status !== "Clos")
     .map((p) => ({ id: p.id as string, name: p.name as string, color: (p.color as string) ?? null }));
@@ -120,7 +129,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     },
     sector: (subRes.data as { name?: string } | null)?.name ?? null,
     programName: prog?.name ?? null, programColor: prog?.color ?? null,
-    programs, programOptions,
+    programs, programOptions, programCommittees,
     officer: dn(offRes.data as { full_name?: string; email?: string } | null),
     analyst: dn(anaRes.data as { full_name?: string; email?: string } | null),
     expectedClose: d.expected_close,

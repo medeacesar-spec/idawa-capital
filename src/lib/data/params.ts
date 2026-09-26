@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { parseProgramCommittees, type ProgramCommittee } from "@/lib/ui-constants";
 
 export type ProgramRow = {
   id: string;
@@ -26,6 +27,8 @@ export type ProgramConfig = {
   esgRequired: boolean;
   ehsFamilies: string[];
   indicators: ProgramIndicator[];
+  /** Comités propres au programme, proposés sur ses dossiers en plus des comités Idawa. */
+  committees: ProgramCommittee[];
   /** Participations en capital rattachées : passer le programme en accélération les rendrait incohérentes. */
   equityCompanies: number;
 };
@@ -33,7 +36,7 @@ export type ProgramConfig = {
 export async function getProgramConfig(id: string): Promise<ProgramConfig | null> {
   const supabase = await createClient();
   const [pRes, cRes, iRes] = await Promise.all([
-    supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_families").eq("id", id).single(),
+    supabase.from("programs").select("id, name, color, nature, status, esg_framework, esg_required, ehs_families, committees").eq("id", id).single(),
     supabase.from("portfolio_companies").select("id", { count: "exact", head: true }).eq("program_id", id).eq("tracking_type", "equity"),
     supabase.from("program_indicators").select("id, category, name, unit, target, scope, program_indicator_values(period, value)").eq("program_id", id).order("position"),
   ]);
@@ -49,6 +52,7 @@ export async function getProgramConfig(id: string): Promise<ProgramConfig | null
     esgRequired: p.esg_required ?? true,
     ehsFamilies: (p.ehs_families as string[] | null) ?? [],
     equityCompanies: cRes.count ?? 0,
+    committees: parseProgramCommittees(p.committees),
     indicators: (iRes.data ?? []).map((x) => ({
       id: x.id, category: x.category, name: x.name, unit: x.unit,
       target: x.target != null ? Number(x.target) : null,

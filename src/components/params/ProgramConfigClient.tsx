@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { ProgramConfig, ProgramIndicator } from "@/lib/data/params";
-import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES , defaultIndicatorScope } from "@/lib/ui-constants";
+import { ACCOMPAGNEMENT_CATALOG, ACCOMP_CATEGORY_COLOR, PROGRAM_NATURES, EHS_FAMILIES , defaultIndicatorScope, COMMITTEE_TYPES, type ProgramCommittee } from "@/lib/ui-constants";
 import { Field, Input, Select } from "@/components/ui/form";
 import ProgramIndicatorValues from "./ProgramIndicatorValues";
 
@@ -23,6 +23,8 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
   const [esgReq, setEsgReq] = useState(config.esgRequired);
   const [ehsFams, setEhsFams] = useState<string[]>(config.ehsFamilies ?? []);
   const [customName, setCustomName] = useState<Record<string, string>>({});
+  const [committees, setCommittees] = useState<ProgramCommittee[]>(config.committees);
+  const [newCommittee, setNewCommittee] = useState("");
 
   const showAccomp = nature === "accompagnement" || nature === "mixte";
 
@@ -44,6 +46,17 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
   async function setTarget(id: string, target: number | null) {
     setInds((x) => x.map((i) => (i.id === id ? { ...i, target } : i)));
     await supabase.from("program_indicators").update({ target }).eq("id", id);
+  }
+
+  function saveCommittees(next: ProgramCommittee[]) {
+    setCommittees(next);
+    saveGeneral({ committees: next.length ? next : null });
+  }
+  function addCommittee() {
+    const v = newCommittee.trim();
+    if (!v || committees.some((c) => c.name === v) || COMMITTEE_TYPES.includes(v)) { setNewCommittee(""); return; }
+    saveCommittees([...committees, { name: v, opens: false }]);
+    setNewCommittee("");
   }
 
   const isActive = (category: string, indName: string) => inds.some((i) => i.category === category && i.name === indName);
@@ -153,6 +166,37 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Comités propres au programme */}
+      {showAccomp && (
+        <div style={panel}>
+          <h3 style={h3}>Comités du programme</h3>
+          <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 12, lineHeight: 1.5 }}>
+            Comités propres à ce programme, proposés sur ses dossiers en plus des comités Idawa ({COMMITTEE_TYPES.join(", ")}).
+            Cochez celui qui <b>vaut comité d&rsquo;ouverture</b> : son passage fait entrer le dossier en Pipeline avancé.
+          </div>
+          {committees.length === 0 && <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 10 }}>Aucun comité propre : les dossiers suivent le parcours Idawa.</div>}
+          {committees.map((c, idx) => (
+            <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: idx === 0 ? "none" : "1px solid var(--sep)" }}>
+              <span style={{ fontSize: 11, color: "var(--text-3)", width: 18 }}>{idx + 1}.</span>
+              <span style={{ flex: 1, fontSize: 12.5, color: "var(--ink)" }}>{c.name}</span>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={c.opens}
+                  onChange={() => saveCommittees(committees.map((x) => ({ ...x, opens: x.name === c.name ? !x.opens : false })))} />
+                vaut comité d&rsquo;ouverture
+              </label>
+              <button onClick={() => saveCommittees(committees.filter((x) => x.name !== c.name))} aria-label="Retirer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--red-fg)", padding: 2 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 6, marginTop: 10, maxWidth: 420 }}>
+            <input value={newCommittee} onChange={(e) => setNewCommittee(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addCommittee(); }}
+              placeholder="Ex : Comité d'éligibilité" style={{ flex: 1, padding: "6px 9px", border: "1px solid var(--border-strong)", borderRadius: 8, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            <button className="btn btn-ghost" style={{ padding: "6px 12px" }} onClick={addCommittee}>Ajouter</button>
+          </div>
         </div>
       )}
 

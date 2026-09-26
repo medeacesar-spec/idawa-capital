@@ -88,6 +88,14 @@ export const CONTACT_FUNCTIONS = [
 export const DOC_CATEGORIES = ["Juridique", "Reporting", "Financier", "Comité", "ESG", "Autre"];
 
 export const COMMITTEE_TYPES = ["Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi"];
+/** Comité propre à un programme (programs.committees). opens = vaut comité d'ouverture de dossier. */
+export type ProgramCommittee = { name: string; opens: boolean };
+export function parseProgramCommittees(raw: unknown): ProgramCommittee[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((c): c is { name: string; opens?: unknown } => !!c && typeof (c as { name?: unknown }).name === "string" && !!(c as { name: string }).name.trim())
+    .map((c) => ({ name: c.name.trim(), opens: c.opens === true }));
+}
 export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "Ajourné", "Défavorable"];
 
 // Nature d'une décision structurante prise en comité (déclenche un changement de cycle de vie une fois validée).

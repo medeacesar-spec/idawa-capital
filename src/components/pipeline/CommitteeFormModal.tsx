@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { COMMITTEE_TYPES, COMMITTEE_DECISIONS, COMMITTEE_OUTCOME_NONE, DEAL_ADVANCED_FROM } from "@/lib/ui-constants";
+import { COMMITTEE_TYPES, COMMITTEE_DECISIONS, COMMITTEE_OUTCOME_NONE, DEAL_ADVANCED_FROM, type ProgramCommittee } from "@/lib/ui-constants";
 import { notifyPendingValidation } from "@/app/(app)/notify-actions";
 
 type PassageInput = {
@@ -19,19 +19,24 @@ type PassageInput = {
 };
 
 export default function CommitteeFormModal({
-  dealId, companyId, dealStage, outcomes = [], defaultType, passage, onClose,
+  dealId, companyId, dealStage, outcomes = [], programCommittees = [], defaultType, passage, onClose,
 }: {
   dealId?: string;
   companyId?: string;
   /** Stade actuel du dossier — permet l'avancement automatique après le comité d'ouverture. */
   dealStage?: string;
   outcomes?: string[];
+  /** Comités propres aux programmes du dossier, proposés en plus des comités Idawa. */
+  programCommittees?: ProgramCommittee[];
   defaultType?: string;
   passage: PassageInput | null;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  // Types proposés : comités Idawa, puis ceux des programmes du dossier. Un passage déjà
+  // saisi garde son type même si le programme ne le propose plus.
+  const types = Array.from(new Set([...COMMITTEE_TYPES, ...programCommittees.map((c) => c.name), ...(passage?.committeeType ? [passage.committeeType] : [])]));
   const [f, setF] = useState({
     committeeType: passage?.committeeType ?? defaultType ?? COMMITTEE_TYPES[0],
     sessionDate: passage?.sessionDate ?? "",
@@ -79,9 +84,11 @@ export default function CommitteeFormModal({
       });
     }
 
-    // Le passage au Comité d'ouverture de dossier fait entrer le dossier dans le pipeline
-    // avancé — sauf s'il l'a déjà dépassé. Le stade reste modifiable à la main ensuite.
-    if (!passage && dealId && f.committeeType === "Comité d'ouverture de dossier"
+    // Le passage au Comité d'ouverture de dossier — ou au comité de programme qui en tient
+    // lieu (ex. Mandate Fit-Check) — fait entrer le dossier dans le pipeline avancé, sauf
+    // s'il l'a déjà dépassé. Le stade reste modifiable à la main ensuite.
+    const opens = f.committeeType === "Comité d'ouverture de dossier" || programCommittees.some((c) => c.opens && c.name === f.committeeType);
+    if (!passage && dealId && opens
         && (dealStage === "Sourcing" || dealStage === "Analyse")) {
       await supabase.from("deals").update({ stage: DEAL_ADVANCED_FROM }).eq("id", dealId);
     }
@@ -99,7 +106,7 @@ export default function CommitteeFormModal({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Type de comité">
           <Select value={f.committeeType} onChange={(e) => set("committeeType", e.target.value)}>
-            {COMMITTEE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {types.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
         </Field>
         <Field label="Date de séance"><Input type="date" value={f.sessionDate} onChange={(e) => set("sessionDate", e.target.value)} /></Field>
