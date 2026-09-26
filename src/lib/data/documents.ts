@@ -6,6 +6,7 @@ export type DocRow = {
   category: string | null;
   linkedTo: string | null;
   storagePath: string | null;
+  url: string | null;
   createdAt: string | null;
 };
 
@@ -15,7 +16,7 @@ export type DocumentsData = { documents: DocRow[]; categories: string[]; entitie
 export async function getDocumentsData(): Promise<DocumentsData> {
   const supabase = await createClient();
   const [docRes, coRes, dealRes] = await Promise.all([
-    supabase.from("documents").select("id, title, category, company_id, deal_id, storage_path, created_at").order("created_at", { ascending: false }),
+    supabase.from("documents").select("id, title, category, company_id, deal_id, storage_path, url, created_at").order("created_at", { ascending: false }),
     supabase.from("portfolio_companies").select("id, name"),
     supabase.from("deals").select("id, company_name"),
   ]);
@@ -28,6 +29,7 @@ export async function getDocumentsData(): Promise<DocumentsData> {
     category: d.category,
     linkedTo: d.company_id ? coMap.get(d.company_id) ?? null : d.deal_id ? dealMap.get(d.deal_id) ?? null : null,
     storagePath: d.storage_path,
+    url: d.url ?? null,
     createdAt: d.created_at,
   }));
 

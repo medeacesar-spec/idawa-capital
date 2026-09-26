@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { CommitteeDoc } from "@/lib/data/dealDetail";
 import { useCanEdit } from "@/components/shared/WriteAccess";
+import { hasTarget, openDocument } from "@/lib/doc-links";
 
 export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: { dealId?: string; companyId?: string; committeeId: string; docs: CommitteeDoc[] }) {
   const canEdit = useCanEdit();
@@ -27,11 +28,7 @@ export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: 
     if (fileRef.current) fileRef.current.value = "";
     router.refresh();
   }
-  async function open(d: CommitteeDoc) {
-    if (!d.storagePath) return;
-    const { data } = await createClient().storage.from("documents").createSignedUrl(d.storagePath, 120);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-  }
+  const open = (d: CommitteeDoc) => openDocument(d);
   async function remove(d: CommitteeDoc) {
     if (!confirm(`Supprimer « ${d.title} » ?`)) return;
     const supabase = createClient();
@@ -44,7 +41,7 @@ export default function CommitteeDocs({ dealId, companyId, committeeId, docs }: 
     <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
       {docs.map((d) => (
         <span key={d.id} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 8px", borderRadius: 7, background: "var(--surface-cream)", fontSize: 11 }}>
-          <button onClick={() => open(d)} title="Ouvrir le CR" style={{ border: "none", background: "none", cursor: d.storagePath ? "pointer" : "default", color: "var(--espresso)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, padding: 0 }}>
+          <button onClick={() => open(d)} title="Ouvrir le CR" style={{ border: "none", background: "none", cursor: hasTarget(d) ? "pointer" : "default", color: "var(--espresso)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, padding: 0 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h9l5 5v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /></svg>
             {d.title}
           </button>

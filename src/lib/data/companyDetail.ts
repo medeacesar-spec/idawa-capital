@@ -14,10 +14,10 @@ import type { QData } from "@/lib/impact/questionnaire";
 
 export type { KpiSeries };
 export type DetailContact = { id: string; name: string; function: string | null; email: string | null; phone: string | null; whatsapp: string | null; website: string | null; linkedin: string | null; twitter: string | null; instagram: string | null };
-export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null; createdAt: string | null };
+export type DetailDoc = { id: string; title: string; category: string | null; storagePath: string | null; url: string | null; createdAt: string | null };
 export type OriginDueDiligence = { id: string; domain: string; item: string; status: string | null; note: string | null };
 export type OriginCommittee = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; outcome: string | null; conditions: string | null; participants: string | null; status: string; validatedBy: string | null; validatedAt: string | null };
-export type CommitteeDocRef = { id: string; title: string; storagePath: string | null };
+export type CommitteeDocRef = { id: string; title: string; storagePath: string | null; url: string | null };
 export type CompanyDecision = { id: string; committeeType: string; sessionDate: string | null; decision: string | null; conditions: string | null; participants: string | null; outcome: string | null; status: string; validatedBy: string | null; validatedAt: string | null; docs: CommitteeDocRef[] };
 export type OriginNote = { id: string; type: string | null; noteDate: string | null; summary: string | null };
 
@@ -102,7 +102,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     c.primary_sub_sector_id ? supabase.from("sub_sectors").select("name").eq("id", c.primary_sub_sector_id).single() : Promise.resolve({ data: null }),
     c.origin_deal_id ? supabase.from("deals").select("company_name, thesis, deal_source, deal_source_detail").eq("id", c.origin_deal_id).single() : Promise.resolve({ data: null }),
     supabase.from("contacts").select("id, name, function, email, phone, whatsapp, website, linkedin, twitter, instagram").eq("company_id", id),
-    supabase.from("documents").select("id, title, category, storage_path, created_at").eq("company_id", id),
+    supabase.from("documents").select("id, title, category, storage_path, url, created_at").eq("company_id", id),
   ]);
 
   const [ddRes, onRes, ocRes, qRes] = await Promise.all([
@@ -128,14 +128,14 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     .eq("company_id", id).is("deal_id", null).order("session_date");
   const decIds = (decRows ?? []).map((d) => d.id);
   const { data: decDocs } = decIds.length
-    ? await supabase.from("documents").select("id, title, storage_path, committee_id").in("committee_id", decIds)
-    : { data: [] as { id: string; title: string; storage_path: string | null; committee_id: string }[] };
+    ? await supabase.from("documents").select("id, title, storage_path, url, committee_id").in("committee_id", decIds)
+    : { data: [] as { id: string; title: string; storage_path: string | null; url: string | null; committee_id: string }[] };
   const decisions: CompanyDecision[] = (decRows ?? []).map((d) => ({
     id: d.id, committeeType: d.committee_type, sessionDate: d.session_date, decision: d.decision, conditions: d.conditions,
     participants: d.participants, outcome: d.outcome ?? null, status: d.status ?? "Proposée",
     validatedBy: d.validated_by ? (users.find((u) => u.id === d.validated_by)?.name ?? "—") : null,
     validatedAt: d.validated_at ?? null,
-    docs: (decDocs ?? []).filter((x) => x.committee_id === d.id).map((x) => ({ id: x.id, title: x.title, storagePath: x.storage_path })),
+    docs: (decDocs ?? []).filter((x) => x.committee_id === d.id).map((x) => ({ id: x.id, title: x.title, storagePath: x.storage_path, url: x.url ?? null })),
   }));
 
   const prog = progRes.data as { name?: string; color?: string } | null;
@@ -213,6 +213,6 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       exitYear: c.exit_year ?? null,
     },
     kpis, kpiLibrary, users, contacts: contactRes.data ?? [],
-    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, createdAt: d.created_at ?? null })),
+    documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, url: d.url ?? null, createdAt: d.created_at ?? null })),
   };
 }
