@@ -30,7 +30,13 @@ export const instrumentKind = (type: string): "equity" | "debt" =>
   INSTRUMENT_TYPES.find((t) => t.key === type)?.kind ?? "debt";
 
 // Source d'entrée du dossier dans le pipeline (pour analyses par source).
+// Canaux de sourcing nommés (listes reçues de partenaires) puis catégories générales.
+// PAEB, IDERA, EnDev, Enabel sont des SOURCES de pipeline, pas des programmes.
 export const DEAL_SOURCES = [
+  "PAEB (ADPME)",
+  "IDERA",
+  "EnDev",
+  "Enabel (IYBA SEED)",
   "Réseau / relations",
   "Recommandation / apporteur",
   "Sourcing proactif",
