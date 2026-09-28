@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
+import FinancialStatementsTab from "@/components/portfolio/FinancialStatementsTab";
 import ConvertDealModal from "./ConvertDealModal";
 import RejectDealModal from "./RejectDealModal";
 import StandbyDealModal from "./StandbyDealModal";
@@ -39,12 +40,12 @@ const DECISION_BADGE: Record<string, string> = { Favorable: "badge-green", "Favo
 
 // L'ESG et la création de valeur n'ont pas de sens sur un dossier qu'on vient de sourcer :
 // ils encombrent la fiche et laissent croire à un travail qui n'a pas lieu d'être fait.
-const EARLY_TABS = ["Présentation", "Suivi", "Due diligence", "Comités", "KPIs", "Documents", "Contacts"];
+const EARLY_TABS = ["Présentation", "Suivi", "Due diligence", "Comités", "États financiers", "KPIs", "Documents", "Contacts"];
 const ADVANCED_ONLY = ["Création de valeur", "ESG"];
 function tabsFor(stage: string | null): string[] {
   if (!isAdvancedStage(stage)) return EARLY_TABS;
   const t = [...EARLY_TABS];
-  t.splice(5, 0, ...ADVANCED_ONLY); // juste après les KPIs, avant les documents
+  t.splice(t.indexOf("KPIs") + 1, 0, ...ADVANCED_ONLY); // juste après les KPIs, avant les documents
   return t;
 }
 
@@ -338,6 +339,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
       {currentTab === "Suivi" && <SuiviTab entityType="deal" entityId={deal.id} notes={deal.notes} tasks={deal.tasks} users={deal.users} />}
       {currentTab === "Due diligence" && <DueDiligenceTab entityType="deal" entityId={deal.id} items={deal.dueDiligence} users={deal.users} />}
+      {currentTab === "États financiers" && <FinancialStatementsTab entity={{ type: "deal", id: deal.id }} values={deal.statements} keyFigures={deal.keyFigures} />}
       {currentTab === "KPIs" && <KpiTab entityType="deal" entityId={deal.id} kpis={deal.kpis} library={deal.kpiLibrary} />}
       {currentTab === "Création de valeur" && <ValueCreationTab entityType="deal" entityId={deal.id} items={deal.valueCreation} contacts={deal.contacts} users={deal.users} />}
       {currentTab === "ESG" && <EsgTab entityType="deal" entityId={deal.id} data={deal.esg} users={deal.users} />}

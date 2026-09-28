@@ -5,6 +5,7 @@ import { getEsg, type EsgData } from "./esg";
 import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
 import { getDdItems, getValueCreation, type DdItem, type ValueInitiative } from "./planning";
 import { getFundUsers, type FundUser } from "./users";
+import { getFinancialStatements, getKeyFigures, type StatementValues, type KeyFigure } from "./financialStatements";
 import { parseProgramCommittees, type ProgramCommittee } from "@/lib/ui-constants";
 
 export type CommitteeDoc = { id: string; title: string; storagePath: string | null; url: string | null };
@@ -61,6 +62,9 @@ export type DealDetail = {
   dueDiligence: DdItem[];
   valueCreation: ValueInitiative[];
   users: FundUser[];
+  /** Liasse OHADA saisie sur le dossier, et chiffres clés déclarés par exercice. */
+  statements: StatementValues;
+  keyFigures: KeyFigure[];
 };
 
 const dn = (p?: { full_name?: string | null; email?: string | null } | null) => (p ? p.full_name || p.email || null : null);
@@ -84,7 +88,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     supabase.from("portfolio_companies").select("id").eq("origin_deal_id", id).maybeSingle(),
   ]);
 
-  const [suivi, esg, kpis, kpiLibrary, dueDiligence, valueCreation, users] = await Promise.all([getSuivi("deal", id), getEsg("deal", id), getKpis("deal", id), getKpiLibraryForEntity("deal", id), getDdItems("deal", id), getValueCreation("deal", id), getFundUsers()]);
+  const [suivi, esg, kpis, kpiLibrary, dueDiligence, valueCreation, users, statements, keyFigures] = await Promise.all([getSuivi("deal", id), getEsg("deal", id), getKpis("deal", id), getKpiLibraryForEntity("deal", id), getDdItems("deal", id), getValueCreation("deal", id), getFundUsers(), getFinancialStatements({ type: "deal", id }), getKeyFigures({ type: "deal", id })]);
 
   const comIds = (comRes.data ?? []).map((c) => c.id);
   const { data: comDocs } = comIds.length ? await supabase.from("documents").select("id, title, storage_path, url, committee_id").in("committee_id", comIds) : { data: [] as { id: string; title: string; storage_path: string | null; url: string | null; committee_id: string }[] };
@@ -137,5 +141,6 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     contacts: contactRes.data ?? [],
     documents: (docRes.data ?? []).map((d) => ({ id: d.id, title: d.title, category: d.category, storagePath: d.storage_path, url: d.url ?? null, createdAt: d.created_at ?? null })),
     notes: suivi.notes, tasks: suivi.tasks, esg, kpis, kpiLibrary, dueDiligence, valueCreation, users,
+    statements, keyFigures,
   };
 }

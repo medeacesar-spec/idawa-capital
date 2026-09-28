@@ -8,11 +8,13 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
+import type { FinEntity } from "@/lib/data/financialStatements";
 import { parseOhadaPaste, pickColumn, columnOptions, pickKey, parsePickKey, type ParseResult, type ColumnPick } from "@/lib/finance/ohadaImport";
 
 const fmt = (v: number | null) => (v == null ? "—" : Math.round(v).toLocaleString("fr-FR"));
 
-export default function OhadaImportModal({ companyId, years, onClose }: { companyId: string; years: number[]; onClose: () => void }) {
+export default function OhadaImportModal({ entity, years, onClose }: { entity: FinEntity; years: number[]; onClose: () => void }) {
+  const ownerCol = entity.type === "deal" ? "deal_id" : "company_id";
   const router = useRouter();
   const [text, setText] = useState("");
   const [result, setResult] = useState<ParseResult | null>(null);
@@ -60,14 +62,14 @@ export default function OhadaImportModal({ companyId, years, onClose }: { compan
     setBusy(true);
     setError(null);
     const payload = retained.map((l) => ({
-      company_id: companyId,
+      [ownerCol]: entity.id,
       fiscal_year: year,
       code: l.code,
       amount: valueOf(l.code, l.numbers),
     }));
     const { error: err } = await createClient()
       .from("financial_statements")
-      .upsert(payload, { onConflict: "company_id,fiscal_year,code" });
+      .upsert(payload, { onConflict: `${ownerCol},fiscal_year,code` });
     setBusy(false);
     if (err) { setError(err.message); return; }
     router.refresh();

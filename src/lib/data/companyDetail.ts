@@ -7,7 +7,7 @@ import { getCompanyFinance, type CompanyFinance } from "./companyFinance";
 import { getKpis, getKpiLibraryForEntity, type KpiSeries, type LibraryKpi } from "./kpis";
 import { getValueCreation, type ValueInitiative } from "./planning";
 import { getInstruments, type Instrument } from "./instruments";
-import { getFinancialStatements, type StatementValues } from "./financialStatements";
+import { getFinancialStatements, getKeyFigures, type StatementValues, type KeyFigure } from "./financialStatements";
 import { getFundUsers, type FundUser } from "./users";
 import type { PromoterEval } from "@/components/shared/PromoterEvalModal";
 import type { QData } from "@/lib/impact/questionnaire";
@@ -81,6 +81,7 @@ export type CompanyDetail = {
   valueCreation: ValueInitiative[];
   instruments: Instrument[];
   statements: StatementValues;
+  keyFigures: KeyFigure[];
   structuration: Structuration;
   kpis: KpiSeries[];
   kpiLibrary: LibraryKpi[];
@@ -118,7 +119,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     supabase.from("impact_questionnaires").select("year, status, data").eq("entity_type", "company").eq("entity_id", id).in("status", ["Reçu", "Validé"]).order("year", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, users, support] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements(id), getFundUsers(), getCompanySupport(id)]);
+  const [suivi, esg, finance, kpis, kpiLibrary, valueCreation, instruments, statements, keyFigures, users, support] = await Promise.all([getSuivi("company", id), getEsg("company", id), getCompanyFinance(id), getKpis("company", id), getKpiLibraryForEntity("company", id), getValueCreation("company", id), getInstruments(id), getFinancialStatements({ type: "company", id }), getKeyFigures({ type: "company", id }), getFundUsers(), getCompanySupport(id)]);
 
   // Décisions de comité prises sur la société APRÈS l'investissement (sortie, radiation,
   // mise sous surveillance…). Les passages d'INSTRUCTION portent un deal_id ; on les EXCLUT
@@ -201,7 +202,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     },
     exitReview: (c.exit_review as string) ?? null,
     impactQuestionnaire: qRes.data ? { year: (qRes.data as { year: number }).year, status: (qRes.data as { status: string }).status, data: ((qRes.data as { data: QData }).data ?? {}) } : null,
-    esg, finance, valueCreation, instruments, statements, support,
+    esg, finance, valueCreation, instruments, statements, keyFigures, support,
     structuration: {
       ehsSector: c.ehs_sector ?? null,
       valuationMethodsEntry: (c.valuation_methods_entry as string[] | null) ?? [],

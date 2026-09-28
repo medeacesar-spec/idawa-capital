@@ -18,7 +18,8 @@ export async function getPerfOverview(year?: number): Promise<PerfOverview> {
   const [coRes, finRes, stmtRes] = await Promise.all([
     supabase.from("portfolio_companies").select("id, name, tracking_type, status").order("name"),
     supabase.from("company_financials").select("company_id, period, label, budget, actual"),
-    supabase.from("financial_statements").select("company_id, fiscal_year, code, amount"),
+    // Seules les liasses des SOCIÉTÉS : celles des dossiers du pipeline n'entrent pas dans la performance.
+    supabase.from("financial_statements").select("company_id, fiscal_year, code, amount").not("company_id", "is", null),
   ]);
 
   const companies = (coRes.data ?? []).filter((c) => (c.tracking_type ?? "equity") === "equity");

@@ -5,17 +5,25 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { OHADA_SECTIONS, computeOhada, ratios, type OhadaSection } from "@/lib/finance/ohada";
 import { computeRatios, RATIO_FAMILIES, bilanFonctionnelComplet, soldesDeGestion, variation, SECTOR_RATIOS_PENDING } from "@/lib/finance/analysis";
-import type { StatementValues } from "@/lib/data/financialStatements";
+import type { StatementValues, FinEntity, KeyFigure } from "@/lib/data/financialStatements";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
 import OhadaImportModal from "./OhadaImportModal";
+import KeyFiguresPanel from "./KeyFiguresPanel";
 import { useCanEdit } from "@/components/shared/WriteAccess";
 
 const fmt = (v: number | null | undefined) => (v == null ? "—" : Math.round(v).toLocaleString("fr-FR"));
 const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)} %`);
 const mult = (v: number | null) => (v == null ? "—" : `${v.toFixed(2)}×`);
 
-export default function FinancialStatementsTab({ companyId, values }: { companyId: string; values: StatementValues }) {
+// Onglet commun aux dossiers du pipeline et aux sociétés du portefeuille : chiffres clés
+// déclarés en tête, puis la liasse OHADA complète quand les états financiers sont reçus.
+export default function FinancialStatementsTab({ entity, values, keyFigures = [] }: { entity: FinEntity; values: StatementValues; keyFigures?: KeyFigure[] }) {
   const router = useRouter();
+  const ownerCol = entity.type === "deal" ? "deal_id" : "company_id";
+  const hasLiasse = Object.values(values).some((v) => Object.keys(v ?? {}).length > 0);
+  // Au sourcing, un dossier n'a le plus souvent que des chiffres déclarés : la grille OHADA
+  // vide (plus de 100 postes) est repliée tant qu'aucune liasse n'est saisie.
+  const [showLiasse, setShowLiasse] = useState(hasLiasse || entity.type === "company");
   const [section, setSection] = useState<OhadaSection>("resultat");
   const saved = Object.keys(values).map(Number);
   // Le remplissage initial (pour toujours proposer au moins YEAR_WINDOW colonnes) est calculé
@@ -66,8 +74,8 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
     if (amount !== null && Number.isNaN(amount)) return;
     if (amount === (values[year]?.[code] ?? null)) return;
     await createClient().from("financial_statements").upsert(
-      { company_id: companyId, fiscal_year: year, code, amount },
-      { onConflict: "company_id,fiscal_year,code" }
+      { [ownerCol]: entity.id, fiscal_year: year, code, amount },
+      { onConflict: `${ownerCol},fiscal_year,code` }
     );
     router.refresh();
   }
@@ -78,6 +86,20 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
 
   return (
     <div>
+      <KeyFiguresPanel entity={entity} figures={keyFigures} liasse={values} />
+
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
+        Liasse OHADA <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— états financiers complets, par exercice</span>
+      </div>
+      {!showLiasse ? (
+        <div className="card" style={{ padding: 22, textAlign: "center", fontSize: 12.5, color: "var(--text-3)" }}>
+          Aucune liasse saisie pour ce dossier.
+          <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            {canEdit && <button className="btn" onClick={() => { setShowLiasse(true); setImportOpen(true); }}>Importer une liasse</button>}
+            <button className="btn btn-ghost" onClick={() => setShowLiasse(true)}>Afficher la grille OHADA</button>
+          </div>
+        </div>
+      ) : (<>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <div style={{ display: "inline-flex", gap: 2, background: "var(--surface-cream)", border: "1px solid var(--border)", borderRadius: 999, padding: 3 }}>
           {OHADA_SECTIONS.map((s) => {
@@ -273,8 +295,9 @@ export default function FinancialStatementsTab({ companyId, values }: { companyI
         <br />
         Les exercices s&apos;affichent {YEAR_WINDOW} à la fois, du plus récent au plus ancien : les flèches font défiler, la croix retire une colonne de l&apos;écran. <b>Aucun exercice n&apos;est perdu</b> — ajoutez-en autant que nécessaire.
       </div>
+      </>)}
 
-      {importOpen && <OhadaImportModal companyId={companyId} years={allYears} onClose={() => setImportOpen(false)} />}
+      {importOpen && <OhadaImportModal entity={entity} years={allYears} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }
