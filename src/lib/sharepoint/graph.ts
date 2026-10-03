@@ -87,6 +87,12 @@ export async function getItem(itemId: string): Promise<GraphItem> {
   return graph<GraphItem>(`/drives/${driveId()}/items/${encodeURIComponent(itemId)}?$select=${SELECT}`);
 }
 
+/** Élément désigné par son chemin dans la bibliothèque (ex. « General »). */
+export async function getItemByPath(path: string): Promise<GraphItem> {
+  const rel = path.split("/").map(encodeURIComponent).join("/");
+  return graph<GraphItem>(`/drives/${driveId()}/root:/${rel}?$select=${SELECT}`);
+}
+
 /** Contenu d'un dossier, rangé comme SharePoint : sous-dossiers d'abord, puis fichiers, ordre naturel. */
 export async function listChildren(itemId: string): Promise<SpItem[]> {
   const out: GraphItem[] = [];

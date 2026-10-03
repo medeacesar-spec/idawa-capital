@@ -20,26 +20,29 @@ const fmtSize = (n: number | null) => n == null ? "" : n < 1024 ? `${n} o` : n <
 // Les fichiers Office s'ouvrent dans le navigateur plutôt que d'être téléchargés.
 const openUrl = (it: Item) => /\.(docx?|xlsx?|pptx?)$/i.test(it.name) ? `${it.webUrl}${it.webUrl.includes("?") ? "&" : "?"}web=1` : it.webUrl;
 
-async function fetchFolder(entity: string, id: string, item?: string) {
-  const q = new URLSearchParams({ entity, id, ...(item ? { item } : {}) });
-  const res = await fetch(`/api/sharepoint/folder?${q}`, { cache: "no-store" });
+/** base : adresse de lecture du dossier racine (fiche ou espace partagé) ; item : sous-dossier. */
+export async function fetchFolder(base: string, item?: string) {
+  const url = item ? `${base}${base.includes("?") ? "&" : "?"}item=${encodeURIComponent(item)}` : base;
+  const res = await fetch(url, { cache: "no-store" });
   const j = await res.json().catch(() => ({ ok: false, error: "Réponse illisible" }));
   if (!j.ok) throw new Error(j.error ?? "Erreur");
   return j;
 }
 
-const FolderIcon = ({ open }: { open: boolean }) => (
+export const FolderIcon = ({ open }: { open: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill={open ? "var(--accent-soft)" : "none"} stroke="var(--camel)" strokeWidth="1.7" strokeLinejoin="round"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></svg>
 );
 const FileIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="1.7" strokeLinejoin="round"><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /></svg>
 );
 
-function Rows({ entity, id, items, depth }: { entity: string; id: string; items: Item[]; depth: number }) {
-  return <>{items.map((it) => <Row key={it.id} entity={entity} id={id} item={it} depth={depth} />)}</>;
+export type SpItem = Item;
+
+export function Rows({ base, items, depth }: { base: string; items: Item[]; depth: number }) {
+  return <>{items.map((it) => <Row key={it.id} base={base} item={it} depth={depth} />)}</>;
 }
 
-function Row({ entity, id, item, depth }: { entity: string; id: string; item: Item; depth: number }) {
+function Row({ base, item, depth }: { base: string; item: Item; depth: number }) {
   const [open, setOpen] = useState(false);
   const [children, setChildren] = useState<Item[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -49,7 +52,7 @@ function Row({ entity, id, item, depth }: { entity: string; id: string; item: It
     if (!item.isFolder) return;
     if (!open && children === null) {
       setBusy(true); setErr(null);
-      try { setChildren((await fetchFolder(entity, id, item.id)).items); }
+      try { setChildren((await fetchFolder(base, item.id)).items); }
       catch (e) { setErr((e as Error).message); }
       setBusy(false);
     }
@@ -77,7 +80,7 @@ function Row({ entity, id, item, depth }: { entity: string; id: string; item: It
       </div>
       {err && <div style={{ padding: `6px 4px 6px ${pad + 28}px`, fontSize: 12, color: "var(--red-fg, #A6412E)" }}>{err}</div>}
       {open && children && (children.length
-        ? <Rows entity={entity} id={id} items={children} depth={depth + 1} />
+        ? <Rows base={base} items={children} depth={depth + 1} />
         : <div style={{ padding: `6px 4px 6px ${pad + 28}px`, fontSize: 12, color: "var(--text-3)", borderTop: "1px solid var(--sep)" }}>Dossier vide</div>)}
     </>
   );
@@ -89,18 +92,19 @@ export default function SharePointFolder({ entityType, entityId, canEdit }: { en
   const [link, setLink] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
+  const base = `/api/sharepoint/folder?${new URLSearchParams({ entity: entityType, id: entityId })}`;
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
     try {
-      const j = await fetchFolder(entityType, entityId);
+      const j = await fetchFolder(base);
       if (!j.configured) setState({ kind: "unconfigured", folderUrl: j.folderUrl ?? null });
       else if (!j.linked) setState({ kind: "unlinked" });
       else setState({ kind: "ready", root: j.root, items: j.items });
     } catch (e) {
       setState({ kind: "error", message: (e as Error).message });
     }
-  }, [entityType, entityId]);
+  }, [base]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement initial depuis SharePoint
   useEffect(() => { load(); }, [load]);
@@ -167,7 +171,7 @@ export default function SharePointFolder({ entityType, entityId, canEdit }: { en
         )}
         {editing && linkForm}
         {state.items.length
-          ? <div style={{ marginTop: 4 }}><Rows entity={entityType} id={entityId} items={state.items} depth={0} /></div>
+          ? <div style={{ marginTop: 4 }}><Rows base={base} items={state.items} depth={0} /></div>
           : <div style={{ fontSize: 12.5, color: "var(--text-3)", paddingTop: 6 }}>Dossier vide.</div>}
       </>)}
     </div>

@@ -6,13 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import type { DocumentsData, DocRow } from "@/lib/data/documents";
 import DocumentUploadModal from "./DocumentUploadModal";
 import SortToggle from "./SortToggle";
+import SharePointSite from "./SharePointSite";
 import { hasTarget, openDocument } from "@/lib/doc-links";
 
 const CAT_COLOR: Record<string, string> = { Juridique: "#8A4B5A", Reporting: "#185FA5", Financier: "#3B6D11", Comité: "#B07A2E", ESG: "#7C7A3A" };
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frDate(d: string | null) { if (!d) return ""; const dt = d.slice(0, 10); return `${parseInt(dt.slice(8, 10), 10)} ${MONTHS[parseInt(dt.slice(5, 7), 10) - 1] ?? ""} ${dt.slice(0, 4)}`; }
 
-export default function DocumentsClient({ data, canEdit = true }: { data: DocumentsData; canEdit?: boolean }) {
+export default function DocumentsClient({ data, canEdit = true, showSharePoint = false }: { data: DocumentsData; canEdit?: boolean; showSharePoint?: boolean }) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [sort, setSort] = useState<"recent" | "alpha">("recent");
@@ -38,6 +39,8 @@ export default function DocumentsClient({ data, canEdit = true }: { data: Docume
 
   return (
     <div>
+      {showSharePoint && <SharePointSite />}
+      {showSharePoint && <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 10 }}>Documents ajoutés dans l&apos;application</div>}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {["all", ...data.categories].map((t) => {
