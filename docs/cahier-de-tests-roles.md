@@ -1,7 +1,7 @@
 # Cahier de tests — rôles **Analyste** et **Chargé d'investissement**
 
 _Idawa Capital · outil de pilotage pipeline & portefeuille_
-_Version du 21/07/2026 (màj : échéances obligatoires, to-do « actions à prendre » en 2 groupes, archivage des dossiers convertis, visibilité « Tout le fonds », onglet Origine/instruction ↔ Décisions, extraction sans Partenaires & LPs) · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
+_Version du 03/10/2026 (màj : documents par lien OneDrive / SharePoint, comités propres à un programme — Catal1.5°T, sources de pipeline nommées, états financiers sur les dossiers — chiffres clés + liasse OHADA) · précédente : 21/07/2026 · à dérouler après chaque déploiement touchant les droits ou les écrans concernés._
 
 ---
 
@@ -97,7 +97,7 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 |---|---|---|---|:---:|
 | A-18 ✅ | Consulter une société | Portefeuille → ouvrir une société | La fiche s'ouvre, **bandeau « lecture seule »** visible | ☐ |
 | A-19 ⛔ | Aucun bouton d'écriture | Parcourir les onglets (Investissement, Valorisation, Budget, KPIs…) | **Aucun** bouton créer / modifier / supprimer | ☐ |
-| A-20 ⛔ | Champs verrouillés | Cliquer dans les grilles (états financiers, budget, échéancier) | Champs **non éditables** (`readOnly`) ; la navigation entre exercices reste possible | ☐ |
+| A-20 ⛔ | Champs verrouillés | Cliquer dans les grilles (chiffres clés et liasse des états financiers, budget, échéancier) | Champs **non éditables** (`readOnly`) ; la navigation entre exercices reste possible | ☐ |
 | A-21 ✅ | Naviguer les exercices | Utiliser les flèches de la fenêtre d'exercices | La fenêtre glisse ; aucune modification n'est écrite | ☐ |
 
 ### 4.5 Reporting, Contacts, Documents
@@ -196,6 +196,14 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 | T-10 ✅ | **Fiche de suivi** (bouton « Fiche de suivi » sur une société) | S'ouvre, imprimable / PDF, titrée selon la cadence : **« Fiche de suivi mensuelle / trimestrielle / annuelle »** cohérente avec la période affichée | ☐ | ☐ |
 | T-11 ✅ | **Origine / instruction vs Décisions** (sur une société **issue d'un dossier**) : ouvrir l'onglet *Origine / instruction*, puis *Décisions* | *Origine / instruction* montre **Canal source du dossier**, **Rationnel / thèse**, **Passages en comité (instruction)** et **Due diligence réalisée** (lecture seule). *Décisions* ne contient QUE les décisions **post-investissement** (vide tant qu'il n'y en a pas) — les comités d'instruction n'y sont plus | ☐ | ☐ |
 | T-12 ⛔ | **Extraction sans Partenaires & LPs** : Reporting → *Extraire des données*, famille **Référentiel** | Propose **Contacts · Documents · Programmes** ; **Partenaires & LPs n'y figure pas** (donnée réservée) | ☐ | ☐ |
+| T-13 ✅⛔ | **Document par lien** : fiche dossier → onglet *Documents* → « Ajouter un document » → choisir **« Lien OneDrive / SharePoint »** → coller un lien → titre → Ajouter | Le document apparaît avec une **icône de lien** et la mention « · lien » ; un clic l'ouvre **dans un nouvel onglet**. Un lien qui ne commence pas par `https://` est **refusé** (bouton grisé + message rouge). Un lien de **OneDrive personnel** (`…-my.sharepoint.com/…/personal/…`) affiche un **avertissement orange** | ☐ | ☐ |
+| T-14 ✅⛔ | **Espace partagé** (une fois l'espace créé et un dossier déplacé) : un 2ᵉ membre de l'équipe ouvre un document ajouté par lien | Le fichier s'ouvre pour un membre **ayant accès** à l'espace ; une personne **sans accès** est **refusée par Microsoft** (l'app n'expose jamais le fichier elle-même) | ☐ | ☐ |
+| T-15 ✅ | **Comités propres à un programme** (Chargé ; prérequis : un Administrateur a réglé les comités du programme dans *Paramètres → programme → Comités du programme*) : sur un dossier rattaché à **Catal1.5°T** → *Comités* → « Enregistrer un passage » | La liste des types propose, en plus des 3 comités Idawa, **Comité d'éligibilité** et **Mandate Fit-Check (MFC)** ; sur un dossier **hors programme**, seulement les 3 comités Idawa. Enregistrer un **MFC** sur un dossier en *Sourcing* ou *Analyse* le fait passer en **Pipeline avancé** (comme un comité d'ouverture) | — | ☐ |
+| T-16 ✅ | **Sources de pipeline nommées** : « Nouveau dossier » → champ *Source* | **PAEB (ADPME)**, **IDERA**, **EnDev**, **Enabel (IYBA SEED)** sont proposés en tête de liste, avant les catégories générales | ☐ | ☐ |
+| T-17 ✅ | **Chiffres clés d'un dossier** : ouvrir un dossier (même au *Sourcing*) → onglet **États financiers** → « + Exercice » 2025 → saisir le CA « 283,4 M », un effectif, une source | L'onglet existe dès le sourcing ; les valeurs s'enregistrent (CA affiché **283 400 000**) ; un montant illisible (ex. « abc ») affiche un **message rouge** et n'est pas enregistré. Tant qu'aucune liasse n'est saisie, la **grille OHADA est repliée** (boutons « Importer une liasse » / « Afficher la grille OHADA ») | ☐ | ☐ |
+| T-18 ✅ | **Recoupement déclaré / liasse** : sur le même dossier, saisir la liasse 2025 (ex. poste TA) avec un CA différent de plus de 5 % du CA déclaré, puis un CA quasi égal | Sous le CA déclaré : « liasse : … » avec **« écart +x % » en orange** au-delà de 5 %, **✓ vert** sinon. Le chiffre déclaré n'est **jamais remplacé** par la liasse | ☐ | ☐ |
+| T-19 ✅ | **Import d'une liasse sur un dossier** : *États financiers* → « Importer une liasse » → coller une liasse à codes OHADA → Analyser → vérifier → Enregistrer | Les postes arrivent dans la grille **du dossier** (et non d'une société) ; les totaux sont recalculés | ☐ | ☐ |
+| T-20 ✅ | **Conversion avec états financiers** (Chargé) : convertir un dossier qui a des chiffres clés **et** une liasse | La société créée affiche les **mêmes** chiffres clés et la même liasse dans son onglet *États financiers* ; le dossier archivé les **conserve** (lecture seule). Les liasses des dossiers **n'entrent pas** dans la Performance du fonds | — | ☐ |
 
 > ℹ️ **T-01 est le test le plus important.** Masquer un bouton ne suffit pas : l'écran doit refuser l'accès **même en tapant l'URL**. C'est ce que garantissent les gardes `requirePerm` côté serveur. (Rappel : le verrou base de données par rôle — RLS — reste « à voir éventuellement » ; tant qu'il n'est pas posé, une personne qui contournerait complètement l'interface pourrait encore écrire. Les gardes testés ici couvrent l'usage par l'interface.)
 
@@ -207,7 +215,7 @@ Règle interne : `édition (E) ≥ validation (V) ≥ lecture (L) ≥ aucun (–
 |---|---|---|---|---|---|
 | Analyste | ___ / 20 | ___ / 9 | | | |
 | Chargé d'investissement | ___ / 17 | ___ / 8 | | | |
-| Transverses (T-01 → T-12) | ___ / 12 (positifs + négatifs) | — | | | |
+| Transverses (T-01 → T-20) | ___ / 20 (positifs + négatifs ; T-15 et T-20 : Chargé seulement) | — | | | |
 
 **Anomalies relevées** (n° du test, écran, ce qui s'est passé, gravité) :
 
