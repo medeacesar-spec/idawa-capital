@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traceAuth } from "@/lib/auth/trace";
+import { IDLE_TIMEOUT_MS, idleDecision } from "@/lib/auth/idle";
 
-const TIMEOUT_MS = 30 * 60 * 1000; // déconnexion après 30 min d'inactivité
-const WARN_MS = 60 * 1000; // avertissement 1 min avant
 const KEY = "idawa:lastActivity"; // partagé entre onglets
 const LOGOUT_KEY = "idawa:loggedOut";
 
@@ -15,40 +14,76 @@ export default function IdleTimeout() {
   const [remaining, setRemaining] = useState<number | null>(null); // secondes affichées, null = pas d'avertissement
   const loggingOut = useRef(false);
   const lastWrite = useRef(0);
+  const memLast = useRef(0);       // repli si le stockage local est indisponible
+  const signedInAt = useRef(0);    // date de la connexion en cours
+  const ready = useRef(false);     // tant que la session n'est pas lue, on n'enregistre rien
 
   useEffect(() => {
-    const write = (t: number) => { try { localStorage.setItem(KEY, String(t)); } catch {} };
-    write(Date.now());
+    const supabase = createClient();
+    const readLast = () => {
+      let v = 0;
+      try { v = parseInt(localStorage.getItem(KEY) ?? "0", 10) || 0; } catch {}
+      return Math.max(v, memLast.current);
+    };
+    const write = (t: number) => {
+      memLast.current = t;
+      try { localStorage.setItem(KEY, String(t)); } catch {}
+    };
+
+    const logout = async () => {
+      if (loggingOut.current) return;
+      loggingOut.current = true;
+      setRemaining(null);
+      try { localStorage.setItem(LOGOUT_KEY, String(Date.now())); } catch {}
+      traceAuth("expiration");
+      await supabase.auth.signOut({ scope: "local" });
+      router.push("/login?raison=inactivite");
+    };
+
+    // Vérification : TOUJOURS avant d'enregistrer une activité. Au retour de veille ou sur un
+    // onglet resté en arrière-plan, le contrôle périodique est suspendu par le navigateur ;
+    // sans cette vérification, le premier mouvement de souris effaçait l'inactivité passée.
+    const check = (): boolean => {
+      if (loggingOut.current || !ready.current) return false;
+      const now = Date.now();
+      const d = idleDecision(now, readLast(), signedInAt.current);
+      if (d === "logout") { logout(); return true; }
+      if (d === "warn") {
+        const ref = Math.max(readLast(), signedInAt.current);
+        setRemaining(Math.max(1, Math.ceil((IDLE_TIMEOUT_MS - (now - ref)) / 1000)));
+      } else setRemaining(null);
+      return false;
+    };
 
     const onActivity = () => {
+      if (!ready.current || loggingOut.current) return;
+      if (check()) return; // délai déjà dépassé : on déconnecte, on n'efface pas l'inactivité
       const t = Date.now();
       if (t - lastWrite.current > 2000) { lastWrite.current = t; write(t); } // limité pour ne pas spammer
     };
     const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"];
     events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
 
-    const logout = async (reason: boolean) => {
-      if (loggingOut.current) return;
-      loggingOut.current = true;
-      try { localStorage.setItem(LOGOUT_KEY, String(Date.now())); } catch {}
-      traceAuth("expiration");
-      await createClient().auth.signOut({ scope: "local" });
-      router.push(reason ? "/login?raison=inactivite" : "/login");
-    };
+    // Retour sur l'onglet / la fenêtre : on contrôle tout de suite, sans attendre le minuteur.
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("pageshow", onVisible);
 
-    const interval = setInterval(() => {
-      if (loggingOut.current) return;
-      let last = 0;
-      try { last = parseInt(localStorage.getItem(KEY) ?? "0", 10) || 0; } catch {}
-      const idle = Date.now() - last;
-      if (idle >= TIMEOUT_MS) { setRemaining(null); logout(true); }
-      else if (idle >= TIMEOUT_MS - WARN_MS) setRemaining(Math.max(1, Math.ceil((TIMEOUT_MS - idle) / 1000)));
-      else setRemaining(null);
-    }, 1000);
+    // Au chargement : l'inactivité court depuis la dernière activité connue (même navigateur
+    // fermé entre-temps), sauf si la connexion en cours est plus récente que cette activité.
+    supabase.auth.getSession().then(({ data }) => {
+      signedInAt.current = Date.parse(data.session?.user?.last_sign_in_at ?? "") || 0;
+      ready.current = true;
+      if (!check()) write(Date.now());
+    });
+
+    const interval = setInterval(check, 1000);
 
     const onStorage = (e: StorageEvent) => {
       if (e.key === LOGOUT_KEY && e.newValue && !loggingOut.current) {
         loggingOut.current = true;
+        setRemaining(null);
         router.push("/login?raison=inactivite");
       }
     };
@@ -56,6 +91,9 @@ export default function IdleTimeout() {
 
     return () => {
       events.forEach((e) => window.removeEventListener(e, onActivity));
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
       window.removeEventListener("storage", onStorage);
       clearInterval(interval);
     };
@@ -64,6 +102,7 @@ export default function IdleTimeout() {
   const stay = () => {
     const t = Date.now();
     lastWrite.current = t;
+    memLast.current = t;
     try { localStorage.setItem(KEY, String(t)); } catch {}
     setRemaining(null);
   };
