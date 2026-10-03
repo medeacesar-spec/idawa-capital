@@ -22,6 +22,7 @@ Une information = un seul endroit de référence ; l'autre outil y renvoie, il n
 - L'onglet Documents lit ce dossier à l'ouverture, rangé comme dans SharePoint (sous-dossiers d'abord, ordre naturel). Rien n'est copié dans la base.
 - Rattacher un dossier : onglet Documents → « Rattacher » → coller le lien du dossier (barre d'adresse ou « Copier le lien »).
 - L'application ne montre jamais un élément situé hors du dossier rattaché.
+- La page **Documents** n'expose que ces dossiers rattachés, regroupés comme l'application : un onglet par fonds (« Pipeline – Fonds I »), « Pipeline non qualifié », un onglet par programme (Catal1.5°T…), « Portefeuille ». La liste se recalcule à chaque visite : une fiche rattachée apparaît d'elle-même, un dossier qualifié pour un fonds change d'onglet, un dossier converti passe au Portefeuille. Un dossier suivi pour un fonds et un programme figure dans les deux onglets ; les dossiers écartés ou sortis sont repliés en bas. Le reste du site (guides, politiques, communications, conseil hors dossiers d'entreprise, RH) n'est plus visible depuis l'application.
 
 ## Activation (une fois, par un administrateur Microsoft 365)
 
