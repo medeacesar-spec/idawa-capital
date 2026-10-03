@@ -155,7 +155,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {company.sector && <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: "var(--espresso)", color: "#fff" }}>{company.sector}</span>}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <FundQualification entityType="company" entityId={company.id} fund={company.fund} options={company.fundOptions} />
+          <FundQualification entityType="company" entityId={company.id} fund={company.fund} options={company.fundOptions} inProgram={company.programs.length > 0} />
           <ProgramMemberships entityType="company" entityId={company.id} programs={company.programs} options={company.programOptions} />
         </div>
       </div>

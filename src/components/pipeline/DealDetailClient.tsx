@@ -255,7 +255,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
 
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <FundQualification entityType="deal" entityId={deal.id} fund={deal.fund} options={deal.fundOptions} readOnly={converted} />
+          <FundQualification entityType="deal" entityId={deal.id} fund={deal.fund} options={deal.fundOptions} readOnly={converted} inProgram={deal.programs.length > 0} />
           <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
         </div>
       </div>

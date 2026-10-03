@@ -58,10 +58,10 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const countries = Array.from(new Set(data.deals.map((d) => d.country).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b, "fr"));
   const q = normalize(query.trim());
   const byProgram = data.deals
-    // « Non qualifié » = aucun fonds (pipeline par défaut) ; un fonds = les dossiers suivis pour lui,
-    // qu'ils relèvent ou non d'un programme ; un programme = ses dossiers, avec ou sans fonds.
+    // « Non qualifié » = ni fonds ni programme (pipeline par défaut) ; un fonds = les dossiers suivis
+    // pour lui, avec ou sans programme ; un programme = ses dossiers, avec ou sans fonds.
     .filter((d) => scope === "all"
-      || (scope === UNQUALIFIED ? !d.fundId
+      || (scope === UNQUALIFIED ? !d.fundId && !d.programId && !d.programIds?.length
       : scope.startsWith("fund:") ? d.fundId === scope.slice(5)
       : (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope)))
     .filter((d) => !source || (source === NONE ? !d.source : d.source === source))

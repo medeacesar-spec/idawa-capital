@@ -13,8 +13,10 @@ import { useCanEdit } from "./WriteAccess";
 
 type Fund = { id: string; name: string };
 
-export default function FundQualification({ entityType, entityId, fund, options, readOnly = false }: {
+export default function FundQualification({ entityType, entityId, fund, options, readOnly = false, inProgram = false }: {
   entityType: "deal" | "company";
+  /** Rattaché à un programme : sans fonds, il n'est pas pour autant « non qualifié ». */
+  inProgram?: boolean;
   entityId: string;
   fund: Fund | null;
   options: Fund[];
@@ -28,7 +30,7 @@ export default function FundQualification({ entityType, entityId, fund, options,
 
   async function setFund(next: Fund | null) {
     const label = entityType === "deal" ? "Dossier" : "Société";
-    if (!next && fund && !confirm(`Retirer de ${fund.name} ? ${entityType === "deal" ? "Le dossier retourne au pipeline non qualifié." : ""}`)) return;
+    if (!next && fund && !confirm(`Retirer de ${fund.name} ? ${entityType === "deal" && !inProgram ? "Le dossier retourne au pipeline non qualifié." : ""}`)) return;
     setBusy(true); setError(null);
     const supabase = createClient();
     const table = entityType === "deal" ? "deals" : "portfolio_companies";
@@ -39,7 +41,7 @@ export default function FundQualification({ entityType, entityId, fund, options,
       note_date: new Date().toISOString().slice(0, 10),
       summary: next
         ? `${label} qualifié${entityType === "company" ? "e" : ""} pour ${next.name}${fund ? ` (auparavant ${fund.name})` : ""}`
-        : `${label} retiré${entityType === "company" ? "e" : ""} de ${fund?.name ?? "son fonds"}${entityType === "deal" ? " — retour au pipeline non qualifié" : ""}`,
+        : `${label} retiré${entityType === "company" ? "e" : ""} de ${fund?.name ?? "son fonds"}${entityType === "deal" && !inProgram ? " — retour au pipeline non qualifié" : ""}`,
     });
     setBusy(false); setChoosing(false);
     router.refresh();
@@ -59,7 +61,7 @@ export default function FundQualification({ entityType, entityId, fund, options,
         </span>
       ) : (
         <span style={{ ...chip, background: "var(--surface-cream)", color: "var(--text-3)", border: "1px solid var(--border)" }} title="Aucun fonds : pipeline non qualifié">
-          {entityType === "deal" ? "Pipeline non qualifié" : "Hors fonds"}
+          {entityType === "deal" && !inProgram ? "Pipeline non qualifié" : "Hors fonds"}
         </span>
       )}
       {canEdit && others.length > 0 && (
