@@ -64,3 +64,18 @@ Tenu depuis le 03/10/2026. Chaque difficulté indique où elle a été rencontr�
 - **Montants douteux** (B8, B11, B13, B26–B29) : **repris tels quels**, avec une alerte sur le dossier. Quand deux documents se contredisent, la valeur du document le plus récent est reprise et l'autre est citée dans l'alerte.
 - **Déroulé** : par lots. Lot 1 = 20 dossiers internes + entreprises Catal1.5°T ; vérification par Médéa ; lot 2 = listes ADPME, IDERA, Enabel.
 - **Ni IFU ni RCCM** dans les dossiers migrés.
+
+## D. Lot 1 chargé (03/10/2026) — 19 dossiers internes + 30 entreprises Catal1.5°T
+
+Chargé en une transaction : 49 dossiers, 81 notes, 3 passages en comité, 227 liens SharePoint, 25 exercices de chiffres clés, 30 adhésions au programme Catal1.5°T. Contrôle après chargement : **0 mention d'IFU ou de RCCM** (dossiers, notes, documents) ; 227 liens sur 227 pointent vers le site d'équipe.
+
+| # | Difficulté | Conséquence | Traitement |
+|---|---|---|---|
+| B34 | Les « prochaines étapes » des comptes rendus n'ont presque jamais de date (« à court terme », « au plus tôt »), alors que l'application exige une échéance pour toute tâche. | Impossible de créer des tâches sans inventer des dates. | Reprises en liste dans la note « Reprise depuis SharePoint » de chaque dossier, à convertir en tâches avec une date. |
+| B35 | Les secteurs des sources sont du texte libre (« 3 Foyers améliorés », « Agro-industrie — ananas »), sans correspondance directe avec les 62 sous-secteurs de l'application. | Colonne secteur vide dans le pipeline. | Secteur cité dans la description ; **classement à faire** (je peux proposer une correspondance). |
+| B36 | Ni chargé d'affaires ni analyste ne sont nommés de façon fiable dans les dossiers. | Tous les dossiers « Non assigné ». | **À attribuer** par Médéa. |
+| B37 | Le Christal : COD du 09/07 **informel** (« ne vaut pas COD formel »). | Ne peut pas être saisi comme comité d'ouverture sans faire avancer le dossier à tort. | Saisi comme réunion datée au Suivi, pas comme passage en comité ; dossier en « Analyse », en veille. |
+| B38 | La recherche SharePoint ne trouve pas encore 8 dossiers sur le site d'équipe (index pas à jour) : KPS, Fedapay, FAABA, On Tech, Agrelev, MM Lekker, Supermarché du Pont, God of Love. | Liens construits par la même règle que les 59 vérifiés, mais non confirmés un à un. | **À tester** en ouvrant un lien de chacun. |
+| B39 | ANEP : la data room est rangée dans « 0- Dataroom/0- Dataroom » (16,5 Mo) et n'a pas été listée. | Pièces de la data room non liées une à une. | Lien vers le dossier de data room uniquement. |
+| B40 | Le Christal : deux bases de chiffres pour 2024–2025 (« déclaré » et « reconstitué », ce dernier ~2× plus élevé). | Un seul jeu de chiffres par exercice possible. | Chiffres **déclarés** dans les chiffres clés ; reconstitués cités dans la note. |
+| B41 | Catal1.5°T : 20 entreprises n'ont pas d'autre état que celui du tracker du 29/06/2026. | État possiblement périmé. | Repris avec l'alerte « état tiré du tracker du 29/06/2026 ». |
