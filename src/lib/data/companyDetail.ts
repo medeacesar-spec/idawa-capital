@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAllTags, getEntityTags, type Tag } from "@/lib/data/tags";
 import { computeTvpi } from "@/lib/format";
 import { getCompanySupport, type CompanySupport } from "@/lib/data/companySupport";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
@@ -52,6 +53,8 @@ export type CompanyDetail = {
   programOptions: { id: string; name: string; color: string | null }[];
   fund: { id: string; name: string } | null;
   fundOptions: { id: string; name: string }[];
+  tags: Tag[];
+  allTags: Tag[];
   programId: string | null;
   originDealId: string | null;
   originDealName: string | null;
@@ -151,6 +154,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     supabase.from("funds").select("id, name").order("created_at"),
   ]);
   const fundOptions = (fundRows ?? []).map((f) => ({ id: f.id as string, name: f.name as string }));
+  const [tags, allTags] = await Promise.all([getEntityTags("company", id), getAllTags()]);
   const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
   const ids = Array.from(new Set([
     ...(c.program_id ? [c.program_id as string] : []),
@@ -170,6 +174,8 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     programs,
     fund: fundOptions.find((f) => f.id === c.fund_id) ?? null,
     fundOptions,
+    tags,
+    allTags,
     programOptions: (allProgs ?? [])
       .filter((p) => (p as { status?: string }).status !== "Clos")
       .map((p) => ({ id: p.id as string, name: p.name as string, color: (p.color as string) ?? null })),

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { sortTags } from "@/lib/data/tags";
 
 export type PipelineDeal = {
   id: string;
@@ -28,6 +29,7 @@ export type PipelineDeal = {
   sourceDetail: string | null;
   country: string | null;
   city: string | null;
+  tags: { id: string; name: string; family: string | null }[];
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
@@ -38,6 +40,7 @@ export type PipelineMember = { id: string; name: string };
 export type PipelineData = {
   deals: PipelineDeal[];
   funds: PipelineFund[];
+  tags: { id: string; name: string; family: string | null }[];
   programs: PipelineProgram[];
   subSectors: PipelineSubSector[];
   members: PipelineMember[];
@@ -63,6 +66,16 @@ export async function getPipelineData(): Promise<PipelineData> {
     supabase.from("program_memberships").select("entity_id, program_id").eq("entity_type", "deal").is("date_end", null),
     supabase.from("funds").select("id, name").order("created_at"),
   ]);
+  // Tags des dossiers (recherche et filtre).
+  const { data: tagRows } = await supabase.from("entity_tags").select("entity_id, tags(id, name, family)").eq("entity_type", "deal");
+  type T = { id: string; name: string; family: string | null };
+  const dealTags = new Map<string, T[]>();
+  const usedTags = new Map<string, T>();
+  for (const r of (tagRows ?? []) as unknown as { entity_id: string; tags: T | null }[]) {
+    if (!r.tags) continue;
+    const list = dealTags.get(r.entity_id) ?? [];
+    list.push(r.tags); dealTags.set(r.entity_id, list); usedTags.set(r.tags.id, r.tags);
+  }
   const funds = (fundRes.data ?? []) as PipelineFund[];
   const fundMap = new Map(funds.map((f) => [f.id, f.name]));
 
@@ -110,12 +123,14 @@ export async function getPipelineData(): Promise<PipelineData> {
       sourceDetail: d.deal_source_detail ?? null,
       country: d.country ?? null,
       city: d.city ?? null,
+      tags: sortTags(dealTags.get(d.id) ?? []),
     };
   });
 
   return {
     deals,
     funds,
+    tags: sortTags([...usedTags.values()]),
     programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color })),
     subSectors: (subRes.data ?? []).map((s) => ({ id: s.id, name: s.name, industry: indMap.get(s.industry_id) ?? "" })),
     members: (profRes.data ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email || "" })),

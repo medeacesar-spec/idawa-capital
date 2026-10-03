@@ -95,3 +95,19 @@ Essai à blanc réussi, après rapprochement des 6 cas douteux : **339 nouveaux 
 | B48 | PAEB : CA « N-1, N-2, N-3 avant sélection » sans année. | Années approximatives. | Année estimée à partir de la date de comité, signalée dans la note et sur chaque exercice. |
 | B49 | 4 entreprises sans fiche Kobo (FMA, BMS, Africa Growing Solutions, L'Écrin). | Fiches minimales. | Créées avec l'information disponible (appui financier ou dossier d'instruction) et une alerte. |
 | B50 | FAABA a deux dossiers SharePoint : le dossier interne (vide) et le dossier d'instruction ADPME. | — | Rattaché au dossier d'instruction (seul à contenir des pièces). 7 dossiers d'instruction rattachés en tout. |
+
+## F. Champs de recherche (03/10/2026) — secteur, stade, tags, effectifs
+
+Objectif fixé par Médéa : des entreprises qui servent aux **recherches** ; remplir le plus de données possible avec l'information disponible.
+
+- **Secteur** : 353 dossiers sur 387 classés dans les 62 sous-secteurs (+ sous-secteurs secondaires quand l'activité couvre deux métiers). Classement fait dossier par dossier à partir du nom, de la description et des notes.
+- **Stade de développement** : 363 dossiers. Pour les PME PAEB, règle unique : composante PAEB, corrigée par l'ancienneté (créée en 2023 ou avant → pas « Amorçage »).
+- **Tags** (nouveau) : 96 tags, 1 543 posés, en familles — Filière (50, vocabulaire resserré), Thématique (15, liste fermée), Profil (entreprise dirigée par une femme, projet non créé, coopérative…), PAEB (composante, statut, appui financier), Zone (département), Enabel (opérateur), IDERA (partage limité).
+- **Effectifs** : 227 exercices complétés (PAEB : effectif permanent ; IDERA : employés déclarés).
+
+| # | Difficulté | Conséquence | Traitement |
+|---|---|---|---|
+| B52 | 34 dossiers restent **sans secteur** : fiches réduites à un nom (FMA, BMS, GLADIO…) ou à un secteur trop large (« hôtel ou restaurant », « industrie »), et des métiers absents du référentiel (mécanique auto). | Non trouvables par secteur. | Filtre « Secteur non renseigné » pour les reprendre ; **à compléter** à la main, ou ajouter un sous-secteur (ex. Garage & mécanique). |
+| B53 | 121 classements en **confiance basse** : fiches PAEB qui ne donnent que le grand secteur déclaré (« Agriculture… » → Production agricole par défaut, « Industrie agro alimentaire » → Transformation). | Secteur probable mais pas certain. | Classement repris ; à corriger au fil de l'eau sur la fiche. |
+| B54 | Les filières proposées étaient dispersées (141 libellés : synonymes, métiers). | Recherche par filière inutilisable. | Vocabulaire ramené à 50 filières (synonymes fusionnés, métiers écartés). |
+| B55 | Classements faits en 4 lots parallèles avec deux lectures différentes du stade PAEB. | Incohérence. | Règle unique réappliquée à tous les dossiers PAEB. |
