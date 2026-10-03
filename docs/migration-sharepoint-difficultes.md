@@ -84,13 +84,13 @@ Chargé en une transaction : 49 dossiers, 81 notes, 3 passages en comité, 227 l
 
 ## E. Lot 2 préparé (03/10/2026) — ADPME/PAEB, IDERA, Enabel (Bénin + Togo)
 
-Essai à blanc réussi : **345 nouveaux dossiers** (236 PAEB, 97 IDERA, 12 Enabel), **21 dossiers existants enrichis** (même entreprise déjà chargée au lot 1), 382 notes, 587 exercices de chiffres clés. Tous en Sourcing, Actifs, dans le pipeline non qualifié. 0 mention d'IFU ou de RCCM.
+Essai à blanc réussi, après rapprochement des 6 cas douteux : **339 nouveaux dossiers** (234 PAEB, 96 IDERA, 9 Enabel), **21 dossiers existants enrichis** (même entreprise déjà chargée au lot 1), 376 notes, ~590 exercices de chiffres clés. Tous en Sourcing, Actifs, dans le pipeline non qualifié. 0 mention d'IFU ou de RCCM.
 
 | # | Difficulté | Conséquence | Traitement |
 |---|---|---|---|
 | B44 | 21 entreprises des listes sont déjà dans l'application (Catal1.5°T et dossiers internes : Le Christal, FedaPay, ISMAT, Benin Teck…). | Doublons si on recrée. | Dossier existant **enrichi** (note de source, chiffres clés, champs vides complétés) ; un exercice déjà renseigné n'est jamais écrasé (3 cas, dont Le Christal 2022-2023 : le CA PAEB concorde avec la note COD). |
 | B45 | 9 rapprochements sûrs entre listes (même promotrice IDERA/ADPME, même entreprise ADPME/Enabel). | Doublons. | Un seul dossier, sources cumulées (ex. AGRI-CEFORPA = ADPME + IDERA n° 37 + fiche). |
-| B46 | **6 rapprochements douteux** : ALSEC/AGODJIE LODGE (même promotrice), BIOLIFE TECH/BIO LIFE, AFRICA GREEN CORPORATION/AFRICA GC, ISMAST LIFE STOVES/ISMAT, Agri Défi Production/Leader's Group (même promoteur), ENTREPRISE PRO SAINS/Pro Sains International. | Doublon ou fusion à tort. | Dossiers **séparés** + alerte « doublon possible » ; **à trancher par Médéa**. |
+| B46 | **6 rapprochements douteux** : ALSEC/AGODJIE LODGE (même promotrice), BIOLIFE TECH/BIO LIFE, AFRICA GREEN CORPORATION/AFRICA GC, ISMAST LIFE STOVES/ISMAT, Agri Défi Production/Leader's Group (même promoteur), ENTREPRISE PRO SAINS/Pro Sains International. | Doublon ou fusion à tort. | **Médéa (03/10) : les 6 sont les mêmes entreprises** → un seul dossier chacun, données rapprochées et complétées des deux côtés (note « Rapprochement confirmé par Médéa »). |
 | B47 | IDERA : pas de nom d'entreprise. | — | Nom du dossier = titre court du projet + promotrice. |
 | B48 | PAEB : CA « N-1, N-2, N-3 avant sélection » sans année. | Années approximatives. | Année estimée à partir de la date de comité, signalée dans la note et sur chaque exercice. |
 | B49 | 4 entreprises sans fiche Kobo (FMA, BMS, Africa Growing Solutions, L'Écrin). | Fiches minimales. | Créées avec l'information disponible (appui financier ou dossier d'instruction) et une alerte. |
