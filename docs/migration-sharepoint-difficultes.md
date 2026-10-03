@@ -111,3 +111,17 @@ Objectif fixé par Médéa : des entreprises qui servent aux **recherches** ; re
 | B53 | 121 classements en **confiance basse** : fiches PAEB qui ne donnent que le grand secteur déclaré (« Agriculture… » → Production agricole par défaut, « Industrie agro alimentaire » → Transformation). | Secteur probable mais pas certain. | Classement repris ; à corriger au fil de l'eau sur la fiche. |
 | B54 | Les filières proposées étaient dispersées (141 libellés : synonymes, métiers). | Recherche par filière inutilisable. | Vocabulaire ramené à 50 filières (synonymes fusionnés, métiers écartés). |
 | B55 | Classements faits en 4 lots parallèles avec deux lectures différentes du stade PAEB. | Incohérence. | Règle unique réappliquée à tous les dossiers PAEB. |
+
+## G. Contacts du pipeline (03/10)
+
+389 contacts chargés sur 355 des 387 dossiers (349 avec téléphone, 348 avec e-mail), rattachés à la fiche (`contacts.deal_id`, type « Pipeline ») : ils suivent l'entreprise à la conversion. Sources : export Kobo PAEB et suivi portefeuille ADPME, pipeline IDERA, dossiers internes et Catal1.5°T (listes de contacts Catalist / EnDev, formulaires, notes). La source de chaque contact est indiquée dans sa note. Aucun IFU, RCCM, pièce d'identité, compte bancaire ni date de naissance.
+
+| # | Difficulté | Effet | Traitement |
+|---|---|---|---|
+| B56 | Les contacts avaient été écartés lors des lots 1 et 2 par précaution. | Pipeline sans sa principale valeur. | Reprise complète depuis les sources (`scripts/load_contacts.mjs`). |
+| B57 | 13 promotrices IDERA n'ont autorisé que le teaser ou la présentation, pas le dossier complet. | Partage des coordonnées non couvert explicitement. | Décision de Médéa : chargées avec la note « Partage limité IDERA (teaser) : contact à utiliser dans le cadre du programme ». |
+| B58 | Une même personne apparaît dans plusieurs sources avec des orthographes différentes. | Doublons. | Fusion par nom normalisé ; le nom le plus complet est gardé, les coordonnées s'additionnent. |
+| B59 | Téléphones abîmés par Excel (zéro initial perdu, deux numéros collés, numéro dans le champ nom). | Numéros faux. | Zéro rétabli, numéros séparés ; 14 numéros à 8 chiffres (ancien format) laissés tels quels. |
+| B60 | 7 numéros sont communs à plusieurs PME (ex. BIO PHYTO et BIOLYNX). | Même promoteur, ou erreur de saisie. | Gardés ; à vérifier au premier appel. |
+| B61 | La présentation Enabel ne porte aucune coordonnée ; Tchaou et AfriSime n'ont que les coordonnées générales de l'entreprise. | Contacts incomplets. | Contact au nom de l'entreprise pour les coordonnées générales ; le reste **à compléter**. |
+| B62 | 32 dossiers restent sans contact (fiches réduites à un nom, porteuses des fiches IDERA absentes du fichier, FMA et Africa Growing Solutions présents au suivi ADPME sans rapprochement). | Pas de contact. | **À compléter** à la main. |
