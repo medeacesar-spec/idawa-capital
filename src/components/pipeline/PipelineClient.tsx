@@ -54,6 +54,11 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
   const [country, setCountry] = useState("");
+  const [tag, setTag] = useState("");
+  const [sector, setSector] = useState("");
+  const tagFamilies = Array.from(new Set(data.tags.map((t) => t.family ?? "Autres")));
+  const usedSectors = new Set(data.deals.map((d) => d.subSectorId).filter(Boolean));
+  const industries = Array.from(new Set(data.subSectors.filter((s) => usedSectors.has(s.id)).map((s) => s.industry)));
   const sources = Array.from(new Set(data.deals.map((d) => d.source).filter((s): s is string => !!s))).sort((a, b) => a.localeCompare(b, "fr"));
   const countries = Array.from(new Set(data.deals.map((d) => d.country).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b, "fr"));
   const q = normalize(query.trim());
@@ -66,7 +71,9 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
       : (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope)))
     .filter((d) => !source || (source === NONE ? !d.source : d.source === source))
     .filter((d) => !country || (country === NONE ? !d.country : d.country === country))
-    .filter((d) => !q || normalize(`${d.companyName} ${d.sector ?? ""} ${d.city ?? ""} ${d.sourceDetail ?? ""}`).includes(q));
+    .filter((d) => !tag || d.tags.some((t) => t.id === tag))
+    .filter((d) => !sector || (sector === NONE ? !d.subSectorId : sector.startsWith("ind:") ? data.subSectors.find((s) => s.id === d.subSectorId)?.industry === sector.slice(4) : d.subSectorId === sector))
+    .filter((d) => !q || normalize(`${d.companyName} ${d.sector ?? ""} ${d.city ?? ""} ${d.sourceDetail ?? ""} ${d.tags.map((t) => t.name).join(" ")}`).includes(q));
   const closedCount = byProgram.filter(isClosed).length;
   const veilleCount = byProgram.filter(isVeille).length;
   const list = byProgram.filter((d) =>
@@ -125,7 +132,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
 
       {/* Recherche, source, pays */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un dossier, un secteur, une ville…"
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un dossier, un secteur, une ville, un tag…"
           aria-label="Rechercher un dossier"
           style={{ flex: "1 1 240px", minWidth: 0, padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)", outline: "none" }} />
         <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Filtrer par source"
@@ -142,8 +149,32 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
             <option value={NONE}>Pays non renseigné</option>
           </select>
         )}
-        {(query || source || country) && (
-          <button className="btn btn-ghost" onClick={() => { setQuery(""); setSource(""); setCountry(""); }}>Effacer</button>
+        {industries.length > 0 && (
+          <select value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Filtrer par secteur"
+            style={{ flex: "0 1 220px", minWidth: 0, padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)" }}>
+            <option value="">Tous les secteurs</option>
+            {industries.map((ind) => (
+              <optgroup key={ind} label={ind}>
+                <option value={`ind:${ind}`}>{ind} (tout)</option>
+                {data.subSectors.filter((s) => s.industry === ind && usedSectors.has(s.id)).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </optgroup>
+            ))}
+            <option value={NONE}>Secteur non renseigné</option>
+          </select>
+        )}
+        {data.tags.length > 0 && (
+          <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Filtrer par tag"
+            style={{ flex: "0 1 200px", minWidth: 0, padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)" }}>
+            <option value="">Tous les tags</option>
+            {tagFamilies.map((f) => (
+              <optgroup key={f} label={f}>
+                {data.tags.filter((t) => (t.family ?? "Autres") === f).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        )}
+        {(query || source || country || tag || sector) && (
+          <button className="btn btn-ghost" onClick={() => { setQuery(""); setSource(""); setCountry(""); setTag(""); setSector(""); }}>Effacer</button>
         )}
       </div>
 
@@ -207,6 +238,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
               <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {d.country && d.country !== "Bénin" ? `${d.country} · ` : ""}
                 {d.sector ? `${d.sector} · ` : ""}
+                {d.tags.filter((t) => t.family === "Filière" || t.family === "Thématique").slice(0, 3).map((t) => `${t.name} · `).join("")}
                 {d.dealState === "Écarté" && !d.convertedCompanyId
                   ? <span style={{ color: "var(--text-2)" }}>{d.rejectionReason ?? "Écarté"}</span>
                   : d.dealState === "En veille" && !d.convertedCompanyId

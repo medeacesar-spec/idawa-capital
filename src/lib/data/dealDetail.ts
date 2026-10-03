@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAllTags, getEntityTags, type Tag } from "@/lib/data/tags";
 import type { PromoterEval } from "@/components/shared/PromoterEvalModal";
 import { getSuivi, type SuiviNote, type SuiviTask } from "./suivi";
 import { getEsg, type EsgData } from "./esg";
@@ -49,6 +50,8 @@ export type DealDetail = {
   /** Fonds pour lequel le dossier est suivi ; null = pipeline non qualifié. */
   fund: { id: string; name: string } | null;
   fundOptions: { id: string; name: string }[];
+  tags: Tag[];
+  allTags: Tag[];
   /** Comités propres aux programmes du dossier (ex. Comité d'éligibilité de Catal1.5°T). */
   programCommittees: ProgramCommittee[];
   officer: string | null;
@@ -106,6 +109,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   ]);
   const fundOptions = (fundRows ?? []).map((f) => ({ id: f.id as string, name: f.name as string }));
   const fund = fundOptions.find((f) => f.id === d.fund_id) ?? null;
+  const [tags, allTags] = await Promise.all([getEntityTags("deal", id), getAllTags()]);
   const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
   const progIds = Array.from(new Set([
     ...(d.program_id ? [d.program_id as string] : []),
@@ -140,7 +144,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     },
     sector: (subRes.data as { name?: string } | null)?.name ?? null,
     programName: prog?.name ?? null, programColor: prog?.color ?? null,
-    programs, programOptions, programCommittees, fund, fundOptions,
+    programs, programOptions, programCommittees, fund, fundOptions, tags, allTags,
     officer: dn(offRes.data as { full_name?: string; email?: string } | null),
     analyst: dn(anaRes.data as { full_name?: string; email?: string } | null),
     expectedClose: d.expected_close,

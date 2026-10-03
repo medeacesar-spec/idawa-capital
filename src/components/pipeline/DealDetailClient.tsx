@@ -8,6 +8,7 @@ import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import FinancialStatementsTab from "@/components/portfolio/FinancialStatementsTab";
 import FundQualification from "@/components/shared/FundQualification";
+import TagEditor from "@/components/shared/TagEditor";
 import ConvertDealModal from "./ConvertDealModal";
 import RejectDealModal from "./RejectDealModal";
 import StandbyDealModal from "./StandbyDealModal";
@@ -257,6 +258,9 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           <FundQualification entityType="deal" entityId={deal.id} fund={deal.fund} options={deal.fundOptions} readOnly={converted} inProgram={deal.programs.length > 0} />
           <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <TagEditor entityType="deal" entityId={deal.id} tags={deal.tags} allTags={deal.allTags} readOnly={converted} />
         </div>
       </div>
 
