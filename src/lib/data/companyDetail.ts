@@ -50,6 +50,8 @@ export type CompanyDetail = {
   programs: { id: string; name: string; color: string | null; principal: boolean }[];
   /** Programmes ouverts, pour proposer un rattachement supplémentaire. */
   programOptions: { id: string; name: string; color: string | null }[];
+  fund: { id: string; name: string } | null;
+  fundOptions: { id: string; name: string }[];
   programId: string | null;
   originDealId: string | null;
   originDealName: string | null;
@@ -94,7 +96,7 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
   const supabase = await createClient();
   const { data: c } = await supabase
     .from("portfolio_companies")
-    .select("id, name, description, founded_year, city, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, exit_review, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
+    .select("id, name, description, founded_year, city, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, exit_review, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, invested_date, program_id, fund_id, primary_sub_sector_id, origin_deal_id, ehs_sector, valuation_methods_entry, valuation_methods_current, exit_scenarios, exit_strategy, exit_multiple_target, exit_irr_target, exit_year")
     .eq("id", id).single();
   if (!c) return null;
 
@@ -143,10 +145,12 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
 
   // Rattachements en cours, principal compris : une société peut relever de plusieurs
   // programmes à la fois, et les afficher tous évite de croire qu'elle n'en a qu'un.
-  const [{ data: memRows }, { data: allProgs }] = await Promise.all([
+  const [{ data: memRows }, { data: allProgs }, { data: fundRows }] = await Promise.all([
     supabase.from("program_memberships").select("program_id").eq("entity_type", "company").eq("entity_id", id).is("date_end", null),
     supabase.from("programs").select("id, name, color, status, position").order("position"),
+    supabase.from("funds").select("id, name").order("created_at"),
   ]);
+  const fundOptions = (fundRows ?? []).map((f) => ({ id: f.id as string, name: f.name as string }));
   const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
   const ids = Array.from(new Set([
     ...(c.program_id ? [c.program_id as string] : []),
@@ -164,6 +168,8 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     ownership: c.ownership_pct != null ? Number(c.ownership_pct) : null,
     investedDate: c.invested_date, programName: prog?.name ?? null, programColor: prog?.color ?? null,
     programs,
+    fund: fundOptions.find((f) => f.id === c.fund_id) ?? null,
+    fundOptions,
     programOptions: (allProgs ?? [])
       .filter((p) => (p as { status?: string }).status !== "Clos")
       .map((p) => ({ id: p.id as string, name: p.name as string, color: (p.color as string) ?? null })),

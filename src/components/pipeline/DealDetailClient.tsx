@@ -7,6 +7,7 @@ import type { DealDetail, CommitteePassage } from "@/lib/data/dealDetail";
 import { fmtM } from "@/lib/format";
 import CommitteeFormModal from "./CommitteeFormModal";
 import FinancialStatementsTab from "@/components/portfolio/FinancialStatementsTab";
+import FundQualification from "@/components/shared/FundQualification";
 import ConvertDealModal from "./ConvertDealModal";
 import RejectDealModal from "./RejectDealModal";
 import StandbyDealModal from "./StandbyDealModal";
@@ -253,7 +254,10 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <FundQualification entityType="deal" entityId={deal.id} fund={deal.fund} options={deal.fundOptions} readOnly={converted} />
+          <ProgramMemberships entityType="deal" entityId={deal.id} programs={deal.programs} options={deal.programOptions} />
+        </div>
       </div>
 
       <DealNextStep dealId={deal.id} tasks={deal.tasks} postMortem={deal.postMortem} postMortemAt={deal.postMortemAt} rejectionReason={deal.rejectionReason}

@@ -27,6 +27,7 @@ import ValuationTab from "./ValuationTab";
 import SupportTab from "./SupportTab";
 import type { Cadence } from "@/lib/periods";
 import ProgramMemberships from "./ProgramMemberships";
+import FundQualification from "@/components/shared/FundQualification";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function frMonth(d: string | null) { if (!d) return "—"; return `${MONTHS[parseInt(d.slice(5, 7), 10) - 1] ?? ""} ${d.slice(2, 4)}`; }
@@ -153,7 +154,10 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
       {/* Tags */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {company.sector && <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: "var(--espresso)", color: "#fff" }}>{company.sector}</span>}
-        <ProgramMemberships entityType="company" entityId={company.id} programs={company.programs} options={company.programOptions} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <FundQualification entityType="company" entityId={company.id} fund={company.fund} options={company.fundOptions} />
+          <ProgramMemberships entityType="company" entityId={company.id} programs={company.programs} options={company.programOptions} />
+        </div>
       </div>
 
       {/* Facts */}

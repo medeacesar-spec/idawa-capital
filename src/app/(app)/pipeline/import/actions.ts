@@ -91,13 +91,11 @@ export async function importDeals(drafts: DealDraft[]): Promise<ImportResult> {
   if (!retained.length) return { error: "Aucune ligne exploitable." };
   if (retained.length > MAX_ROWS) return { error: `Trop de lignes en une fois (${retained.length}). Découpez le fichier.` };
 
-  const [{ data: fund }, { data: subSectors }] = await Promise.all([
-    supabase.from("funds").select("id").limit(1).single(),
-    supabase.from("sub_sectors").select("id, name"),
-  ]);
+  const { data: subSectors } = await supabase.from("sub_sectors").select("id, name");
 
   const rows = retained.map((d) => ({
-    fund_id: fund?.id ?? null,
+    // Pipeline NON QUALIFIÉ : une liste importée n'est pas encore suivie pour un fonds.
+    fund_id: null,
     company_name: d.companyName.trim(),
     description: composedDescription(d),
     thesis: d.thesis,

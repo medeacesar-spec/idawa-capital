@@ -20,6 +20,7 @@ export type PortfolioCompany = {
   programName: string | null;
   programColor: string | null;
   programStatus: string | null;
+  fundName: string | null;
   ehsSector: string | null;
 };
 
@@ -35,17 +36,19 @@ export type PortfolioData = {
 export async function getPortfolioData(): Promise<PortfolioData> {
   const supabase = await createClient();
 
-  const [compRes, progRes, subRes, indRes, memRes] = await Promise.all([
+  const [compRes, progRes, subRes, indRes, memRes, fundRes] = await Promise.all([
     supabase
       .from("portfolio_companies")
-      .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, program_id, primary_sub_sector_id, invested_date, ehs_sector")
+      .select("id, name, status, tracking_type, invested_amount, current_valuation, tvpi, tri, ownership_pct, program_id, fund_id, primary_sub_sector_id, invested_date, ehs_sector")
       .order("invested_date", { ascending: true }),
     supabase.from("programs").select("id, name, color, status, position, ehs_families, nature").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
     supabase.from("industries").select("id, name"),
     // Adhésions en cours : une société peut relever de plusieurs programmes à la fois.
     supabase.from("program_memberships").select("entity_id, program_id").eq("entity_type", "company").is("date_end", null),
+    supabase.from("funds").select("id, name"),
   ]);
+  const fundMap = new Map((fundRes.data ?? []).map((f) => [f.id as string, f.name as string]));
 
   const programs = progRes.data ?? [];
   // Programmes de chaque société : le principal (program_id) plus toute adhésion ouverte.
@@ -80,6 +83,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
       programName: prog?.name ?? null,
       programColor: prog?.color ?? null,
       programStatus: prog?.status ?? null,
+      fundName: c.fund_id ? fundMap.get(c.fund_id) ?? null : null,
       ehsSector: c.ehs_sector ?? null,
     };
   });

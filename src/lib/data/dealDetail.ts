@@ -46,6 +46,9 @@ export type DealDetail = {
   /** Programmes du dossier : le principal en tête, puis les rattachements simultanés. */
   programs: { id: string; name: string; color: string | null; principal: boolean }[];
   programOptions: { id: string; name: string; color: string | null }[];
+  /** Fonds pour lequel le dossier est suivi ; null = pipeline non qualifié. */
+  fund: { id: string; name: string } | null;
+  fundOptions: { id: string; name: string }[];
   /** Comités propres aux programmes du dossier (ex. Comité d'éligibilité de Catal1.5°T). */
   programCommittees: ProgramCommittee[];
   officer: string | null;
@@ -74,7 +77,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const supabase = await createClient();
   const { data: d } = await supabase
     .from("deals")
-    .select("id, company_name, stage, status, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, description, founded_year, city, country, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem, post_mortem_at")
+    .select("id, company_name, stage, status, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, description, founded_year, city, country, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, program_id, fund_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem, post_mortem_at")
     .eq("id", id).single();
   if (!d) return null;
 
@@ -96,10 +99,13 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
 
   const prog = progRes.data as { name?: string; color?: string } | null;
   // Rattachements en cours, principal compris — même modèle que les sociétés.
-  const [{ data: memRows }, { data: allProgs }] = await Promise.all([
+  const [{ data: memRows }, { data: allProgs }, { data: fundRows }] = await Promise.all([
     supabase.from("program_memberships").select("program_id").eq("entity_type", "deal").eq("entity_id", id).is("date_end", null),
     supabase.from("programs").select("id, name, color, status, position, committees").order("position"),
+    supabase.from("funds").select("id, name").order("created_at"),
   ]);
+  const fundOptions = (fundRows ?? []).map((f) => ({ id: f.id as string, name: f.name as string }));
+  const fund = fundOptions.find((f) => f.id === d.fund_id) ?? null;
   const progById = new Map((allProgs ?? []).map((p) => [p.id as string, p]));
   const progIds = Array.from(new Set([
     ...(d.program_id ? [d.program_id as string] : []),
@@ -134,7 +140,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     },
     sector: (subRes.data as { name?: string } | null)?.name ?? null,
     programName: prog?.name ?? null, programColor: prog?.color ?? null,
-    programs, programOptions, programCommittees,
+    programs, programOptions, programCommittees, fund, fundOptions,
     officer: dn(offRes.data as { full_name?: string; email?: string } | null),
     analyst: dn(anaRes.data as { full_name?: string; email?: string } | null),
     expectedClose: d.expected_close,

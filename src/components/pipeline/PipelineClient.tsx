@@ -25,6 +25,7 @@ const isClosed = (d: PipelineDeal) => isConverted(d) || isRejected(d);
 const isVeille = (d: PipelineDeal) => !isConverted(d) && d.dealState === "En veille";
 type StatusFilter = "actifs" | "veille" | "clotures" | "tous";
 const NONE = "__none__";
+const UNQUALIFIED = "__unqualified__";
 // Recherche insensible aux accents et à la casse (« benin » trouve « Bénin »).
 const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -57,9 +58,11 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const countries = Array.from(new Set(data.deals.map((d) => d.country).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b, "fr"));
   const q = normalize(query.trim());
   const byProgram = data.deals
-    // Un fonds sélectionné = ses dossiers internes (investissement direct, sans programme).
+    // « Non qualifié » = aucun fonds (pipeline par défaut) ; un fonds = les dossiers suivis pour lui,
+    // qu'ils relèvent ou non d'un programme ; un programme = ses dossiers, avec ou sans fonds.
     .filter((d) => scope === "all"
-      || (scope.startsWith("fund:") ? d.fundId === scope.slice(5) && !d.programIds?.length && !d.programId
+      || (scope === UNQUALIFIED ? !d.fundId
+      : scope.startsWith("fund:") ? d.fundId === scope.slice(5)
       : (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope)))
     .filter((d) => !source || (source === NONE ? !d.source : d.source === source))
     .filter((d) => !country || (country === NONE ? !d.country : d.country === country))
@@ -86,6 +89,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
       {/* Filtre par programme */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         {[{ id: "all", name: "Tous les dossiers", color: "var(--espresso)" },
+          { id: UNQUALIFIED, name: "Pipeline non qualifié", color: "#8A7256" },
           ...data.funds.map((f) => ({ id: `fund:${f.id}`, name: f.name, color: "#4A2617" })),
           ...data.programs].map((s) => {
           const on = s.id === scope;
@@ -178,8 +182,8 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.companyName}</span>
-                {!d.programName && !d.programIds?.length && d.fundName && (
-                  <span title="Dossier interne — investissement direct du fonds" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "#4A26171a", color: "#4A2617", flexShrink: 0, whiteSpace: "nowrap" }}>
+                {d.fundName && (
+                  <span title="Suivi pour ce fonds" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "#4A26171a", color: "#4A2617", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4A2617" }} />
                     {d.fundName}
                   </span>

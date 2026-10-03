@@ -44,11 +44,18 @@ function Actions({ onEdit, onDelete, canEdit }: { onEdit: () => void; onDelete: 
 }
 
 function ProgramTag({ c }: { c: PortfolioCompany }) {
-  if (!c.programName) return null;
+  // Une société peut relever d'un fonds ET d'un programme (ex. Fonds I + Catal1.5°T).
+  if (!c.programName && !c.fundName) return null;
   return (
-    <div style={{ marginTop: 9, paddingTop: 9, borderTop: "1px solid var(--sep)", display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: c.programColor ?? "var(--text-3)" }} />
-      <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{c.programName}</span>
+    <div style={{ marginTop: 9, paddingTop: 9, borderTop: "1px solid var(--sep)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      {c.fundName && (<>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4A2617" }} />
+        <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{c.fundName}</span>
+      </>)}
+      {c.programName && (<>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: c.programColor ?? "var(--text-3)", marginLeft: c.fundName ? 6 : 0 }} />
+        <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{c.programName}</span>
+      </>)}
       {c.programStatus === "Clos" && <span className="badge badge-neutral" style={{ fontSize: 9.5, padding: "1px 7px" }}>Clos</span>}
     </div>
   );

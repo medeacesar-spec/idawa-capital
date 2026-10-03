@@ -4,6 +4,7 @@
 //   node scripts/load_sharepoint_lot.mjs <lot.json> [--dry-run]
 //
 // Refuse de recharger un dossier déjà présent (même nom + même import_source).
+// Fonds : aucun par défaut (pipeline non qualifié) ; `"fund": true` rattache au fonds principal.
 // Identifiants lus depuis .env.local (jamais affichés).
 import pg from "pg";
 import fs from "fs";
@@ -42,7 +43,7 @@ try {
       `insert into deals (fund_id, company_name, stage, deal_state, standby_reason, rejection_reason, amount, probability,
          deal_source, deal_source_detail, country, city, founded_year, description, promoter_name, import_source, program_id)
        values ($1,$2,$3,$4,$5,$6,$7,null,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning id`,
-      [fund, d.company_name, d.stage, d.deal_state, d.standby_reason, d.rejection_reason, d.amount,
+      [d.fund ? fund : null, d.company_name, d.stage, d.deal_state, d.standby_reason, d.rejection_reason, d.amount,
        d.deal_source, d.deal_source_detail, d.country, d.city, d.founded_year, d.description, d.promoter_name,
        d.import_source, programId],
     );
