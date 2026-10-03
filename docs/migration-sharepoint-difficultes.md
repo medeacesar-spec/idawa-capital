@@ -95,3 +95,9 @@ Essai à blanc réussi, après rapprochement des 6 cas douteux : **339 nouveaux 
 | B48 | PAEB : CA « N-1, N-2, N-3 avant sélection » sans année. | Années approximatives. | Année estimée à partir de la date de comité, signalée dans la note et sur chaque exercice. |
 | B49 | 4 entreprises sans fiche Kobo (FMA, BMS, Africa Growing Solutions, L'Écrin). | Fiches minimales. | Créées avec l'information disponible (appui financier ou dossier d'instruction) et une alerte. |
 | B50 | FAABA a deux dossiers SharePoint : le dossier interne (vide) et le dossier d'instruction ADPME. | — | Rattaché au dossier d'instruction (seul à contenir des pièces). 7 dossiers d'instruction rattachés en tout. |
+
+**Lot 2 chargé le 03/10/2026** (go de Médéa) : 339 dossiers créés, 21 enrichis, 376 notes, 586 exercices de chiffres clés (4 conservés). Contrôle après chargement : 0 mention d'IFU ou de RCCM ; pipeline = 387 dossiers (19 Fonds I, 30 Catal1.5°T, 338 non qualifiés), 381 actifs, 7 écartés.
+
+| # | Difficulté | Conséquence | Traitement |
+|---|---|---|---|
+| B51 | **Doublon créé au chargement** : I.Y SARL (lot 1, Catal1.5°T) recréé depuis la liste ADPME — le rapprochement par le nom ignorait les noms trop courts (« I.Y »), et celui par le promoteur exigeait un mot du nom en commun. | Un doublon. | Détecté par le contrôle d'après chargement ; fiche ADPME (note + 3 exercices de chiffres clés) rattachée au dossier existant, doublon supprimé, note de correction. Contrôle par promoteur relancé sur tout le lot : aucun autre cas. |
