@@ -271,7 +271,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
       {currentTab === "Présentation" && (
         <DealPresentationTab dealId={deal.id} presentation={{
           description: deal.description, thesis: deal.thesis, foundedYear: deal.foundedYear,
-          city: deal.city, developmentStage: deal.developmentStage, promoter: deal.promoter as PromoterData,
+          city: deal.city, country: deal.country, developmentStage: deal.developmentStage, promoter: deal.promoter as PromoterData,
         }} />
       )}
 

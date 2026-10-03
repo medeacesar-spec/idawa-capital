@@ -17,6 +17,7 @@ export type DealPresentation = {
   thesis: string | null;
   foundedYear: number | null;
   city: string | null;
+  country: string | null;
   developmentStage: string | null;
   promoter: PromoterData;
 };
@@ -27,6 +28,7 @@ export default function DealPresentationTab({ dealId, presentation }: { dealId: 
   const [desc, setDesc] = useState(presentation.description ?? "");
   const [year, setYear] = useState(presentation.foundedYear != null ? String(presentation.foundedYear) : "");
   const [city, setCity] = useState(presentation.city ?? "");
+  const [country, setCountry] = useState(presentation.country ?? "");
   const [stage, setStage] = useState(presentation.developmentStage ?? "");
 
   const saveField = useCallback(async (patch: Record<string, string | number | null>) => {
@@ -36,6 +38,7 @@ export default function DealPresentationTab({ dealId, presentation }: { dealId: 
   useDebouncedSave(year, presentation.foundedYear != null ? String(presentation.foundedYear) : "",
     (v) => saveField({ founded_year: v.trim() ? Number(v) : null }));
   useDebouncedSave(city, presentation.city ?? "", (v) => saveField({ city: v.trim() || null }));
+  useDebouncedSave(country, presentation.country ?? "", (v) => saveField({ country: v.trim() || null }));
   useDebouncedSave(desc, presentation.description ?? "", (v) => saveField({ description: v.trim() || null }));
 
   return (
@@ -44,7 +47,7 @@ export default function DealPresentationTab({ dealId, presentation }: { dealId: 
 
       <div className="card" style={{ padding: "16px 18px" }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Identité</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
           <Field label="Année de création">
             <Input type="number" value={year} disabled={!canEdit} placeholder="Ex : 2019"
               onChange={(e) => setYear(e.target.value)} />
@@ -52,6 +55,13 @@ export default function DealPresentationTab({ dealId, presentation }: { dealId: 
           <Field label="Ville">
             <Input value={city} disabled={!canEdit} placeholder="Ex : Cotonou"
               onChange={(e) => setCity(e.target.value)} />
+          </Field>
+          <Field label="Pays">
+            <Input value={country} disabled={!canEdit} placeholder="Ex : Bénin" list="deal-countries"
+              onChange={(e) => setCountry(e.target.value)} />
+            <datalist id="deal-countries">
+              {["Bénin", "Togo", "Burkina Faso", "Côte d'Ivoire", "Niger", "Sénégal"].map((c) => <option key={c} value={c} />)}
+            </datalist>
           </Field>
           <Field label="Stade de développement">
             <Select value={stage} disabled={!canEdit}

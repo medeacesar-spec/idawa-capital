@@ -24,6 +24,9 @@ const isRejected = (d: PipelineDeal) => d.dealState === "Écarté";
 const isClosed = (d: PipelineDeal) => isConverted(d) || isRejected(d);
 const isVeille = (d: PipelineDeal) => !isConverted(d) && d.dealState === "En veille";
 type StatusFilter = "actifs" | "veille" | "clotures" | "tous";
+const NONE = "__none__";
+// Recherche insensible aux accents et à la casse (« benin » trouve « Bénin »).
+const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function initials(name: string): string {
   const clean = name.replace(/[^A-Za-zÀ-ÿ ]/g, "");
@@ -45,7 +48,19 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const [scope, setScope] = useState<string>("all");
   const [status, setStatus] = useState<StatusFilter>("actifs");
   const [modal, setModal] = useState<{ open: boolean; deal: PipelineDeal | null }>({ open: false, deal: null });
-  const byProgram = scope === "all" ? data.deals : data.deals.filter((d) => (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope));
+  // Recherche, source et pays : indispensables dès que le pipeline compte des centaines de
+  // dossiers (listes ADPME, IDERA, Enabel) — sans eux, les dossiers suivis de près s'y noient.
+  const [query, setQuery] = useState("");
+  const [source, setSource] = useState("");
+  const [country, setCountry] = useState("");
+  const sources = Array.from(new Set(data.deals.map((d) => d.source).filter((s): s is string => !!s))).sort((a, b) => a.localeCompare(b, "fr"));
+  const countries = Array.from(new Set(data.deals.map((d) => d.country).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b, "fr"));
+  const q = normalize(query.trim());
+  const byProgram = data.deals
+    .filter((d) => scope === "all" || (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope))
+    .filter((d) => !source || (source === NONE ? !d.source : d.source === source))
+    .filter((d) => !country || (country === NONE ? !d.country : d.country === country))
+    .filter((d) => !q || normalize(`${d.companyName} ${d.sector ?? ""} ${d.city ?? ""} ${d.sourceDetail ?? ""}`).includes(q));
   const closedCount = byProgram.filter(isClosed).length;
   const veilleCount = byProgram.filter(isVeille).length;
   const list = byProgram.filter((d) =>
@@ -97,6 +112,30 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
             </button>
           );
         })}
+      </div>
+
+      {/* Recherche, source, pays */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un dossier, un secteur, une ville…"
+          aria-label="Rechercher un dossier"
+          style={{ flex: "1 1 240px", minWidth: 0, padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)", outline: "none" }} />
+        <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="Filtrer par source"
+          style={{ flex: "0 1 220px", minWidth: 0, padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)" }}>
+          <option value="">Toutes les sources</option>
+          {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          <option value={NONE}>Source non renseignée</option>
+        </select>
+        {countries.length > 0 && (
+          <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Filtrer par pays"
+            style={{ flex: "0 1 160px", minWidth: 0, padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 9, fontSize: 12.5, fontFamily: "inherit", background: "var(--surface)", color: "var(--ink)" }}>
+            <option value="">Tous les pays</option>
+            {countries.map((c) => <option key={c} value={c}>{c}</option>)}
+            <option value={NONE}>Pays non renseigné</option>
+          </select>
+        )}
+        {(query || source || country) && (
+          <button className="btn btn-ghost" onClick={() => { setQuery(""); setSource(""); setCountry(""); }}>Effacer</button>
+        )}
       </div>
 
       {/* Stats + action */}
@@ -151,6 +190,7 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
                 ) : null}
               </div>
               <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {d.country && d.country !== "Bénin" ? `${d.country} · ` : ""}
                 {d.sector ? `${d.sector} · ` : ""}
                 {d.dealState === "Écarté" && !d.convertedCompanyId
                   ? <span style={{ color: "var(--text-2)" }}>{d.rejectionReason ?? "Écarté"}</span>

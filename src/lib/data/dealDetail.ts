@@ -34,6 +34,7 @@ export type DealDetail = {
   description: string | null;
   foundedYear: number | null;
   city: string | null;
+  country: string | null;
   developmentStage: string | null;
   promoter: {
     name: string | null; bio: string | null; diploma: string | null;
@@ -73,7 +74,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
   const supabase = await createClient();
   const { data: d } = await supabase
     .from("deals")
-    .select("id, company_name, stage, status, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, description, founded_year, city, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem, post_mortem_at")
+    .select("id, company_name, stage, status, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, amount, probability, valuation_pre, ownership_target, thesis, description, founded_year, city, country, development_stage, promoter_name, promoter_bio, promoter_diploma, promoter_age, promoter_gender, promoter_eval, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, post_mortem, post_mortem_at")
     .eq("id", id).single();
   if (!d) return null;
 
@@ -126,7 +127,7 @@ export async function getDealDetail(id: string): Promise<DealDetail | null> {
     ownershipTarget: d.ownership_target != null ? Number(d.ownership_target) : null,
     convertedCompanyId: (convRes.data as { id?: string } | null)?.id ?? null,
     thesis: d.thesis,
-    description: d.description ?? null, foundedYear: d.founded_year ?? null, city: d.city ?? null, developmentStage: d.development_stage ?? null,
+    description: d.description ?? null, foundedYear: d.founded_year ?? null, city: d.city ?? null, country: d.country ?? null, developmentStage: d.development_stage ?? null,
     promoter: {
       name: d.promoter_name ?? null, bio: d.promoter_bio ?? null, diploma: d.promoter_diploma ?? null,
       age: d.promoter_age ?? null, gender: d.promoter_gender ?? null, evaluation: d.promoter_eval ?? null,

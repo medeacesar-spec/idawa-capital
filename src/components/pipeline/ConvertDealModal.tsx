@@ -23,7 +23,7 @@ export default function ConvertDealModal({ deal, onClose }: { deal: DealDetail; 
   const [amount, setAmount] = useState(String(deal.amount ?? ""));
   const [ownership, setOwnership] = useState(deal.ownershipTarget != null ? String(deal.ownershipTarget) : "");
   const [valuation, setValuation] = useState(deal.valuationPre != null ? String(deal.valuationPre) : "");
-  const [country, setCountry] = useState("Bénin");
+  const [country, setCountry] = useState(deal.country ?? "Bénin");
 
   async function submit() {
     setBusy(true); setError(null);

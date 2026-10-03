@@ -24,6 +24,8 @@ export type PipelineDeal = {
   standbyReason: string | null;
   source: string | null;
   sourceDetail: string | null;
+  country: string | null;
+  city: string | null;
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
@@ -46,7 +48,7 @@ export async function getPipelineData(): Promise<PipelineData> {
   const [dealRes, progRes, subRes, indRes, profRes, convRes, memRes] = await Promise.all([
     supabase
       .from("deals")
-      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail")
+      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, country, city")
       .order("created_at", { ascending: false }),
     supabase.from("programs").select("id, name, color, position, status").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
@@ -97,6 +99,8 @@ export async function getPipelineData(): Promise<PipelineData> {
       standbyReason: d.standby_reason ?? null,
       source: d.deal_source ?? null,
       sourceDetail: d.deal_source_detail ?? null,
+      country: d.country ?? null,
+      city: d.city ?? null,
     };
   });
 
