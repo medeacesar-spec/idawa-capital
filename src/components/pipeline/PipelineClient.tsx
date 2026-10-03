@@ -57,7 +57,10 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
   const countries = Array.from(new Set(data.deals.map((d) => d.country).filter((c): c is string => !!c))).sort((a, b) => a.localeCompare(b, "fr"));
   const q = normalize(query.trim());
   const byProgram = data.deals
-    .filter((d) => scope === "all" || (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope))
+    // Un fonds sélectionné = ses dossiers internes (investissement direct, sans programme).
+    .filter((d) => scope === "all"
+      || (scope.startsWith("fund:") ? d.fundId === scope.slice(5) && !d.programIds?.length && !d.programId
+      : (d.programIds?.length ? d.programIds.includes(scope) : d.programId === scope)))
     .filter((d) => !source || (source === NONE ? !d.source : d.source === source))
     .filter((d) => !country || (country === NONE ? !d.country : d.country === country))
     .filter((d) => !q || normalize(`${d.companyName} ${d.sector ?? ""} ${d.city ?? ""} ${d.sourceDetail ?? ""}`).includes(q));
@@ -82,7 +85,9 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
     <div>
       {/* Filtre par programme */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        {[{ id: "all", name: "Tous les programmes", color: "var(--espresso)" }, ...data.programs].map((s) => {
+        {[{ id: "all", name: "Tous les dossiers", color: "var(--espresso)" },
+          ...data.funds.map((f) => ({ id: `fund:${f.id}`, name: f.name, color: "#4A2617" })),
+          ...data.programs].map((s) => {
           const on = s.id === scope;
           return (
             <button key={s.id} onClick={() => setScope(s.id)}
@@ -173,6 +178,12 @@ export default function PipelineClient({ data, canEdit = true }: { data: Pipelin
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.companyName}</span>
+                {!d.programName && !d.programIds?.length && d.fundName && (
+                  <span title="Dossier interne — investissement direct du fonds" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "#4A26171a", color: "#4A2617", flexShrink: 0, whiteSpace: "nowrap" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4A2617" }} />
+                    {d.fundName}
+                  </span>
+                )}
                 {d.programName && (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "1px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: `${d.programColor}1a`, color: d.programColor ?? "var(--text-2)", flexShrink: 0, whiteSpace: "nowrap" }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: d.programColor ?? "var(--text-2)" }} />

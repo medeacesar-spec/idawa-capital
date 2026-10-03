@@ -11,6 +11,8 @@ export type PipelineDeal = {
   programIds: string[];
   programName: string | null;
   programColor: string | null;
+  fundId: string | null;
+  fundName: string | null;
   sector: string | null;
   officer: string | null;
   analyst: string | null;
@@ -29,11 +31,13 @@ export type PipelineDeal = {
 };
 
 export type PipelineProgram = { id: string; name: string; color: string };
+export type PipelineFund = { id: string; name: string };
 export type PipelineSubSector = { id: string; name: string; industry: string };
 export type PipelineMember = { id: string; name: string };
 
 export type PipelineData = {
   deals: PipelineDeal[];
+  funds: PipelineFund[];
   programs: PipelineProgram[];
   subSectors: PipelineSubSector[];
   members: PipelineMember[];
@@ -45,10 +49,10 @@ const displayName = (p?: { full_name?: string | null; email?: string | null } | 
 export async function getPipelineData(): Promise<PipelineData> {
   const supabase = await createClient();
 
-  const [dealRes, progRes, subRes, indRes, profRes, convRes, memRes] = await Promise.all([
+  const [dealRes, progRes, subRes, indRes, profRes, convRes, memRes, fundRes] = await Promise.all([
     supabase
       .from("deals")
-      .select("id, company_name, stage, amount, probability, program_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, country, city")
+      .select("id, company_name, stage, amount, probability, program_id, fund_id, primary_sub_sector_id, investment_officer_id, analyst_id, expected_close, created_at, deal_state, rejection_reason, standby_reason, deal_source, deal_source_detail, country, city")
       .order("created_at", { ascending: false }),
     supabase.from("programs").select("id, name, color, position, status").order("position"),
     supabase.from("sub_sectors").select("id, name, industry_id, position").order("position"),
@@ -57,7 +61,10 @@ export async function getPipelineData(): Promise<PipelineData> {
     supabase.from("portfolio_companies").select("id, origin_deal_id").not("origin_deal_id", "is", null),
     // Adhésions en cours : un dossier peut relever de plusieurs programmes à la fois.
     supabase.from("program_memberships").select("entity_id, program_id").eq("entity_type", "deal").is("date_end", null),
+    supabase.from("funds").select("id, name").order("created_at"),
   ]);
+  const funds = (fundRes.data ?? []) as PipelineFund[];
+  const fundMap = new Map(funds.map((f) => [f.id, f.name]));
 
   const allPrograms = progRes.data ?? [];
   const programs = allPrograms.filter((p) => p.status !== "Clos");
@@ -86,6 +93,8 @@ export async function getPipelineData(): Promise<PipelineData> {
       programIds: Array.from(new Set([...(d.program_id ? [d.program_id] : []), ...(dealPrograms.get(d.id) ?? [])])),
       programName: prog?.name ?? null,
       programColor: prog?.color ?? null,
+      fundId: d.fund_id ?? null,
+      fundName: d.fund_id ? fundMap.get(d.fund_id) ?? null : null,
       sector: d.primary_sub_sector_id ? subMap.get(d.primary_sub_sector_id) ?? null : null,
       officer: displayName(d.investment_officer_id ? profMap.get(d.investment_officer_id) : null),
       analyst: displayName(d.analyst_id ? profMap.get(d.analyst_id) : null),
@@ -106,6 +115,7 @@ export async function getPipelineData(): Promise<PipelineData> {
 
   return {
     deals,
+    funds,
     programs: programs.map((p) => ({ id: p.id, name: p.name, color: p.color })),
     subSectors: (subRes.data ?? []).map((s) => ({ id: s.id, name: s.name, industry: indMap.get(s.industry_id) ?? "" })),
     members: (profRes.data ?? []).map((p) => ({ id: p.id, name: p.full_name || p.email || "" })),
