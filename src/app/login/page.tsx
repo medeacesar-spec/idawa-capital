@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { traceAuth } from "@/lib/auth/trace";
+import { markSessionStart } from "@/lib/auth/idle";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -54,6 +55,10 @@ export default function LoginPage() {
       // réponse de connexion — inutile de redemander au serveur qui vient de répondre.
       // Appel NON ATTENDU : la trace part, la navigation aussi.
       traceAuth("connexion", { userId: data.user?.id ?? null, email });
+
+      // Le décompte d'inactivité repart de cette connexion, quelle que soit l'activité
+      // enregistrée lors d'une session précédente.
+      markSessionStart();
 
       // L'ouverture du tableau de bord prend une à deux secondes : on le dit, plutôt que
       // de laisser un bouton « Connexion… » que l'on finit par croire figé.

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import PasswordChecklist from "@/components/shared/PasswordChecklist";
 import { checkPassword } from "@/lib/password-policy";
+import { markSessionStart } from "@/lib/auth/idle";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function ResetPasswordPage() {
     // Rechargement complet plutôt que router.push : la session vient d'être établie et une
     // navigation côté client peut traverser le middleware avant que les cookies soient
     // visibles, qui renvoie alors sur la page de connexion. Voir /login.
+    markSessionStart();
     setTimeout(() => window.location.assign("/dashboard"), 1500);
   }
 

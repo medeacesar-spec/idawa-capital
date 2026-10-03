@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { traceAuth } from "@/lib/auth/trace";
-import { IDLE_TIMEOUT_MS, idleDecision } from "@/lib/auth/idle";
+import { ACTIVITY_KEY as KEY, IDLE_TIMEOUT_MS, idleDecision, readActivityCookie, recordActivity, sessionStartFromToken } from "@/lib/auth/idle";
 
-const KEY = "idawa:lastActivity"; // partagé entre onglets
 const LOGOUT_KEY = "idawa:loggedOut";
 
 export default function IdleTimeout() {
@@ -23,11 +22,11 @@ export default function IdleTimeout() {
     const readLast = () => {
       let v = 0;
       try { v = parseInt(localStorage.getItem(KEY) ?? "0", 10) || 0; } catch {}
-      return Math.max(v, memLast.current);
+      return Math.max(v, readActivityCookie(), memLast.current);
     };
     const write = (t: number) => {
       memLast.current = t;
-      try { localStorage.setItem(KEY, String(t)); } catch {}
+      recordActivity(t);
     };
 
     const logout = async () => {
@@ -73,7 +72,11 @@ export default function IdleTimeout() {
     // Au chargement : l'inactivité court depuis la dernière activité connue (même navigateur
     // fermé entre-temps), sauf si la connexion en cours est plus récente que cette activité.
     supabase.auth.getSession().then(({ data }) => {
-      signedInAt.current = Date.parse(data.session?.user?.last_sign_in_at ?? "") || 0;
+      const s = data.session;
+      signedInAt.current = Math.max(
+        sessionStartFromToken(s?.access_token),
+        Date.parse(s?.user?.last_sign_in_at ?? "") || 0,
+      );
       ready.current = true;
       if (!check()) write(Date.now());
     });
@@ -103,7 +106,7 @@ export default function IdleTimeout() {
     const t = Date.now();
     lastWrite.current = t;
     memLast.current = t;
-    try { localStorage.setItem(KEY, String(t)); } catch {}
+    recordActivity(t);
     setRemaining(null);
   };
 
