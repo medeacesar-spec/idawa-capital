@@ -93,7 +93,8 @@ export const CONTACT_FUNCTIONS = [
 
 export const DOC_CATEGORIES = ["Juridique", "Reporting", "Financier", "Comité", "ESG", "Autre"];
 
-export const COMMITTEE_TYPES = ["Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi"];
+// Pré-COD : revue interne qui précède le comité d'ouverture ; elle n'ouvre pas le dossier.
+export const COMMITTEE_TYPES = ["Pré-COD", "Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi"];
 /** Comité propre à un programme (programs.committees). opens = vaut comité d'ouverture de dossier. */
 export type ProgramCommittee = { name: string; opens: boolean };
 export function parseProgramCommittees(raw: unknown): ProgramCommittee[] {

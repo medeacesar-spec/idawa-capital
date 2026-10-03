@@ -7,6 +7,7 @@ import DocumentUploadModal from "@/components/documents/DocumentUploadModal";
 import SortToggle, { type DocSort } from "@/components/documents/SortToggle";
 import { useCanEdit } from "./WriteAccess";
 import { hasTarget, openDocument } from "@/lib/doc-links";
+import SharePointFolder from "@/components/documents/SharePointFolder";
 
 type Doc = { id: string; title: string; category: string | null; storagePath: string | null; url?: string | null; createdAt?: string | null };
 
@@ -35,8 +36,10 @@ export default function EntityDocuments({ entityType, entityId, entityName, docs
 
   return (
     <div>
+      {/* Les fichiers vivent dans SharePoint : lus en direct, jamais recopiés. */}
+      <SharePointFolder entityType={entityType} entityId={entityId} canEdit={canEdit} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Documents rattachés</div>
+        <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Documents ajoutés dans l&apos;application</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {docs.length > 1 && <SortToggle sort={sort} setSort={setSort} />}
           {canEdit && (<button className="btn btn-primary" onClick={() => setModal(true)}>
