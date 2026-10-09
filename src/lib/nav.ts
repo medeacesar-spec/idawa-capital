@@ -18,6 +18,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "dashboard", label: "Tableau de bord", href: "/dashboard" },
       { key: "pipeline", label: "Pipeline", href: "/pipeline" },
       { key: "portefeuille", label: "Portefeuille", href: "/portefeuille" },
+      { key: "comites", label: "Comités", href: "/comites" },
       { key: "performance", label: "Performance", href: "/performance" },
       { key: "esg", label: "ESG & Impact", href: "/esg" },
       { key: "reporting", label: "Reporting & extraction", href: "/reporting" },
@@ -48,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
 export const NAV_REQ: Record<string, { domain: string; min?: string }> = {
   pipeline: { domain: "pipeline" },
   portefeuille: { domain: "portefeuille" },
+  comites: { domain: "comites" },
   performance: { domain: "consolide" },
   esg: { domain: "consolide" },
   reporting: { domain: "reporting" },
@@ -79,6 +81,7 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   dashboard: { title: "Tableau de bord", sub: "Vue d'ensemble du fonds" },
   pipeline: { title: "Pipeline", sub: "Dossiers d'investissement par étape" },
   portefeuille: { title: "Portefeuille", sub: "Participations actives" },
+  comites: { title: "Comités", sub: "Séances, dossiers de séance et avis des membres" },
   performance: { title: "Performance", sub: "Multiples, TRI et création de valeur" },
   esg: { title: "ESG & Impact", sub: "Méthodologie I&P / IFC" },
   reporting: { title: "Reporting & extraction", sub: "Consolidation et exports" },

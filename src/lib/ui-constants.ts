@@ -104,6 +104,12 @@ export function parseProgramCommittees(raw: unknown): ProgramCommittee[] {
     .map((c) => ({ name: c.name.trim(), opens: c.opens === true }));
 }
 export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "Ajourné", "Défavorable"];
+export const COMMITTEE_DECISION_STYLE: Record<string, { bg: string; fg: string }> = {
+  "Favorable": { bg: "#E6F0DA", fg: "#3B6D11" },
+  "Favorable sous conditions": { bg: "#F7ECD6", fg: "#8A5A12" },
+  "Ajourné": { bg: "#EEE8E0", fg: "#6B5744" },
+  "Défavorable": { bg: "#F6E1DC", fg: "#A6412E" },
+};
 
 // Nature d'une décision structurante prise en comité (déclenche un changement de cycle de vie une fois validée).
 export const COMMITTEE_OUTCOME_NONE = "Aucune (suivi)";

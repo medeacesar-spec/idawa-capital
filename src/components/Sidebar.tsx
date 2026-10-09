@@ -18,6 +18,7 @@ const ICONS: Record<string, React.ReactNode> = {
   dashboard: (<><rect x="3" y="3" width="7" height="8" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="11" width="7" height="10" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></>),
   pipeline: (<><circle cx="5" cy="6" r="2.4" /><circle cx="5" cy="18" r="2.4" /><circle cx="19" cy="12" r="2.4" /><path d="M7.3 7.2 16.7 11M7.3 16.8 16.7 13" /></>),
   portefeuille: (<><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5.5A2 2 0 0 1 10 3.5h4a2 2 0 0 1 2 2V7" /><path d="M3 12h18" /></>),
+  comites: (<><circle cx="12" cy="7" r="3" /><circle cx="5" cy="10" r="2.2" /><circle cx="19" cy="10" r="2.2" /><path d="M7 20v-1.5a5 5 0 0 1 10 0V20" /><path d="M2 19v-.8A3.2 3.2 0 0 1 5.2 15M22 19v-.8a3.2 3.2 0 0 0-3.2-3.2" /></>),
   performance: (<><path d="M4 4v16h16" /><path d="M7 15l3.5-4 3 2.5L20 7" /></>),
   esg: (<><path d="M11 20A7 7 0 0 1 4 13C4 8 8 4 20 4c0 8-4 12-9 12z" /><path d="M11 20c0-5 2-8 6-10" /></>),
   reporting: (<><path d="M5 3h9l5 5v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M9 13v4M12 11v6M15 15v2" /></>),

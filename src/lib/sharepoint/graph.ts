@@ -142,3 +142,18 @@ export async function resolveFolderUrl(raw: string): Promise<SpItem> {
     throw new SharePointError("Ce dossier n'est pas dans l'espace partagé « Idawa Capital » (OneDrive personnel ?)", 400);
   return toItem(g);
 }
+
+/** Contenu d'un fichier (copie figée d'une pièce présentée en comité). */
+export async function downloadFile(itemId: string): Promise<{ item: GraphItem; data: ArrayBuffer }> {
+  const item = await getItem(itemId);
+  if (item.folder || !item.file) throw new SharePointError("Seuls des fichiers peuvent être ajoutés", 400);
+  if ((item.size ?? 0) > 50 * 1024 * 1024) throw new SharePointError(`« ${item.name} » dépasse 50 Mo`, 413);
+  const res = await fetch(`${GRAPH}/drives/${driveId()}/items/${encodeURIComponent(itemId)}/content`, {
+    headers: { Authorization: `Bearer ${await token()}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new SharePointError(`Lecture de « ${item.name} » impossible (${res.status})`, 502);
+  return { item, data: await res.arrayBuffer() };
+}
+
+export type { GraphItem };

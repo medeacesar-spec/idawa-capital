@@ -38,7 +38,8 @@ export async function updateSession(request: NextRequest) {
   // exemption, la redirection transforme l'appel en POST sur /login, qui répond 405 —
   // et aucune tentative ratée n'est jamais consignée.
   const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser") || path === "/api/auth-event"
-    || path.startsWith("/q/"); // questionnaire d'impact rempli par l'entrepreneur (accès par jeton)
+    || path.startsWith("/q/") // questionnaire d'impact rempli par l'entrepreneur (accès par jeton)
+    || path.startsWith("/c/") || path.startsWith("/api/c/"); // portail des membres extérieurs d'un comité (jeton)
 
   // Plus de 30 minutes sans activité -> session fermée ICI, avant tout affichage.
   // Le minuteur de la page ne suffit pas : un onglet oublié, un ordinateur en veille ou un
