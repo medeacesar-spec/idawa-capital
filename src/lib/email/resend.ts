@@ -212,3 +212,22 @@ export function assignmentEmail({ fullName, assignedBy, kind, title, dueDate, en
 
   return { subject, html };
 }
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Invitation d'un membre extérieur à une séance de comité (lien personnel, sans compte). */
+export function committeeInviteEmail({ memberName, committeeType, title, sessionDate, deadline, items, link }: {
+  memberName: string; committeeType: string; title: string; sessionDate: string | null; deadline: string; items: string[]; link: string;
+}): { subject: string; html: string } {
+  const subject = `${committeeType} — dossier de séance : ${title}`;
+  const list = items.map((n) => `<li style="margin:0 0 4px;">${esc(n)}</li>`).join("");
+  const inner = `
+    <p style="margin:0 0 10px;font-size:14px;line-height:1.6;">Bonjour ${esc(memberName)},</p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#5A4636;">Idawa Capital vous invite à examiner le dossier de la séance « ${esc(title)} »${sessionDate ? `, prévue le ${longDate(sessionDate)}` : ""}. Vous y trouverez les documents de chaque dossier ; vous pouvez y poser vos questions et donner votre avis.</p>
+    ${list ? `<ul style="margin:0 0 14px;padding-left:18px;font-size:14px;line-height:1.5;color:#33200F;">${list}</ul>` : ""}
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#5A4636;">Merci de transmettre vos avis avant le <b>${longDate(deadline)}</b>.</p>
+    ${ctaButton(link, "Ouvrir le dossier de séance")}
+    <p style="margin:20px 0 6px;font-size:12px;color:#7A6552;">Ce lien vous est personnel : merci de ne pas le transférer. Si le bouton ne fonctionne pas, copiez ce lien :</p>
+    <p style="margin:0 0 6px;font-size:12px;word-break:break-all;"><a href="${link}" style="color:#A9714B;">${link}</a></p>`;
+  return { subject, html: shell(esc(committeeType), inner) };
+}

@@ -19,7 +19,7 @@ type PassageInput = {
 };
 
 export default function CommitteeFormModal({
-  dealId, companyId, dealStage, outcomes = [], programCommittees = [], defaultType, passage, onClose,
+  dealId, companyId, dealStage, outcomes = [], programCommittees = [], defaultType, passage, prefill, onSaved, onClose,
 }: {
   dealId?: string;
   companyId?: string;
@@ -30,6 +30,10 @@ export default function CommitteeFormModal({
   programCommittees?: ProgramCommittee[];
   defaultType?: string;
   passage: PassageInput | null;
+  /** Valeurs proposées pour une nouvelle décision (ex. séance de comité avec membres extérieurs). */
+  prefill?: { sessionDate?: string | null; participants?: string; conditions?: string };
+  /** Appelé après l'enregistrement d'une NOUVELLE décision, avec l'identifiant du passage. */
+  onSaved?: (passageId: string) => Promise<unknown> | void;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -39,10 +43,10 @@ export default function CommitteeFormModal({
   const types = Array.from(new Set([...COMMITTEE_TYPES, ...programCommittees.map((c) => c.name), ...(passage?.committeeType ? [passage.committeeType] : [])]));
   const [f, setF] = useState({
     committeeType: passage?.committeeType ?? defaultType ?? COMMITTEE_TYPES[0],
-    sessionDate: passage?.sessionDate ?? "",
+    sessionDate: passage?.sessionDate ?? prefill?.sessionDate ?? "",
     decision: passage?.decision ?? COMMITTEE_DECISIONS[0],
-    participants: passage?.participants ?? "",
-    conditions: passage?.conditions ?? "",
+    participants: passage?.participants ?? prefill?.participants ?? "",
+    conditions: passage?.conditions ?? prefill?.conditions ?? "",
     outcome: passage?.outcome ?? (outcomes.length ? COMMITTEE_OUTCOME_NONE : ""),
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -61,7 +65,8 @@ export default function CommitteeFormModal({
     };
     if (passage) await supabase.from("committee_passages").update(payload).eq("id", passage.id);
     else {
-      await supabase.from("committee_passages").insert({ ...payload, deal_id: dealId ?? null, company_id: companyId ?? null });
+      const { data: created } = await supabase.from("committee_passages").insert({ ...payload, deal_id: dealId ?? null, company_id: companyId ?? null }).select("id").single();
+      if (created && onSaved) await onSaved(created.id);
       // Un passage en comité est un événement du dossier : on en laisse une trace datée dans le Suivi.
       const parts = [`Passage en ${f.committeeType}`];
       if (outcomeVal) parts.push(outcomeVal);
@@ -117,7 +122,7 @@ export default function CommitteeFormModal({
             {[COMMITTEE_OUTCOME_NONE, ...outcomes].map((o) => <option key={o} value={o}>{o}</option>)}
           </Select>
           <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 5, lineHeight: 1.5 }}>
-            Une décision structurante (hors « suivi ») ne prend effet qu'après validation par la Direction.
+            Une décision structurante (hors « suivi ») ne prend effet qu&apos;après validation par la Direction.
           </div>
         </Field>
       )}
