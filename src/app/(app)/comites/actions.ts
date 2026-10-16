@@ -91,13 +91,26 @@ export async function updateSession(id: string, input: SessionInput): Promise<Re
   return { ok: true };
 }
 
+/**
+ * Supprime une séance : ordre du jour, membres (les liens cessent de fonctionner), avis, échanges
+ * et copies des pièces. En préparation : tout rôle qui gère les comités ; une fois ouverte ou close
+ * (des avis ont pu être donnés) : rôle « Validation » seulement (Direction / Administrateur).
+ * Les décisions déjà enregistrées sur les fiches restent : elles se retirent depuis la fiche.
+ */
 export async function deleteSession(id: string): Promise<Result> {
   const ctx = await editor(); if (!ctx) return DENIED;
   const s = await sessionOf(ctx.supabase, id);
   if (!s) return { error: "Séance introuvable." };
-  if (s.status !== "Préparation") return { error: "Seule une séance en préparation peut être supprimée." };
+  if (s.status !== "Préparation") {
+    const { perms } = await getMyPermissions();
+    if (perms.comites !== "V") return { error: "Une séance ouverte ou close ne peut être supprimée que par la Direction ou un administrateur." };
+  }
   const { data: docs } = await ctx.supabase.from("committee_documents").select("storage_path, committee_session_items!inner(session_id)").eq("committee_session_items.session_id", id);
-  const paths = (docs ?? []).map((d) => d.storage_path as string);
+  // Une pièce jointe à une décision de comité (onglet Documents de la fiche) n'est pas effacée.
+  const all = (docs ?? []).map((d) => d.storage_path as string);
+  const { data: kept } = all.length ? await ctx.supabase.from("documents").select("storage_path").in("storage_path", all) : { data: [] };
+  const keep = new Set((kept ?? []).map((k) => k.storage_path as string));
+  const paths = all.filter((p) => !keep.has(p));
   if (paths.length) await ctx.supabase.storage.from("documents").remove(paths);
   const { error } = await ctx.supabase.from("committee_sessions").delete().eq("id", id);
   if (error) return { error: error.message };
