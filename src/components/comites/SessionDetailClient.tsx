@@ -193,7 +193,7 @@ function ItemCard({ item, index, session, canEdit, programCommittees }: {
   );
 }
 
-export default function SessionDetailClient({ session, options, canEdit }: { session: SessionDetail; options: SessionOptions; canEdit: boolean }) {
+export default function SessionDetailClient({ session, options, canEdit, canDelete = false }: { session: SessionDetail; options: SessionOptions; canEdit: boolean; canDelete?: boolean }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [entityPick, setEntityPick] = useState("");
@@ -246,7 +246,14 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span className="badge" style={{ background: st.bg, color: st.fg }}>{st.label}</span>
             {canEdit && session.status !== "Close" && <button className="btn btn-ghost" onClick={() => setEditing(true)}>Modifier</button>}
-            {canEdit && session.status === "Préparation" && <button className="btn btn-ghost" disabled={busy} onClick={async () => { if (confirm("Supprimer cette séance ?")) { const r = await run(deleteSession(session.id)); if (!errOf(r)) router.push("/comites"); } }}>Supprimer</button>}
+            {canEdit && canDelete && <button className="btn btn-ghost" disabled={busy} onClick={async () => {
+              const decided = session.items.filter((i) => i.passageId).length;
+              const msg = session.status === "Préparation"
+                ? "Supprimer cette séance ?"
+                : `Supprimer définitivement la séance « ${session.title} » ?\n\n• Les liens des membres cesseront de fonctionner.\n• Les avis, échanges et copies des pièces de la séance seront effacés.`
+                  + (decided ? `\n• Les ${decided} décision(s) déjà enregistrée(s) restent sur les fiches : retirez-les depuis la fiche si besoin.` : "");
+              if (confirm(msg)) { const r = await run(deleteSession(session.id)); if (!errOf(r)) router.push("/comites"); }
+            }}>Supprimer la séance</button>}
             {canEdit && session.status === "Préparation" && (
               <button className="btn btn-primary" disabled={busy} onClick={() => confirm(`Ouvrir la séance ? Chaque membre (${active.length}) recevra son lien personnel par e-mail.`) && run(openSession(session.id)).then((r) => {
                 if (!errOf(r) && "sent" in r) { const x = r as { sent: number; total: number }; setMsg({ text: `Séance ouverte : ${x.sent} e-mail${x.sent > 1 ? "s" : ""} envoyé${x.sent > 1 ? "s" : ""} sur ${x.total}.${x.sent < x.total ? " Copiez le lien des autres membres ci-dessous." : ""}` }); }

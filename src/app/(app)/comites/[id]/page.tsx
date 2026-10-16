@@ -9,5 +9,5 @@ export default async function ComiteSessionPage({ params }: { params: Promise<{ 
   if (!can(perms, "comites", "L") || isExternalRole(roleName)) redirect("/dashboard");
   const [session, options] = await Promise.all([getCommitteeSession(id), getSessionOptions()]);
   if (!session) notFound();
-  return <SessionDetailClient session={session} options={options} canEdit={perms.comites === "E" || perms.comites === "V"} />;
+  return <SessionDetailClient session={session} options={options} canEdit={perms.comites === "E" || perms.comites === "V"} canDelete={perms.comites === "V" || session.status === "Préparation"} />;
 }
