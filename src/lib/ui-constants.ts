@@ -95,13 +95,14 @@ export const DOC_CATEGORIES = ["Juridique", "Reporting", "Financier", "Comité",
 
 // Pré-COD : revue interne qui précède le comité d'ouverture ; elle n'ouvre pas le dossier.
 export const COMMITTEE_TYPES = ["Pré-COD", "Comité d'ouverture de dossier", "Comité d'investissement", "Comité de suivi"];
-/** Comité propre à un programme (programs.committees). opens = vaut comité d'ouverture de dossier. */
-export type ProgramCommittee = { name: string; opens: boolean };
+/** Comité propre à un programme (programs.committees). opens = vaut comité d'ouverture de dossier ;
+ *  invests = vaut comité d'investissement (ex. Comité d'amorçage de Catal1.5°T). */
+export type ProgramCommittee = { name: string; opens: boolean; invests?: boolean };
 export function parseProgramCommittees(raw: unknown): ProgramCommittee[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((c): c is { name: string; opens?: unknown } => !!c && typeof (c as { name?: unknown }).name === "string" && !!(c as { name: string }).name.trim())
-    .map((c) => ({ name: c.name.trim(), opens: c.opens === true }));
+    .filter((c): c is { name: string; opens?: unknown; invests?: unknown } => !!c && typeof (c as { name?: unknown }).name === "string" && !!(c as { name: string }).name.trim())
+    .map((c) => ({ name: c.name.trim(), opens: c.opens === true, invests: c.invests === true }));
 }
 export const COMMITTEE_DECISIONS = ["Favorable", "Favorable sous conditions", "Ajourné", "Défavorable"];
 export const COMMITTEE_DECISION_STYLE: Record<string, { bg: string; fg: string }> = {

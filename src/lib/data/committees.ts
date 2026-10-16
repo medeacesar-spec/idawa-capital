@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { parseProgramCommittees, type ProgramCommittee } from "@/lib/ui-constants";
+import { COMMITTEE_TYPES, parseProgramCommittees, type ProgramCommittee } from "@/lib/ui-constants";
+import { EXTERNAL_ROLES } from "@/lib/auth/permissions";
 
 // Séances de comité avec membres extérieurs (voir migration 0051).
 // Les mêmes chargeurs servent l'équipe (client connecté) et le portail des membres
@@ -11,6 +12,8 @@ export type SessionStatus = "Préparation" | "Ouverte" | "Close";
 export type SessionRow = {
   id: string;
   committeeType: string;
+  /** Fonds ou programme de la séance. */
+  scopeName: string | null;
   title: string;
   sessionDate: string | null;
   opinionDeadline: string;
@@ -49,6 +52,8 @@ export type CMember = {
   email: string | null;
   organization: string | null;
   contactId: string | null;
+  /** Membre de l'équipe Idawa (utilisateur de l'application). */
+  profileId: string | null;
   token: string;
   invitedAt: string | null;
   acceptedAt: string | null;
@@ -58,6 +63,9 @@ export type CMember = {
 export type SessionDetail = {
   id: string;
   committeeType: string;
+  fundId: string | null;
+  programId: string | null;
+  scopeName: string | null;
   title: string;
   sessionDate: string | null;
   opinionDeadline: string;
@@ -71,7 +79,7 @@ export type SessionDetail = {
 export async function getCommitteeSessions(): Promise<SessionRow[]> {
   const supabase = await createClient();
   const [s, i, m, o] = await Promise.all([
-    supabase.from("committee_sessions").select("id, committee_type, title, session_date, opinion_deadline, status, created_at").order("created_at", { ascending: false }),
+    supabase.from("committee_sessions").select("id, committee_type, title, session_date, opinion_deadline, status, created_at, funds(name), programs(name)").order("created_at", { ascending: false }),
     supabase.from("committee_session_items").select("session_id"),
     supabase.from("committee_session_members").select("session_id").is("revoked_at", null),
     supabase.from("committee_opinions").select("item_id, opinion, committee_session_items!inner(session_id)").not("opinion", "is", null),
@@ -85,6 +93,7 @@ export async function getCommitteeSessions(): Promise<SessionRow[]> {
   const opinions = count(((o.data ?? []) as unknown as { committee_session_items: { session_id: string } }[]).map((x) => ({ session_id: x.committee_session_items.session_id })));
   return (s.data ?? []).map((r) => ({
     id: r.id, committeeType: r.committee_type, title: r.title, sessionDate: r.session_date,
+    scopeName: (r.funds as unknown as { name: string } | null)?.name ?? (r.programs as unknown as { name: string } | null)?.name ?? null,
     opinionDeadline: r.opinion_deadline, status: r.status as SessionStatus, createdAt: r.created_at,
     items: items.get(r.id) ?? 0, members: members.get(r.id) ?? 0, opinions: opinions.get(r.id) ?? 0,
   }));
@@ -93,12 +102,12 @@ export async function getCommitteeSessions(): Promise<SessionRow[]> {
 /** Détail d'une séance. `client` : client connecté (équipe) ou administrateur (portail, jeton vérifié). */
 export async function loadSession(client: SupabaseClient, sessionId: string): Promise<SessionDetail | null> {
   const { data: s } = await client.from("committee_sessions")
-    .select("id, committee_type, title, session_date, opinion_deadline, status, opened_at, closed_at").eq("id", sessionId).maybeSingle();
+    .select("id, committee_type, title, session_date, opinion_deadline, status, opened_at, closed_at, fund_id, program_id, funds(name), programs(name)").eq("id", sessionId).maybeSingle();
   if (!s) return null;
 
   const [itemRes, memberRes] = await Promise.all([
     client.from("committee_session_items").select("id, deal_id, company_id, position, passage_id, created_at").eq("session_id", sessionId).order("position").order("created_at"),
-    client.from("committee_session_members").select("id, name, email, organization, contact_id, token, invited_at, confidentiality_accepted_at, last_seen_at, revoked_at").eq("session_id", sessionId).order("created_at"),
+    client.from("committee_session_members").select("id, name, email, organization, contact_id, profile_id, token, invited_at, confidentiality_accepted_at, last_seen_at, revoked_at").eq("session_id", sessionId).order("created_at"),
   ]);
   const itemRows = (itemRes.data ?? []) as { id: string; deal_id: string | null; company_id: string | null; passage_id: string | null }[];
   const itemIds = itemRows.map((r) => r.id);
@@ -154,12 +163,14 @@ export async function loadSession(client: SupabaseClient, sessionId: string): Pr
   });
 
   const members: CMember[] = ((memberRes.data ?? []) as Record<string, string | null>[]).map((m) => ({
-    id: m.id as string, name: m.name as string, email: m.email, organization: m.organization, contactId: m.contact_id,
+    id: m.id as string, name: m.name as string, email: m.email, organization: m.organization, contactId: m.contact_id, profileId: m.profile_id,
     token: m.token as string, invitedAt: m.invited_at, acceptedAt: m.confidentiality_accepted_at, lastSeenAt: m.last_seen_at, revokedAt: m.revoked_at,
   }));
 
   return {
     id: s.id, committeeType: s.committee_type, title: s.title, sessionDate: s.session_date, opinionDeadline: s.opinion_deadline,
+    fundId: s.fund_id, programId: s.program_id,
+    scopeName: (s.funds as unknown as { name: string } | null)?.name ?? (s.programs as unknown as { name: string } | null)?.name ?? null,
     status: s.status as SessionStatus, openedAt: s.opened_at, closedAt: s.closed_at, items, members,
   };
 }
@@ -171,11 +182,14 @@ export async function getCommitteeSession(id: string) {
 /** Choix proposés à la préparation : dossiers actifs, sociétés, contacts. */
 export async function getSessionOptions() {
   const supabase = await createClient();
-  const [deals, companies, contacts, programs] = await Promise.all([
+  const [deals, companies, contacts, programs, funds, team] = await Promise.all([
     supabase.from("deals").select("id, company_name, deal_state").neq("deal_state", "Écarté").order("company_name"),
     supabase.from("portfolio_companies").select("id, name").order("name"),
-    supabase.from("contacts").select("id, name, email, organization, function").not("email", "is", null).order("name"),
-    supabase.from("programs").select("committees"),
+    // Membres possibles : pas les promoteurs des dossiers et participations (sauf « Membre de comité »).
+    supabase.from("contacts").select("id, name, email, organization, function, org_type").not("email", "is", null).order("name"),
+    supabase.from("programs").select("id, name, committees, status").order("position"),
+    supabase.from("funds").select("id, name").order("created_at"),
+    supabase.from("profiles").select("id, full_name, email, roles(name)").not("email", "is", null).order("full_name"),
   ]);
   const programCommittees: ProgramCommittee[] = [];
   for (const c of (programs.data ?? []).flatMap((p) => parseProgramCommittees(p.committees)))
@@ -185,8 +199,17 @@ export async function getSessionOptions() {
       ...(deals.data ?? []).map((d) => ({ type: "deal" as const, id: d.id as string, name: d.company_name as string })),
       ...(companies.data ?? []).map((c) => ({ type: "company" as const, id: c.id as string, name: c.name as string })),
     ],
-    contacts: (contacts.data ?? []).map((c) => ({ id: c.id as string, name: c.name as string, email: c.email as string, organization: c.organization as string | null, isMember: c.function === "Membre de comité" })),
+    contacts: (contacts.data ?? []).filter((c) => c.function === "Membre de comité" || !["Pipeline", "Participation"].includes(c.org_type as string)).map((c) => ({ id: c.id as string, name: c.name as string, email: c.email as string, organization: c.organization as string | null, isMember: c.function === "Membre de comité" })),
     programCommittees,
+    // Périmètres d'une séance : un fonds (comités Idawa) ou un programme (ses propres comités).
+    scopes: [
+      ...(funds.data ?? []).map((f) => ({ kind: "fund" as const, id: f.id as string, name: f.name as string, committees: COMMITTEE_TYPES.map((name) => ({ name, opens: name === "Comité d'ouverture de dossier", invests: name === "Comité d'investissement" })) })),
+      ...(programs.data ?? []).filter((p) => p.status !== "Clos").map((p) => ({ kind: "program" as const, id: p.id as string, name: p.name as string, committees: parseProgramCommittees(p.committees) })),
+    ],
+    // Équipe Idawa : invitée au même titre que les membres extérieurs (rôles externes exclus).
+    team: (team.data ?? [])
+      .filter((p) => !EXTERNAL_ROLES.includes((p.roles as unknown as { name: string } | null)?.name ?? ""))
+      .map((p) => ({ id: p.id as string, name: (p.full_name || p.email) as string, email: p.email as string })),
   };
 }
 export type SessionOptions = Awaited<ReturnType<typeof getSessionOptions>>;

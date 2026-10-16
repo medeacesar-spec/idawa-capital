@@ -208,6 +208,10 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
   const decided = session.items.filter((i) => i.passageId).length;
   const onAgenda = new Set(session.items.map((i) => `${i.entityType}:${i.entityId}`));
   const memberContacts = new Set(session.members.map((m) => m.contactId));
+  const memberProfiles = new Set(session.members.map((m) => m.profileId));
+  const team = options.team.filter((p) => !memberProfiles.has(p.id));
+  // Comités du programme de la séance, proposés au formulaire de décision (rien de plus pour un fonds).
+  const scopeCommittees = session.programId ? options.scopes.find((s) => s.kind === "program" && s.id === session.programId)?.committees ?? [] : [];
 
   async function run(p: Promise<object>, ok?: string) {
     setBusy(true); setMsg(null);
@@ -232,7 +236,7 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
       <div className="card" style={{ padding: "18px 20px", margin: "10px 0 14px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--camel)", textTransform: "uppercase", letterSpacing: ".05em" }}>{session.committeeType}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--camel)", textTransform: "uppercase", letterSpacing: ".05em" }}>{session.scopeName ? `${session.scopeName} · ` : ""}{session.committeeType}</div>
             <div className="serif" style={{ fontSize: 21, fontWeight: 600, color: "var(--ink)", margin: "3px 0 6px" }}>{session.title}</div>
             <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>
               Séance {frDate(session.sessionDate)} · avis attendus avant le <b>{frDate(session.opinionDeadline)}</b>
@@ -277,7 +281,7 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
             )}
           </div>
           {session.items.length === 0 && <div className="card" style={{ padding: 22, textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucun dossier à l&apos;ordre du jour.</div>}
-          {session.items.map((it, i) => <ItemCard key={it.id} item={it} index={i} session={session} canEdit={canEdit} programCommittees={options.programCommittees} />)}
+          {session.items.map((it, i) => <ItemCard key={it.id} item={it} index={i} session={session} canEdit={canEdit} programCommittees={scopeCommittees} />)}
         </div>
 
         {/* Membres */}
@@ -288,7 +292,7 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
             const s = memberState(m);
             return (
               <div key={m.id} style={{ padding: "8px 0", borderTop: "1px solid var(--sep)", opacity: m.revokedAt ? 0.6 : 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{m.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 6 }}>{m.name}{m.profileId && <span className="badge" style={{ background: "var(--surface-cream)", color: "var(--espresso)", fontSize: 10 }}>Équipe Idawa</span>}</div>
                 <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{[m.organization, m.email].filter(Boolean).join(" · ")}</div>
                 <div style={{ fontSize: 11.5, color: s.color, marginTop: 2 }}>{s.text}</div>
                 {canEdit && !m.revokedAt && session.status !== "Close" && (
@@ -318,7 +322,12 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
                 <>
                   <div style={{ display: "flex", gap: 6 }}>
                     <select value={contactPick} onChange={(e) => setContactPick(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-                      <option value="">Choisir un contact…</option>
+                      <option value="">Choisir une personne…</option>
+                      {team.length > 0 && (
+                        <optgroup label="Équipe Idawa">
+                          {team.map((p) => <option key={p.id} value={`profile:${p.id}`}>{p.name}</option>)}
+                        </optgroup>
+                      )}
                       {[true, false].map((isMember) => {
                         const list = options.contacts.filter((c) => c.isMember === isMember && !memberContacts.has(c.id));
                         return list.length ? (
@@ -328,7 +337,10 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
                         ) : null;
                       })}
                     </select>
-                    <button className="btn btn-ghost" disabled={busy || !contactPick} onClick={async () => { const r = await run(addMember(session.id, { contactId: contactPick })); if (!errOf(r)) setContactPick(""); }}>Ajouter</button>
+                    <button className="btn btn-ghost" disabled={busy || !contactPick} onClick={async () => {
+                      const r = await run(addMember(session.id, contactPick.startsWith("profile:") ? { profileId: contactPick.slice(8) } : { contactId: contactPick }));
+                      if (!errOf(r)) setContactPick("");
+                    }}>Ajouter</button>
                   </div>
                   <button onClick={() => setNewMember({ name: "", email: "", organization: "" })} style={{ background: "none", border: "none", padding: 0, marginTop: 8, color: "var(--camel)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+ Nouveau membre (pas encore dans les contacts)</button>
                 </>
@@ -340,8 +352,8 @@ export default function SessionDetailClient({ session, options, canEdit }: { ses
       <style>{`@media (max-width: 900px) { .comite-grid { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
 
       {editing && (
-        <SessionFormModal sessionId={session.id} programCommittees={options.programCommittees.map((c) => c.name)} onClose={() => setEditing(false)}
-          initial={{ committeeType: session.committeeType, title: session.title, sessionDate: session.sessionDate, opinionDeadline: session.opinionDeadline }} />
+        <SessionFormModal sessionId={session.id} scopes={options.scopes} onClose={() => setEditing(false)}
+          initial={{ scope: session.fundId ? `fund:${session.fundId}` : session.programId ? `program:${session.programId}` : "", committeeType: session.committeeType, title: session.title, sessionDate: session.sessionDate, opinionDeadline: session.opinionDeadline }} />
       )}
     </div>
   );

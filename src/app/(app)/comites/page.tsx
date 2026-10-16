@@ -8,5 +8,5 @@ export default async function ComitesPage() {
   if (!can(perms, "comites", "L") || isExternalRole(roleName)) redirect("/dashboard");
   const [sessions, options] = await Promise.all([getCommitteeSessions(), getSessionOptions()]);
   const canEdit = perms.comites === "E" || perms.comites === "V";
-  return <SessionsClient sessions={sessions} programCommittees={options.programCommittees.map((c) => c.name)} canEdit={canEdit} />;
+  return <SessionsClient sessions={sessions} scopes={options.scopes} canEdit={canEdit} />;
 }

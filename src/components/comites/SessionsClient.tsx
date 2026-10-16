@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { SessionRow } from "@/lib/data/committees";
+import type { SessionOptions, SessionRow } from "@/lib/data/committees";
 import SessionFormModal from "./SessionFormModal";
 
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -13,7 +13,7 @@ export const STATUS_STYLE: Record<string, { bg: string; fg: string; label: strin
   "Close": { bg: "#EEE8E0", fg: "#6B5744", label: "Close" },
 };
 
-export default function SessionsClient({ sessions, programCommittees, canEdit }: { sessions: SessionRow[]; programCommittees: string[]; canEdit: boolean }) {
+export default function SessionsClient({ sessions, scopes, canEdit }: { sessions: SessionRow[]; scopes: SessionOptions["scopes"]; canEdit: boolean }) {
   const [creating, setCreating] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const groups = [
@@ -46,7 +46,7 @@ export default function SessionsClient({ sessions, programCommittees, canEdit }:
                   <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{s.title}</div>
                     <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
-                      {s.committeeType} · séance {frDate(s.sessionDate)} · {s.items} dossier{s.items > 1 ? "s" : ""} · {s.members} membre{s.members > 1 ? "s" : ""}
+                      {s.scopeName ? `${s.scopeName} · ` : ""}{s.committeeType} · séance {frDate(s.sessionDate)} · {s.items} dossier{s.items > 1 ? "s" : ""} · {s.members} membre{s.members > 1 ? "s" : ""}
                     </div>
                   </div>
                   {s.status === "Ouverte" && (
@@ -62,7 +62,7 @@ export default function SessionsClient({ sessions, programCommittees, canEdit }:
         </div>
       ))}
 
-      {creating && <SessionFormModal programCommittees={programCommittees} onClose={() => setCreating(false)} />}
+      {creating && <SessionFormModal scopes={scopes} onClose={() => setCreating(false)} />}
     </div>
   );
 }
