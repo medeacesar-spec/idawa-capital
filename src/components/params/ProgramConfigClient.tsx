@@ -175,7 +175,8 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
           <h3 style={h3}>Comités du programme</h3>
           <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 12, lineHeight: 1.5 }}>
             Comités propres à ce programme, proposés sur ses dossiers en plus des comités Idawa ({COMMITTEE_TYPES.join(", ")}).
-            Cochez celui qui <b>vaut comité d&rsquo;ouverture</b> : son passage fait entrer le dossier en Pipeline avancé.
+            Cochez celui qui <b>vaut comité d&rsquo;ouverture</b> (son passage fait entrer le dossier en Pipeline avancé) et celui qui
+            <b> vaut comité d&rsquo;investissement</b> (sa décision « Investissement » validée permet la conversion en participation).
           </div>
           {committees.length === 0 && <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 10 }}>Aucun comité propre : les dossiers suivent le parcours Idawa.</div>}
           {committees.map((c, idx) => (
@@ -186,6 +187,11 @@ export default function ProgramConfigClient({ config }: { config: ProgramConfig 
                 <input type="checkbox" checked={c.opens}
                   onChange={() => saveCommittees(committees.map((x) => ({ ...x, opens: x.name === c.name ? !x.opens : false })))} />
                 vaut comité d&rsquo;ouverture
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={!!c.invests}
+                  onChange={() => saveCommittees(committees.map((x) => ({ ...x, invests: x.name === c.name ? !x.invests : false })))} />
+                vaut comité d&rsquo;investissement
               </label>
               <button onClick={() => saveCommittees(committees.filter((x) => x.name !== c.name))} aria-label="Retirer" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--red-fg)", padding: 2 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyPermissions, isExternalRole } from "@/lib/auth/permissions";
 import { committeeInviteEmail, sendEmail } from "@/lib/email/resend";
 import { SharePointError, downloadFile, fullPath, getItem } from "@/lib/sharepoint/graph";
+import { COMMITTEE_TYPES, parseProgramCommittees } from "@/lib/ui-constants";
 
 // Préparation et conduite des séances de comité (équipe Idawa).
 // Droit requis : Comités en Édition ou Validation, rôle interne.
@@ -42,26 +43,48 @@ const refresh = (sessionId?: string) => { revalidatePath("/comites"); if (sessio
 
 // ── Séance ────────────────────────────────────────────────────────────────────
 
-export async function createSession(input: { committeeType: string; title: string; sessionDate: string | null; opinionDeadline: string }): Promise<Result<{ id: string }>> {
+type SessionInput = { scope: string; committeeType: string; title: string; sessionDate: string | null; opinionDeadline: string };
+
+/** « fund:<id> » ou « program:<id> » → colonnes, après contrôle que le type de comité relève bien du périmètre. */
+async function scopeColumns(supabase: Awaited<ReturnType<typeof createClient>>, input: SessionInput) {
+  const [kind, id] = input.scope.split(":");
+  if (kind === "fund") {
+    if (!COMMITTEE_TYPES.includes(input.committeeType)) return { error: "Ce type de comité n'est pas un comité du fonds." };
+    return { fund_id: id, program_id: null };
+  }
+  if (kind === "program") {
+    const { data } = await supabase.from("programs").select("committees").eq("id", id).single();
+    if (!parseProgramCommittees(data?.committees).some((c) => c.name === input.committeeType))
+      return { error: "Ce type de comité n'est pas configuré pour ce programme (Paramètres → Programmes)." };
+    return { fund_id: null, program_id: id };
+  }
+  return { error: "Choisissez le fonds ou le programme." };
+}
+
+export async function createSession(input: SessionInput): Promise<Result<{ id: string }>> {
   const ctx = await editor(); if (!ctx) return DENIED;
   if (!input.title.trim() || !input.committeeType) return { error: "Type de comité et intitulé requis." };
   if (!input.opinionDeadline) return { error: "La date limite des avis est obligatoire." };
+  const scope = await scopeColumns(ctx.supabase, input);
+  if ("error" in scope) return { error: scope.error as string };
   const { data, error } = await ctx.supabase.from("committee_sessions").insert({
-    committee_type: input.committeeType, title: input.title.trim(), session_date: input.sessionDate || null, opinion_deadline: input.opinionDeadline,
+    ...scope, committee_type: input.committeeType, title: input.title.trim(), session_date: input.sessionDate || null, opinion_deadline: input.opinionDeadline,
   }).select("id").single();
   if (error || !data) return { error: error?.message ?? "Création impossible." };
   refresh();
   return { ok: true, id: data.id };
 }
 
-export async function updateSession(id: string, input: { committeeType: string; title: string; sessionDate: string | null; opinionDeadline: string }): Promise<Result> {
+export async function updateSession(id: string, input: SessionInput): Promise<Result> {
   const ctx = await editor(); if (!ctx) return DENIED;
   const s = await sessionOf(ctx.supabase, id);
   if (!s) return { error: "Séance introuvable." };
   if (s.status === "Close") return { error: "Séance close." };
   if (!input.title.trim() || !input.opinionDeadline) return { error: "Intitulé et date limite des avis requis." };
+  const scope = await scopeColumns(ctx.supabase, input);
+  if ("error" in scope) return { error: scope.error as string };
   const { error } = await ctx.supabase.from("committee_sessions").update({
-    committee_type: input.committeeType, title: input.title.trim(), session_date: input.sessionDate || null, opinion_deadline: input.opinionDeadline,
+    ...scope, committee_type: input.committeeType, title: input.title.trim(), session_date: input.sessionDate || null, opinion_deadline: input.opinionDeadline,
   }).eq("id", id);
   if (error) return { error: error.message };
   refresh(id);
@@ -171,10 +194,21 @@ export async function removeDocument(docId: string): Promise<Result> {
 
 // ── Membres ───────────────────────────────────────────────────────────────────
 
-export async function addMember(sessionId: string, input: { contactId?: string; name?: string; email?: string; organization?: string }): Promise<Result> {
+export async function addMember(sessionId: string, input: { contactId?: string; profileId?: string; name?: string; email?: string; organization?: string }): Promise<Result> {
   const ctx = await editor(); if (!ctx) return DENIED;
   const s = await sessionOf(ctx.supabase, sessionId);
   if (!s || s.status === "Close") return { error: "Séance close ou introuvable." };
+  // Membre de l'équipe Idawa : invité comme les autres (lien personnel), sans fiche contact.
+  if (input.profileId) {
+    const { data: p } = await ctx.supabase.from("profiles").select("id, full_name, email").eq("id", input.profileId).single();
+    if (!p?.email) return { error: "Utilisateur introuvable ou sans e-mail." };
+    const { error } = await ctx.supabase.from("committee_session_members").insert({
+      session_id: sessionId, profile_id: p.id, name: p.full_name || p.email, email: p.email, organization: "Idawa Capital",
+    });
+    if (error) return { error: error.code === "23505" ? "Cette personne est déjà invitée." : error.message };
+    refresh(sessionId);
+    return { ok: true };
+  }
   let contact: { id: string; name: string; email: string | null; organization: string | null } | null = null;
   if (input.contactId) {
     const { data } = await ctx.supabase.from("contacts").select("id, name, email, organization").eq("id", input.contactId).single();

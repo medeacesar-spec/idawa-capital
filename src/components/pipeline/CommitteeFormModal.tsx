@@ -121,6 +121,11 @@ export default function CommitteeFormModal({
           <Select value={f.outcome} onChange={(e) => set("outcome", e.target.value)}>
             {[COMMITTEE_OUTCOME_NONE, ...outcomes].map((o) => <option key={o} value={o}>{o}</option>)}
           </Select>
+          {programCommittees.some((c) => c.invests && c.name === f.committeeType) && (
+            <div style={{ fontSize: 11, color: "var(--text-2)", marginTop: 5, lineHeight: 1.5 }}>
+              Ce comité vaut comité d&apos;investissement : choisissez « Investissement » pour permettre la conversion en participation.
+            </div>
+          )}
           <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 5, lineHeight: 1.5 }}>
             Une décision structurante (hors « suivi ») ne prend effet qu&apos;après validation par la Direction.
           </div>

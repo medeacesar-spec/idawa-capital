@@ -127,7 +127,7 @@ export default function DealDetailClient({ deal, canEditComites = true, canValid
   );
   function onConvertClick() {
     if (!hasValidatedInvestment) {
-      alert("La conversion en participation nécessite d'abord une décision d'investissement favorable, validée en Comité d'investissement (onglet Comités).");
+      alert("La conversion en participation nécessite d'abord une décision d'investissement favorable, validée en Comité d'investissement ou au comité de programme qui en tient lieu, ex. Comité d'amorçage Catal1.5°T (onglet Comités).");
       setTab("Comités");
       return;
     }
