@@ -39,7 +39,8 @@ export async function updateSession(request: NextRequest) {
   // et aucune tentative ratée n'est jamais consignée.
   const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser") || path === "/api/auth-event"
     || path.startsWith("/q/") // questionnaire d'impact rempli par l'entrepreneur (accès par jeton)
-    || path.startsWith("/c/") || path.startsWith("/api/c/"); // portail des membres extérieurs d'un comité (jeton)
+    || path.startsWith("/c/") || path.startsWith("/api/c/") // portail des membres extérieurs d'un comité (jeton)
+    || path === "/api/keepalive"; // maintien en éveil de la base (tâche quotidienne)
 
   // Plus de 30 minutes sans activité -> session fermée ICI, avant tout affichage.
   // Le minuteur de la page ne suffit pas : un onglet oublié, un ordinateur en veille ou un
