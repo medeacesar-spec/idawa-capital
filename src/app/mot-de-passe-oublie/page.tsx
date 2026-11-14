@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { SERVICE_UNAVAILABLE, isServiceUnavailable } from "@/lib/auth/errors";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,8 @@ export default function ForgotPasswordPage() {
     setLoading(false);
     if (error) {
       const m = error.message?.toLowerCase() ?? "";
-      if (m.includes("rate") || m.includes("limit")) setError("Trop d'envois récents — le service email est limité à quelques messages par heure. Réessayez plus tard, ou demandez à un administrateur de générer un lien (bouton 🔑).");
+      if (isServiceUnavailable(error)) setError(SERVICE_UNAVAILABLE);
+      else if (m.includes("rate") || m.includes("limit")) setError("Trop d'envois récents — le service email est limité à quelques messages par heure. Réessayez plus tard, ou demandez à un administrateur de générer un lien (bouton 🔑).");
       else if (m.includes("redirect")) setError("URL de redirection non autorisée dans Supabase. À corriger : Authentication → URL Configuration → Redirect URLs.");
       else setError(error.message || "Une erreur est survenue. Réessayez.");
       return;

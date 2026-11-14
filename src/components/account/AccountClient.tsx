@@ -7,6 +7,7 @@ import { sendTestDigest } from "@/app/(app)/notify-actions";
 import { Field, Input } from "@/components/ui/form";
 import PasswordChecklist from "@/components/shared/PasswordChecklist";
 import { checkPassword } from "@/lib/password-policy";
+import { authFailure } from "@/lib/auth/errors";
 
 function Msg({ kind, text }: { kind: "ok" | "err"; text: string }) {
   return <div style={{ fontSize: 12.5, marginTop: 10, borderRadius: 8, padding: "9px 12px", color: kind === "ok" ? "var(--green-fg)" : "var(--red-fg)", background: kind === "ok" ? "var(--green-bg)" : "var(--red-bg)" }}>{text}</div>;
@@ -57,7 +58,7 @@ export default function AccountClient({ userId, email, fullName, roleName }: { u
     setPwdBusy(true); setPwdMsg(null);
     const { error } = await createClient().auth.updateUser({ password: pwd });
     setPwdBusy(false);
-    if (error) setPwdMsg({ kind: "err", text: "Échec : " + error.message });
+    if (error) setPwdMsg({ kind: "err", text: authFailure(error) });
     else { setPwdMsg({ kind: "ok", text: "Mot de passe modifié." }); setPwd(""); setPwd2(""); }
   }
 

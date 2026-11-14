@@ -5,6 +5,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { traceAuth } from "@/lib/auth/trace";
 import { markSessionStart } from "@/lib/auth/idle";
+import { SERVICE_UNAVAILABLE, isServiceUnavailable } from "@/lib/auth/errors";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -41,6 +42,13 @@ export default function LoginPage() {
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error && isServiceUnavailable(error)) {
+        // Serveur injoignable : ce n'est pas le mot de passe, et ce n'est pas une tentative
+        // d'intrusion — on ne le trace pas comme un échec de connexion.
+        setError(SERVICE_UNAVAILABLE);
+        setLoading(false);
+        return;
+      }
       if (error) {
         // Une série d'échecs sur un compte est le premier signe d'une tentative d'intrusion.
         // Sans trace, elle serait totalement invisible.
