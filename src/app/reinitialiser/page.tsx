@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import PasswordChecklist from "@/components/shared/PasswordChecklist";
 import { checkPassword } from "@/lib/password-policy";
 import { markSessionStart } from "@/lib/auth/idle";
+import { authFailure } from "@/lib/auth/errors";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -82,7 +83,7 @@ export default function ResetPasswordPage() {
     setBusy(true); setError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password: pwd });
-    if (error) { setBusy(false); setError("Échec : " + error.message); return; }
+    if (error) { setBusy(false); setError(authFailure(error)); return; }
     // Mot de passe défini : on lève le blocage d'accès du compte invité.
     const { data: { user } } = await supabase.auth.getUser();
     if (user) await supabase.from("profiles").update({ must_set_password: false }).eq("id", user.id);
