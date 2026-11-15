@@ -45,6 +45,12 @@ export default function DepositsBoard({ rows, unconfigured, canSend = false }: {
           Qui doit déposer quoi, et pour quand. Le paramétrage se fait sur la fiche de chaque entreprise (Suivi &amp; gouvernance → Reporting entreprise).
           Les e-mails partent seuls chaque matin vers 8 h : ouverture de la période, rappel 2 jours avant l&apos;échéance, relance le lendemain si rien n&apos;est arrivé.
         </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--text-3)" }}>Classeurs Idawa à jour :</span>
+          <a className="btn btn-ghost" href="/api/reporting/classeurs?f=1" title="RECAP, Suivi budgétaire, détail par entreprise">1- Tableaux de bord</a>
+          <a className="btn btn-ghost" href="/api/reporting/classeurs?f=2" title="Performances par produit, REALISATIONS">2- Performances mensuelles</a>
+          <a className="btn btn-ghost" href="/api/reporting/classeurs?f=3" title="Performances annuelles, synthèses">3- Performances annuelles</a>
+        </div>
         {canSend && (
           <button className="btn" disabled={pending} onClick={() => start(async () => setResult(await sendReportingNow()))}>
             {pending ? "Envoi…" : "Envoyer les e-mails du jour"}

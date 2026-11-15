@@ -95,7 +95,7 @@ export function safeSegment(s: string, max = 60): string {
 
 // ── Écriture ─────────────────────────────────────────────────────────────────────
 
-export type WriteKind = "mensuel" | "annuel" | "releve" | "controle";
+export type WriteKind = "mensuel" | "annuel" | "releve" | "controle" | "modele";
 export type WriteResult = { id: string; itemId: string; webUrl: string; path: string; sha256: string; quickXor: string | null };
 
 type DriveItem = { id: string; webUrl: string; file?: { hashes?: { quickXorHash?: string } } };
@@ -116,6 +116,8 @@ export async function addFile(o: {
   const base = safeSegment(o.originalName.replace(/\.[^.]+$/, ""), 80);
   const folder = o.kind === "controle"
     ? ["_Controle de connexion"]
+    : o.kind === "modele"
+    ? ["Entreprises", `${safeSegment(o.companyName)} (${(o.companyId ?? "").slice(0, 8)})`, "Classeur de référence"]
     : ["Entreprises", `${safeSegment(o.companyName)} (${(o.companyId ?? "").slice(0, 8)})`, (o.period ?? "").slice(0, 4) || "sans-annee", safeSegment(o.period ?? "sans-periode", 20)];
   const fileName = `${o.version != null ? `V${o.version} - ` : ""}${stamp} - ${base}${ext}`;
   const path = [...folder, fileName].join("/");

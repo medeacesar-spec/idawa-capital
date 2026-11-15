@@ -22,5 +22,6 @@ export default async function DepositPage({ params }: { params: Promise<{ token:
     .filter((p) => p.opens <= today)
     .map((p) => ({ ...p }))
     .sort((a, b) => b.due.localeCompare(a.due));
-  return <DepositPortal token={token} companyName={co.companyName} referent={co.setup.referentName} periods={periods} deposits={deposits} />;
+  const { data: model } = await createAdminClient().from("company_models").select("company_id").eq("company_id", co.companyId).maybeSingle();
+  return <DepositPortal token={token} companyName={co.companyName} referent={co.setup.referentName} periods={periods} deposits={deposits} hasModel={!!model} />;
 }

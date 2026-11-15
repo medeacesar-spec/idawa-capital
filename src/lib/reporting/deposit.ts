@@ -7,12 +7,14 @@
 import { readWorkbook, type SheetData } from "@/lib/import/xlsx";
 
 export type Value = number | string | null;
-export type Line = { sheet: string; code: string; label: string | null; unit: string | null; values: Value[] };
+export type LineMeta = { nature?: string; onglet?: string; composition?: string };
+export type Line = { sheet: string; code: string; label: string | null; unit: string | null; values: Value[]; meta?: LineMeta };
 export type Parsed = {
   model: "SYNTHESE_ERP_V1" | "SYNTHESE_ERP_ANNUELLE_V1" | "SYNTHESE_ERP_V2" | "SYNTHESE_ERP_ANNUELLE_V2";
   year: number | null;          // exercice déclaré dans Paramètres (mensuel) / premier exercice (annuel)
   lines: Line[];
   warnings: string[];
+  entity?: string | null;       // nom inscrit dans la Synthèse (V2)
 };
 
 const MODELS = {
@@ -60,7 +62,10 @@ function parseV2(sheets: SheetData[], synth: SheetData, kind: "mensuel" | "annue
     if (seen.has(code)) warnings.push(`Le code ${code} est utilisé deux fois dans le classeur.`);
     seen.add(code);
     const values = Array.from({ length: m.ncols }, (_, i) => toValue(cell(synth, r, 4 + i)));
-    lines.push({ sheet: m.sheet, code, label: cell(synth, r, 2) || null, unit: cell(synth, r, 3) || null, values });
+    const meta: LineMeta = kind === "mensuel"
+      ? { nature: cell(synth, r, 19) || undefined, onglet: cell(synth, r, 20) || undefined, composition: cell(synth, r, 22) || undefined }
+      : { nature: cell(synth, r, 13) || undefined };
+    lines.push({ sheet: m.sheet, code, label: cell(synth, r, 2) || null, unit: cell(synth, r, 3) || null, values, meta });
   }
   // écarts signalés par la page « Contrôles » du classeur
   const ctl = sheets.find((s) => s.name === "Contrôles");
@@ -69,7 +74,7 @@ function parseV2(sheets: SheetData[], synth: SheetData, kind: "mensuel" | "annue
     for (const row of ctl.rows) for (const v of row) if ((v ?? "").trim() === "ÉCART") n++;
     if (n) warnings.push(`La page « Contrôles » du classeur signale ${n} écart${n > 1 ? "s" : ""} à corriger.`);
   }
-  return { model: m.marker, year, lines, warnings: Array.from(new Set(warnings)).slice(0, 30) };
+  return { model: m.marker, year, lines, warnings: Array.from(new Set(warnings)).slice(0, 30), entity: cell(synth, 2, 2) || null };
 }
 
 export function parseWorkbook(buf: Buffer, kind: "mensuel" | "annuel"): Parsed {
@@ -161,4 +166,36 @@ export function diff(prev: Line[], next: Line[], lastCol: number): Change[] {
     }
   }
   return out;
+}
+
+
+/** Nature d'une ligne d'après son code (classeurs V1, sans colonne « Nature »). */
+export function natureOf(code: string): "flux" | "solde" | "taux" {
+  if (/^(STOCK_|RH_|IMPACT_|PARC_|EFF_|ENCOURS_)/.test(code) || ["TRESO_DEBUT", "TRESO_FIN", "BUD_TRESO_FIN", "CREANCES_TOTAL", "DETTES_EXPLOITATION"].includes(code)
+    || /_RESTANT_DU(_TOTAL)?$/.test(code) || /^ENT_.*_(STOCKS|DETTES|CREANCES|TRESO)$/.test(code)) return "solde";
+  if (code === "PROD_RENDEMENT" || code.startsWith("ESG_TAUX")) return "taux";
+  return "flux";
+}
+
+/** Codes communs dont les vues du portefeuille ont besoin (vérifiés à l'intégration d'un classeur). */
+export const REQUIRED_CODES = ["CA_TOTAL", "TRESO_DEBUT", "TRESO_FIN", "BUD_CA_TOTAL"] as const;
+
+/** Vérifications d'un classeur d'entreprise à son intégration (modèle de référence). */
+export function checkModel(p: Parsed, companyName: string, synthName: string | null): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [], warnings = [...p.warnings];
+  if (p.model !== "SYNTHESE_ERP_V2") errors.push("Ce classeur n'est pas fondé sur le gabarit Idawa actuel (page « Synthèse ERP » V2). Partez du gabarit « TdB mensuel – GABARIT ».");
+  const codes = new Set(p.lines.map((l) => l.code));
+  for (const c of REQUIRED_CODES) if (!codes.has(c)) errors.push(`Code commun absent : ${c} (indispensable aux vues du portefeuille).`);
+  const ventes = p.lines.filter((l) => l.code.startsWith("VENTE_") && !l.code.endsWith("_QTE") && !l.code.endsWith("_EXPORT"));
+  if (!ventes.length) errors.push("Aucune ligne de ventes (code VENTE_…) : le chiffre d'affaires ne peut pas être détaillé.");
+  for (const l of p.lines.filter((x) => x.code.startsWith("BUD_") && !["BUD_CA_TOTAL", "BUD_CA_TOTAL_SAISI", "BUD_TRESO_FIN"].includes(x.code))) {
+    const comp = (l.meta?.composition ?? "").split(";").map((x) => x.trim()).filter(Boolean);
+    if (!comp.length) warnings.push(`Budget « ${l.label ?? l.code} » : aucune ligne de ventes rattachée (colonne P de l'onglet Budget).`);
+    for (const c of comp) if (!codes.has(c)) warnings.push(`Budget « ${l.label ?? l.code} » : le code ${c} n'existe pas dans le tableau de bord.`);
+  }
+  const grouped = new Set(p.lines.flatMap((l) => (l.meta?.composition ?? "").split(";").map((x) => x.trim())));
+  const orphans = ventes.filter((v) => !grouped.has(v.code)).map((v) => v.code);
+  if (orphans.length && grouped.size > 1) warnings.push(`Lignes de ventes rattachées à aucun groupe du budget : ${orphans.join(", ")}.`);
+  if (synthName && synthName.trim() !== companyName.trim()) warnings.push(`Le classeur porte le nom « ${synthName} » ; la plateforme utilisera « ${companyName} ».`);
+  return { errors, warnings: Array.from(new Set(warnings)) };
 }

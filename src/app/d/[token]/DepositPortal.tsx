@@ -21,8 +21,8 @@ function quarters(): string[] {
   return out;
 }
 
-export default function DepositPortal({ token, companyName, referent, periods, deposits }: {
-  token: string; companyName: string; referent: string | null; periods: PortalPeriod[]; deposits: PortalDeposit[];
+export default function DepositPortal({ token, companyName, referent, periods, deposits, hasModel = false }: {
+  token: string; companyName: string; referent: string | null; periods: PortalPeriod[]; deposits: PortalDeposit[]; hasModel?: boolean;
 }) {
   const router = useRouter();
   const [target, setTarget] = useState<{ kind: string; period: string; label: string } | null>(null);
@@ -76,6 +76,7 @@ export default function DepositPortal({ token, companyName, referent, periods, d
           {(lastFile || lastAnnual) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
               {lastFile && <a className="btn btn-ghost" href={`/api/d/${token}/fichier?id=${lastFile.id}`}>Télécharger mon dernier tableau de bord</a>}
+              {!lastFile && hasModel && <a className="btn btn-ghost" href={`/api/d/${token}/fichier?modele=1`}>Télécharger mon tableau de bord (à remplir)</a>}
               {lastAnnual && <a className="btn btn-ghost" href={`/api/d/${token}/fichier?id=${lastAnnual.id}`}>Télécharger mon dernier classeur annuel</a>}
             </div>
           )}
