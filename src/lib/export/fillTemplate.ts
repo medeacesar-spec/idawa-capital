@@ -135,7 +135,22 @@ function applyToSheet(xml: string, values: Record<string, CellValue>): string {
  * Tout ce qui n'est pas une feuille modifiée est recopié tel quel : images, graphiques,
  * styles, mises en page.
  */
-export function fillTemplate(templatePath: string, fill: Fill): Buffer {
+/** Lignes à ajouter en bloc à la fin d'une feuille (ex. page « Données ») : bien plus rapide que cellule par cellule. */
+export type Append = Record<string, { start: number; rows: CellValue[][] }>;
+
+const colName = (i: number) => { let s = "", n = i + 1; while (n) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+
+function appendRows(xml: string, a: { start: number; rows: CellValue[][] }): string {
+  const parts: string[] = [];
+  a.rows.forEach((row, k) => {
+    const r = a.start + k;
+    const cells = row.map((v, i) => (v == null || v === "" ? "" : cellXml(`${colName(i)}${r}`, v, null))).join("");
+    if (cells) parts.push(`<row r="${r}">${cells}</row>`);
+  });
+  return xml.replace("</sheetData>", parts.join("") + "</sheetData>").replace("<sheetData/>", `<sheetData>${parts.join("")}</sheetData>`);
+}
+
+export function fillTemplate(templatePath: string, fill: Fill, append: Append = {}): Buffer {
   const entries = unzipAll(readFileSync(templatePath));
 
   const get = (name: string) => entries.find((e) => e.name === name)?.data.toString("utf8") ?? "";
@@ -176,8 +191,11 @@ export function fillTemplate(templatePath: string, fill: Fill): Buffer {
     }
 
     const sheetName = [...sheetFile].find(([, file]) => file === e.name)?.[0];
-    if (sheetName && fill[sheetName]) {
-      out.push({ name: e.name, data: Buffer.from(applyToSheet(e.data.toString("utf8"), fill[sheetName]), "utf8") });
+    if (sheetName && (fill[sheetName] || append[sheetName])) {
+      let xml = e.data.toString("utf8");
+      if (fill[sheetName]) xml = applyToSheet(xml, fill[sheetName]);
+      if (append[sheetName]) xml = appendRows(xml, append[sheetName]);
+      out.push({ name: e.name, data: Buffer.from(xml, "utf8") });
       continue;
     }
 

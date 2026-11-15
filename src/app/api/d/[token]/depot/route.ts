@@ -62,6 +62,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
         if (p.year && p.year !== y) return bad(`Ce classeur est celui de l'exercice ${p.year} : pour ${MONTHS[m - 1]} ${y}, déposez le classeur ${y}.`);
         if (!monthHasData(p, m)) return bad(`Le mois de ${MONTHS[m - 1]} est vide dans la Synthèse de votre fichier : avez-vous rempli ce mois ?`);
       }
+      if (kind === "annuel" && p.model === "SYNTHESE_ERP_ANNUELLE_V2" && p.year && p.year !== Number(period)) {
+        return bad(`Ce classeur s'arrête à l'exercice ${p.year} : pour l'exercice ${period}, indiquez ${period} comme « Dernier exercice » dans son Lisez-moi.`);
+      }
     } catch (e) {
       if (e instanceof DepositError) return bad(e.message);
       throw e;
@@ -94,17 +97,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
 
   // Fichier rangé dans « Idawa Depots » (ajout seul), puis dépôt et chiffres enregistrés.
   try {
+    // Lignes absentes du classeur de référence de l'entreprise (nouveau produit…) : signalées à l'équipe.
+    let newCodes: string[] = [];
+    if (kind === "mensuel" && lines.length) {
+      const { data: model } = await admin.from("company_models").select("codes").eq("company_id", co.companyId).maybeSingle();
+      if (model) {
+        const known = new Set((model.codes as string[]) ?? []);
+        newCodes = Array.from(new Set(lines.map((l) => l.code).filter((c) => !known.has(c))));
+        if (newCodes.length) warnings = [...warnings, `Nouvelles lignes par rapport à votre classeur de référence : ${newCodes.slice(0, 12).join(", ")}${newCodes.length > 12 ? "…" : ""}. Idawa les validera.`];
+      }
+    }
     const w = await addFile({ companyId: co.companyId, companyName: co.companyName, kind, period, version, originalName: file.name,
       bytes, fileKind, origin: "depot" });
     const { data: dep, error } = await admin.from("deposits").insert({
       company_id: co.companyId, kind, period, version, write_id: w.id, original_name: file.name.slice(0, 200), size: bytes.length, sha256: w.sha256,
-      reason: reason || null, changes: changes.slice(0, 300), changes_count: changes.length, warnings,
+      reason: reason || null, changes: changes.slice(0, 300), changes_count: changes.length, warnings, new_codes: newCodes,
       ip: (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null, user_agent: req.headers.get("user-agent")?.slice(0, 200) ?? null,
     }).select("id").single();
     if (error || !dep) return bad("Fichier reçu, mais l'enregistrement a échoué : prévenez Idawa Capital.", 500);
     await admin.from("sharepoint_writes").update({ deposit_id: dep.id }).eq("id", w.id);
     for (let i = 0; i < lines.length; i += 500) {
-      await admin.from("deposit_lines").insert(lines.slice(i, i + 500).map((l) => ({ deposit_id: dep.id, sheet: l.sheet, code: l.code, label: l.label, unit: l.unit, vals: l.values })));
+      await admin.from("deposit_lines").insert(lines.slice(i, i + 500).map((l) => ({ deposit_id: dep.id, sheet: l.sheet, code: l.code, label: l.label, unit: l.unit, vals: l.values, meta: l.meta ?? null })));
     }
     return NextResponse.json({ ok: true, version, changesCount: changes.length, warnings });
   } catch (e) {

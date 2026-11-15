@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { Field, Input, Select } from "@/components/ui/form";
 import type { FundUser } from "@/lib/data/users";
 import { DEFAULT_SETUP, calendarFor, formatDay, type ReportingSetup, type SeasonalShift } from "@/lib/reporting/calendar";
-import { saveReportingSetup, setDepositLink } from "@/app/(app)/portefeuille/actions";
+import { acceptNewCodes, saveReportingSetup, setDepositLink } from "@/app/(app)/portefeuille/actions";
 
 const MONTHS = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
 const STATE_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -21,13 +21,23 @@ const card: React.CSSProperties = { padding: "16px 18px", marginBottom: 14 };
 const h3: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--ink)", margin: "0 0 4px" };
 const sub: React.CSSProperties = { fontSize: 12, color: "var(--text-3)", margin: "0 0 12px", lineHeight: 1.5 };
 
-type Dep = { id: string; kind: string; period: string; version: number; at: string; reason: string | null; changes: number; warnings: string[]; webUrl: string | null; integrity: string | null };
+type Dep = { id: string; kind: string; period: string; version: number; at: string; reason: string | null; changes: number; warnings: string[]; webUrl: string | null; integrity: string | null; newCodes?: string[] };
+type Model = { name: string | null; lines: number; warnings: string[]; at: string } | null;
 const stamp = (d: string) => { const x = new Date(d); return `${x.getDate()} ${MONTHS[x.getMonth()].toLowerCase()} ${x.getFullYear()} ${String(x.getHours()).padStart(2, "0")}h${String(x.getMinutes()).padStart(2, "0")}`; };
 
-export default function ReportingSetupTab({ companyId, setup, token, deposits = [], users, canEdit }: {
-  companyId: string; setup: ReportingSetup | null; token?: string | null; deposits?: Dep[]; users: FundUser[]; canEdit: boolean;
+export default function ReportingSetupTab({ companyId, setup, token, deposits = [], users, canEdit, model = null }: {
+  companyId: string; setup: ReportingSetup | null; token?: string | null; deposits?: Dep[]; users: FundUser[]; canEdit: boolean; model?: Model;
 }) {
   const router = useRouter();
+  const [up, setUp] = useState<{ busy: boolean; ok?: boolean; text?: string; list?: string[] }>({ busy: false });
+  async function integrate(file: File) {
+    setUp({ busy: true });
+    const fd = new FormData(); fd.append("file", file);
+    const r = await fetch(`/api/portefeuille/${companyId}/modele`, { method: "POST", body: fd });
+    const j = await r.json().catch(() => ({ ok: false, error: "Réponse illisible." }));
+    if (j.ok) { setUp({ busy: false, ok: true, text: `Classeur intégré : ${j.lines} lignes reconnues.`, list: j.warnings }); router.refresh(); }
+    else setUp({ busy: false, ok: false, text: j.error ?? "Le classeur n'a pas pu être intégré :", list: [...(j.errors ?? []), ...(j.warnings ?? [])] });
+  }
   const init = setup ?? { companyId, ...DEFAULT_SETUP };
   const [f, setF] = useState({
     referentName: init.referentName ?? "", referentEmail: init.referentEmail ?? "", referentPhone: init.referentPhone ?? "",
@@ -152,6 +162,34 @@ export default function ReportingSetupTab({ companyId, setup, token, deposits = 
         </div>
       )}
 
+      <div className="card" style={card}>
+        <h3 style={h3}>Classeur de l&apos;entreprise</h3>
+        <p style={sub}>
+          Conçu par l&apos;équipe à partir du gabarit : les lignes propres à l&apos;entreprise (produits, matières, stocks…) et leurs codes, puis le budget par groupe de produits.
+          Une fois intégré, il est vérifié, rangé dans « Idawa Depots » et proposé au référent sur sa page de dépôt.
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}>
+          <a className="btn btn-ghost" href="/api/reporting/gabarit?type=tdb">Gabarit vierge (tableau de bord)</a>
+          <a className="btn btn-ghost" href="/api/reporting/gabarit?type=ef">Gabarit vierge (analyses des états financiers)</a>
+          {model && <a className="btn btn-ghost" href={`/api/portefeuille/${companyId}/modele`}>Télécharger le classeur intégré</a>}
+          {canEdit && (
+            <label className="btn" style={{ cursor: up.busy ? "wait" : "pointer" }}>
+              {up.busy ? "Vérification…" : model ? "Intégrer une nouvelle version" : "Intégrer le classeur"}
+              <input type="file" accept=".xlsx" style={{ display: "none" }} disabled={up.busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) integrate(f); e.target.value = ""; }} />
+            </label>
+          )}
+        </div>
+        {model
+          ? <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Intégré le {stamp(model.at)} — {model.name} — {model.lines} lignes reconnues{model.warnings.length ? ` — ${model.warnings.length} point(s) à vérifier` : ""}.</div>
+          : <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>Aucun classeur intégré pour l&apos;instant.</div>}
+        {up.text && (
+          <div style={{ marginTop: 8, fontSize: 12.5, color: up.ok ? "#3B6D11" : "#A6412E" }}>
+            {up.text}
+            {up.list && up.list.length > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 18, color: "var(--text-2)" }}>{up.list.map((x, i) => <li key={i}>{x}</li>)}</ul>}
+          </div>
+        )}
+      </div>
+
       {setup && (
         <div className="card" style={card}>
           <h3 style={h3}>Dépôts reçus</h3>
@@ -164,6 +202,15 @@ export default function ReportingSetupTab({ companyId, setup, token, deposits = 
               {d.warnings.length > 0 && <span className="badge" style={{ background: "#F7ECD6", color: "#8A5A12" }} title={d.warnings.join("\n")}>{d.warnings.length} point{d.warnings.length > 1 ? "s" : ""} à vérifier</span>}
               {d.integrity && d.integrity !== "ok" && <span className="badge" style={{ background: "#F6E1DC", color: "#A6412E" }}>Fichier {d.integrity}</span>}
               {d.reason && <span style={{ color: "var(--text-2)" }}>Motif : {d.reason}</span>}
+              {(d.newCodes?.length ?? 0) > 0 && (
+                <span className="badge" style={{ background: "#F7ECD6", color: "#8A5A12" }} title={d.newCodes!.join("\n")}>
+                  {d.newCodes!.length} nouvelle{d.newCodes!.length > 1 ? "s" : ""} ligne{d.newCodes!.length > 1 ? "s" : ""}
+                </span>
+              )}
+              {(d.newCodes?.length ?? 0) > 0 && canEdit && model && (
+                <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }}
+                  onClick={async () => { if (confirm(`Valider ces lignes dans le classeur de référence ?\n${d.newCodes!.join("\n")}`)) { await acceptNewCodes(companyId, d.id); router.refresh(); } }}>Valider</button>
+              )}
               {d.webUrl && <a href={d.webUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: "auto", color: "var(--camel)" }}>Ouvrir</a>}
             </div>
           ))}

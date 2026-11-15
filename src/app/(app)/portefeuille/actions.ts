@@ -161,3 +161,19 @@ export async function setDepositLink(companyId: string, action: "regenerer" | "c
   revalidatePath(`/portefeuille/${companyId}`);
   return { ok: true };
 }
+
+
+/** Nouvelles lignes d'un dépôt (nouveau produit…) : ajoutées aux codes reconnus du classeur de référence. */
+export async function acceptNewCodes(companyId: string, depositId: string) {
+  const { perms } = await getMyPermissions();
+  if (!["E", "V"].includes(perms.portefeuille ?? "")) return { error: "Droit « Portefeuille » en édition requis." };
+  const supabase = await createClient();
+  const { data: dep } = await supabase.from("deposits").select("new_codes").eq("id", depositId).eq("company_id", companyId).maybeSingle();
+  const { data: model } = await supabase.from("company_models").select("codes").eq("company_id", companyId).maybeSingle();
+  if (!dep || !model) return { error: "Dépôt ou classeur de référence introuvable." };
+  const codes = Array.from(new Set([...((model.codes as string[]) ?? []), ...((dep.new_codes as string[]) ?? [])]));
+  await supabase.from("company_models").update({ codes, lines_count: codes.length, updated_at: new Date().toISOString() }).eq("company_id", companyId);
+  await supabase.from("deposits").update({ new_codes: [] }).eq("id", depositId);
+  revalidatePath(`/portefeuille/${companyId}`);
+  return { ok: true };
+}
