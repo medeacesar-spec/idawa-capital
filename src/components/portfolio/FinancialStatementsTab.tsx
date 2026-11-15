@@ -1,9 +1,10 @@
 "use client";
 
+import { adoptDepositedStatements } from "@/app/(app)/portefeuille/actions";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { OHADA_SECTIONS, computeOhada, ratios, type OhadaSection } from "@/lib/finance/ohada";
+import { OHADA_SECTIONS, OHADA_INPUT_CODES, computeOhada, ratios, type OhadaSection } from "@/lib/finance/ohada";
 import { computeRatios, RATIO_FAMILIES, bilanFonctionnelComplet, soldesDeGestion, variation, SECTOR_RATIOS_PENDING } from "@/lib/finance/analysis";
 import type { StatementValues, FinEntity, KeyFigure } from "@/lib/data/financialStatements";
 import { useYearWindow, YearNav, YEAR_WINDOW } from "./YearWindow";
@@ -17,7 +18,10 @@ const mult = (v: number | null) => (v == null ? "—" : `${v.toFixed(2)}×`);
 
 // Onglet commun aux dossiers du pipeline et aux sociétés du portefeuille : chiffres clés
 // déclarés en tête, puis la liasse OHADA complète quand les états financiers sont reçus.
-export default function FinancialStatementsTab({ entity, values, keyFigures = [] }: { entity: FinEntity; values: StatementValues; keyFigures?: KeyFigure[] }) {
+export default function FinancialStatementsTab({ entity, values, keyFigures = [], origins = {}, deposited = {} }: {
+  entity: FinEntity; values: StatementValues; keyFigures?: KeyFigure[];
+  origins?: Record<number, { origin: "saisie" | "depot"; at: string }>; deposited?: Record<number, Record<string, number>>;
+}) {
   const router = useRouter();
   const ownerCol = entity.type === "deal" ? "deal_id" : "company_id";
   const hasLiasse = Object.values(values).some((v) => Object.keys(v ?? {}).length > 0);
@@ -77,6 +81,10 @@ export default function FinancialStatementsTab({ entity, values, keyFigures = []
       { [ownerCol]: entity.id, fiscal_year: year, code, amount },
       { onConflict: `${ownerCol},fiscal_year,code` }
     );
+    // Une correction de l'équipe protège l'exercice : un dépôt ultérieur ne l'écrasera plus.
+    if (entity.type === "company" && origins[year]?.origin !== "saisie") {
+      await createClient().from("financial_statement_origin").upsert({ company_id: entity.id, fiscal_year: year, origin: "saisie", updated_at: new Date().toISOString() });
+    }
     router.refresh();
   }
 
@@ -87,6 +95,37 @@ export default function FinancialStatementsTab({ entity, values, keyFigures = []
   return (
     <div>
       <KeyFiguresPanel entity={entity} figures={keyFigures} liasse={values} />
+
+      {entity.type === "company" && (Object.keys(deposited).length > 0 || Object.values(origins).some((o) => o.origin === "depot")) && (
+        <div className="card" style={{ padding: "12px 16px", marginBottom: 14, fontSize: 12.5 }}>
+          <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Origine des exercices</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {Array.from(new Set([...Object.keys(deposited), ...Object.keys(origins)].map(Number))).sort((a, b) => b - a).map((y) => {
+              const o = origins[y]?.origin;
+              const dep = deposited[y];
+              const diffs = dep && o === "saisie"
+                ? Array.from(new Set([...Object.keys(dep), ...Object.keys(values[y] ?? {})])).filter((c) => OHADA_INPUT_CODES.has(c) && Math.abs((dep[c] ?? 0) - (values[y]?.[c] ?? 0)) >= 1)
+                : [];
+              return (
+                <div key={y} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 600, minWidth: 44 }}>{y}</span>
+                  {o === "depot" && <span className="badge" style={{ background: "#E3EEDC", color: "#3F6B2E" }}>repris du dépôt de l&apos;entreprise</span>}
+                  {o === "saisie" && <span className="badge" style={{ background: "var(--surface-cream)", color: "var(--text-2)" }}>saisi par l&apos;équipe</span>}
+                  {o === "saisie" && dep && (diffs.length
+                    ? <span className="badge" style={{ background: "#F7ECD6", color: "#8A5A12" }} title={diffs.map((c) => `${c} : saisi ${Math.round(values[y]?.[c] ?? 0).toLocaleString("fr-FR")} / déposé ${Math.round(dep[c] ?? 0).toLocaleString("fr-FR")}`).join("\n")}>
+                        version déposée : {diffs.length} écart{diffs.length > 1 ? "s" : ""}</span>
+                    : <span style={{ color: "var(--text-3)" }}>version déposée identique</span>)}
+                  {o === "saisie" && dep && diffs.length > 0 && canEdit && (
+                    <button className="btn btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }}
+                      onClick={async () => { if (confirm(`Remplacer les états financiers ${y} saisis par la version déposée par l'entreprise ?`)) { await adoptDepositedStatements(entity.id, y); router.refresh(); } }}>
+                      Adopter la version déposée</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 8 }}>
         Liasse OHADA <span style={{ fontWeight: 400, color: "var(--text-3)" }}>— états financiers complets, par exercice</span>

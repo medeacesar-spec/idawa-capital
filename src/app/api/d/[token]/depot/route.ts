@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { companyByToken } from "@/lib/reporting/portal";
 import { DepositError, diff, monthHasData, parseWorkbook, type Line } from "@/lib/reporting/deposit";
+import { applyAnnualDeposit } from "@/lib/reporting/annualStatements";
 import { SharePointError } from "@/lib/sharepoint/graph";
 import { MAX_BYTES, addFile, checkFile } from "@/lib/sharepoint/write";
 
@@ -118,6 +119,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     await admin.from("sharepoint_writes").update({ deposit_id: dep.id }).eq("id", w.id);
     for (let i = 0; i < lines.length; i += 500) {
       await admin.from("deposit_lines").insert(lines.slice(i, i + 500).map((l) => ({ deposit_id: dep.id, sheet: l.sheet, code: l.code, label: l.label, unit: l.unit, vals: l.values, meta: l.meta ?? null })));
+    }
+    // Dépôt annuel : reprise dans les états financiers de la fiche (sans jamais écraser un exercice saisi).
+    if (kind === "annuel" && lines.some((l) => l.code.startsWith("EF_"))) {
+      try {
+        const summary = await applyAnnualDeposit(admin, co.companyId, dep.id, Number(period), lines);
+        await admin.from("deposits").update({ statements_summary: summary }).eq("id", dep.id);
+      } catch { /* le dépôt reste enregistré ; la reprise pourra être relancée */ }
     }
     return NextResponse.json({ ok: true, version, changesCount: changes.length, warnings });
   } catch (e) {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { REPORTING_STATUS } from "@/lib/ui-constants";
+import { calendarFor } from "@/lib/reporting/calendar";
 import { currentPeriod, rollingPeriods, formatPeriod } from "@/lib/periods";
 import { resolveCadence, type CadenceSettings } from "@/lib/cadence";
 import type { ReportingData } from "@/lib/data/reporting";
@@ -53,7 +54,23 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
   const shownCompanies = progFilter === "all" ? data.companies : data.companies.filter((c) => c.programId === progFilter);
 
   const statusFor = (companyId: string) => data.statuses.find((s) => s.companyId === companyId && s.period === period)?.status ?? "À faire";
-  const done = shownCompanies.filter((c) => statusFor(c.id) === "Validé").length;
+  // Entreprises dont le reporting est paramétré : statut AUTOMATIQUE, tiré des dépôts et du calendrier.
+  const autoStatus = (companyId: string): { label: string; tone: string; title: string } | null => {
+    const row = depositsBoard.find((r) => r.companyId === companyId);
+    if (!row || !row.setup.expectsMonthly) return null;
+    const vs = (row.deposits ?? []).filter((d) => d.kind === "mensuel" && d.period === period).map((d) => d.version);
+    if (vs.length) {
+      const v = Math.max(...vs);
+      return { label: v === 0 ? "Reçu V0" : `Corrigé V${v}`, tone: "badge-green", title: "Statut automatique : tableau de bord déposé par l'entreprise." };
+    }
+    const y = Number(period.slice(0, 4));
+    const p = calendarFor(row.setup, y).find((x) => x.kind === "mensuel" && x.period === period);
+    if (!p) return { label: "Hors suivi", tone: "badge-neutral", title: "Période antérieure au début du suivi de cette entreprise." };
+    return p.state === "en retard" ? { label: "En retard", tone: "badge-red", title: `Échéance dépassée (${p.due}).` }
+      : p.state === "ouverte" ? { label: "Ouvert", tone: "badge-amber", title: `Attendu au plus tard le ${p.due}.` }
+      : { label: "À venir", tone: "badge-neutral", title: `Ouverture le ${p.opens}.` };
+  };
+  const done = shownCompanies.filter((c) => { const a = autoStatus(c.id); return a ? a.tone === "badge-green" : statusFor(c.id) === "Validé"; }).length;
 
   async function cycle(companyId: string) {
     const cur = statusFor(companyId);
@@ -94,7 +111,7 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
             <select value={period} onChange={(e) => setPeriod(e.target.value)} style={{ padding: "7px 11px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "var(--surface)", fontFamily: "inherit", fontSize: 12.5, color: "var(--ink)" }}>
               {periodOptions.map((p) => <option key={p} value={p}>{formatPeriod(p)}</option>)}
             </select>
-            <span className="badge badge-green" style={{ marginLeft: "auto" }}>{done} / {shownCompanies.length} validés</span>
+            <span className="badge badge-green" style={{ marginLeft: "auto" }}>{done} / {shownCompanies.length} reçus ou validés</span>
           </div>
           {shownCompanies.length === 0 ? (
             <div className="card" style={{ padding: "28px", textAlign: "center", fontSize: 13, color: "var(--text-3)" }}>Aucune participation à collecter{progFilter !== "all" ? " pour ce programme" : ""}.</div>
@@ -102,11 +119,16 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
             <div className="card" style={{ padding: "4px 18px" }}>
               {shownCompanies.map((c, i) => {
                 const st = statusFor(c.id);
+                const auto = autoStatus(c.id);
                 return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "1px solid var(--sep)" }}>
-                    <button onClick={() => canEdit && cycle(c.id)} disabled={!canEdit} title={canEdit ? "Changer le statut" : "Lecture seule"} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
-                      <span className={`badge ${STATUS_BADGE[st]}`} style={{ cursor: "pointer", minWidth: 66, textAlign: "center" }}>{st}</span>
-                    </button>
+                    {auto ? (
+                      <span className={`badge ${auto.tone}`} title={auto.title} style={{ minWidth: 66, textAlign: "center" }}>{auto.label}</span>
+                    ) : (
+                      <button onClick={() => canEdit && cycle(c.id)} disabled={!canEdit} title={canEdit ? "Changer le statut (entreprise suivie hors plateforme)" : "Lecture seule"} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
+                        <span className={`badge ${STATUS_BADGE[st]}`} style={{ cursor: "pointer", minWidth: 66, textAlign: "center" }}>{st}</span>
+                      </button>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{c.name}</div>
                       {c.programName && <div style={{ fontSize: 11, color: "var(--text-3)" }}>{c.programName}</div>}
@@ -117,7 +139,7 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
               })}
             </div>
           )}
-          <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 10 }}>Cliquez le statut pour le faire évoluer (À faire → En cours → Validé). « Saisir » ouvre la saisie de reporting de la société.</div>
+          <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 10 }}>Entreprises au reporting paramétré : statut automatique, tiré de leurs dépôts (Reçu V0, Corrigé V1…) et de leur calendrier (Ouvert, En retard). Les autres : cliquez le statut pour le faire évoluer (À faire → En cours → Validé).</div>
         </div>
       )}
 
