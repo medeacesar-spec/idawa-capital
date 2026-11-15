@@ -1,3 +1,4 @@
+import type { ReportingSetup, SeasonalShift } from "@/lib/reporting/calendar";
 import { createClient } from "@/lib/supabase/server";
 import { getAllTags, getEntityTags, type Tag } from "@/lib/data/tags";
 import { computeTvpi } from "@/lib/format";
@@ -93,6 +94,8 @@ export type CompanyDetail = {
   users: FundUser[];
   contacts: DetailContact[];
   documents: DetailDoc[];
+  /** Paramétrage du suivi des dépôts (référent, chargé, échéances) ; null tant qu'il n'est pas créé. */
+  reportingSetup: ReportingSetup | null;
 };
 
 export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
@@ -164,7 +167,15 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     const p = progById.get(pid);
     return { id: pid, name: (p?.name as string) ?? "—", color: (p?.color as string) ?? null, principal: pid === c.program_id };
   });
+  const { data: rs } = await supabase.from("company_reporting_setup").select("*").eq("company_id", c.id).maybeSingle();
+  const reportingSetup: ReportingSetup | null = rs ? {
+    companyId: rs.company_id, referentName: rs.referent_name, referentEmail: rs.referent_email, referentPhone: rs.referent_phone,
+    chargeId: rs.charge_id, suppleantId: rs.suppleant_id, expectsMonthly: rs.expects_monthly, expectsAnnual: rs.expects_annual,
+    openDay: rs.open_day, dueDay: rs.due_day, annualDueMonth: rs.annual_due_month, annualDueDay: rs.annual_due_day,
+    seasonalShifts: (rs.seasonal_shifts as SeasonalShift[]) ?? [], tokenRevoked: !!rs.token_revoked_at, startsOn: rs.starts_on,
+  } : null;
   return {
+    reportingSetup,
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
     status: c.status, trackingType: c.tracking_type ?? "equity",
     invested: Number(c.invested_amount ?? 0), valuation: Number(c.current_valuation ?? 0),
