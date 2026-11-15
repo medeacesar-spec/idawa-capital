@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, reminderEmail } from "@/lib/email/resend";
+import { runReportingMailings } from "@/lib/reporting/mailings";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,12 @@ export async function GET(req: Request) {
     .not("assignee_id", "is", null)
     .in("due_date", [today, heads]);
   const rows = tasks ?? [];
-  if (rows.length === 0) return NextResponse.json({ ok: true, sent: 0 });
+
+  // Suivi des entreprises : ouverture, rappel et retard des dépôts (même passage quotidien).
+  let reporting: { sent: number } | { error: string };
+  try { reporting = { sent: (await runReportingMailings()).sent }; } catch (e) { reporting = { error: (e as Error).message }; }
+
+  if (rows.length === 0) return NextResponse.json({ ok: true, sent: 0, reporting });
 
   const dealIds = [...new Set(rows.filter((r) => r.entity_type === "deal").map((r) => r.entity_id))];
   const compIds = [...new Set(rows.filter((r) => r.entity_type === "company").map((r) => r.entity_id))];
@@ -67,5 +73,5 @@ export async function GET(req: Request) {
     if (res.ok) sent += 1;
   }
 
-  return NextResponse.json({ ok: true, sent });
+  return NextResponse.json({ ok: true, sent, reporting });
 }
