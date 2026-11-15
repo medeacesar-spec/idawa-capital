@@ -177,3 +177,15 @@ export async function acceptNewCodes(companyId: string, depositId: string) {
   revalidatePath(`/portefeuille/${companyId}`);
   return { ok: true };
 }
+
+
+/** Adopter, pour un exercice, la version des états financiers déposée par l'entreprise (remplace la saisie). */
+export async function adoptDepositedStatements(companyId: string, year: number) {
+  const { perms } = await getMyPermissions();
+  if (!["E", "V"].includes(perms.portefeuille ?? "")) return { error: "Droit « Portefeuille » en édition requis." };
+  const { adoptDeposited } = await import("@/lib/reporting/annualStatements");
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const r = await adoptDeposited(createAdminClient(), companyId, year);
+  revalidatePath(`/portefeuille/${companyId}`); revalidatePath("/performance");
+  return r;
+}

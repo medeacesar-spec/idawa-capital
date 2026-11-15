@@ -213,7 +213,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       {tab === "Structuration" && <StructurationTab companyId={company.id} data={company.structuration} />}
 
-      {tab === "États financiers" && <FinancialStatementsTab entity={{ type: "company", id: company.id }} values={company.statements} keyFigures={company.keyFigures} />}
+      {tab === "États financiers" && <FinancialStatementsTab entity={{ type: "company", id: company.id }} values={company.statements} keyFigures={company.keyFigures} origins={company.statementOrigins} deposited={company.depositedStatements} />}
 
       {tab === "KPIs" && <KpiTab entityType="company" entityId={company.id} kpis={company.kpis} library={company.kpiLibrary} statements={company.statements} budget={company.finance.financials} cadence={kpisCadence} />}
 

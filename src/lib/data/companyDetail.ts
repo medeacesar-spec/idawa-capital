@@ -100,6 +100,8 @@ export type CompanyDetail = {
   reportingToken: string | null;
   deposits: { id: string; kind: string; period: string; version: number; at: string; reason: string | null; changes: number; warnings: string[]; webUrl: string | null; integrity: string | null; newCodes: string[] }[];
   companyModel: { name: string | null; lines: number; warnings: string[]; at: string } | null;
+  statementOrigins: Record<number, { origin: "saisie" | "depot"; at: string }>;
+  depositedStatements: Record<number, Record<string, number>>;
 };
 
 export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
@@ -188,9 +190,17 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
       newCodes: (d.new_codes as string[]) ?? [] };
   });
   const { data: cm } = await supabase.from("company_models").select("original_name, lines_count, warnings, updated_at").eq("company_id", c.id).maybeSingle();
+  const [{ data: origins }, { data: depStmts }] = await Promise.all([
+    supabase.from("financial_statement_origin").select("fiscal_year, origin, updated_at").eq("company_id", c.id),
+    supabase.from("deposit_statements").select("fiscal_year, code, amount").eq("company_id", c.id),
+  ]);
+  const statementOrigins: Record<number, { origin: "saisie" | "depot"; at: string }> = {};
+  for (const o of origins ?? []) statementOrigins[Number(o.fiscal_year)] = { origin: o.origin as "saisie" | "depot", at: o.updated_at as string };
+  const depositedStatements: Record<number, Record<string, number>> = {};
+  for (const r of depStmts ?? []) if (r.amount != null) (depositedStatements[Number(r.fiscal_year)] ??= {})[r.code as string] = Number(r.amount);
   const companyModel = cm ? { name: cm.original_name as string | null, lines: (cm.lines_count as number) ?? 0, warnings: (cm.warnings as string[]) ?? [], at: cm.updated_at as string } : null;
   return {
-    reportingSetup, reportingToken: rs ? (rs.token as string) : null, deposits, companyModel,
+    reportingSetup, reportingToken: rs ? (rs.token as string) : null, deposits, companyModel, statementOrigins, depositedStatements,
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
     status: c.status, trackingType: c.tracking_type ?? "equity",
     invested: Number(c.invested_amount ?? 0), valuation: Number(c.current_valuation ?? 0),
