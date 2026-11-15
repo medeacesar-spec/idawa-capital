@@ -42,19 +42,40 @@ export function sharePointConfigured(): boolean {
 
 const b64url = (b: Buffer) => b.toString("base64").replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
 
-/** Assertion signée par la clé privée du certificat (flux « client credentials » sans secret). */
-function clientAssertion(tokenUrl: string): string {
-  const thumb = process.env.MS_CLIENT_CERT_THUMBPRINT!.replace(/[^0-9a-fA-F]/g, "");
+/** Assertion signée par la clé privée d'un certificat (flux « client credentials » sans secret). */
+function clientAssertion(tokenUrl: string, clientId: string, keyPem: string, thumbprint: string): string {
+  const thumb = thumbprint.replace(/[^0-9a-fA-F]/g, "");
   // La clé collée dans Vercel peut arriver avec des « \n » littéraux au lieu de vrais retours à la ligne.
-  const key = process.env.MS_CLIENT_CERT_KEY!.replace(/\\n/g, "\n");
+  const key = keyPem.replace(/\\n/g, "\n");
   const now = Math.floor(Date.now() / 1000);
   const header = b64url(Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", x5t: b64url(Buffer.from(thumb, "hex")) })));
-  const payload = b64url(Buffer.from(JSON.stringify({
-    aud: tokenUrl, iss: process.env.MS_CLIENT_ID, sub: process.env.MS_CLIENT_ID,
-    jti: randomUUID(), nbf: now - 60, exp: now + 600,
-  })));
+  const payload = b64url(Buffer.from(JSON.stringify({ aud: tokenUrl, iss: clientId, sub: clientId, jti: randomUUID(), nbf: now - 60, exp: now + 600 })));
   const signature = createSign("RSA-SHA256").update(`${header}.${payload}`).sign(key);
   return `${header}.${payload}.${b64url(signature)}`;
+}
+
+/**
+ * Jeton d'application Microsoft Graph. Partagé par l'identité de LECTURE (ce module) et l'identité
+ * d'ÉCRITURE (write.ts), chacune avec son propre certificat et ses propres droits.
+ */
+export async function fetchAppToken(o: { clientId: string; certKey?: string; certThumbprint?: string; secret?: string; label: string }): Promise<{ token: string; expiresIn: number }> {
+  const tokenUrl = `https://login.microsoftonline.com/${process.env.MS_TENANT_ID}/oauth2/v2.0/token`;
+  const useCert = !!(o.certKey && o.certThumbprint);
+  if (!useCert && !o.secret) throw new SharePointError(`Connexion SharePoint (${o.label}) non configurée`, 503);
+  const auth: Record<string, string> = useCert
+    ? { client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer", client_assertion: clientAssertion(tokenUrl, o.clientId, o.certKey!, o.certThumbprint!) }
+    : { client_secret: o.secret! };
+  const res = await fetch(tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: o.clientId, scope: "https://graph.microsoft.com/.default", ...auth }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new SharePointError(useCert
+    ? `Microsoft a refusé la connexion (${o.label}) : certificat expiré, ou absent d'Entra ?`
+    : `Microsoft a refusé la connexion (${o.label}) : identifiants ou secret expiré ?`, 502);
+  const j = (await res.json()) as { access_token: string; expires_in: number };
+  return { token: j.access_token, expiresIn: j.expires_in };
 }
 
 export function driveId(): string {
@@ -67,22 +88,9 @@ let cached: { token: string; until: number } | null = null;
 async function token(): Promise<string> {
   if (cached && Date.now() < cached.until) return cached.token;
   if (!sharePointConfigured()) throw new SharePointError("Connexion SharePoint non configurée", 503);
-  const tokenUrl = `https://login.microsoftonline.com/${process.env.MS_TENANT_ID}/oauth2/v2.0/token`;
-  const auth: Record<string, string> = certConfigured()
-    ? { client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer", client_assertion: clientAssertion(tokenUrl) }
-    : { client_secret: process.env.MS_CLIENT_SECRET! };
-  const res = await fetch(tokenUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "client_credentials", client_id: process.env.MS_CLIENT_ID!, scope: "https://graph.microsoft.com/.default", ...auth }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new SharePointError(certConfigured()
-    ? "Microsoft a refusé la connexion de l'application (certificat expiré, ou absent d'Entra ?)"
-    : "Microsoft a refusé la connexion de l'application (identifiants ou secret expiré ?)", 502);
-  const j = (await res.json()) as { access_token: string; expires_in: number };
-  cached = { token: j.access_token, until: Date.now() + (j.expires_in - 300) * 1000 };
-  return j.access_token;
+  const t = await fetchAppToken({ clientId: process.env.MS_CLIENT_ID!, certKey: process.env.MS_CLIENT_CERT_KEY, certThumbprint: process.env.MS_CLIENT_CERT_THUMBPRINT, secret: process.env.MS_CLIENT_SECRET, label: "lecture" });
+  cached = { token: t.token, until: Date.now() + (t.expiresIn - 300) * 1000 };
+  return t.token;
 }
 
 async function graph<T>(path: string): Promise<T> {

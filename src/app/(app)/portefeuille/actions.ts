@@ -116,3 +116,35 @@ export async function setValuationValidation(flowId: string, validate: boolean) 
   revalidatePath("/portefeuille");
   return { ok: true };
 }
+
+// ── Paramétrage du suivi des dépôts (feuille de route, phase 2) ─────────────────
+export async function saveReportingSetup(companyId: string, input: {
+  referentName: string; referentEmail: string; referentPhone: string; chargeId: string | null; suppleantId: string | null;
+  expectsMonthly: boolean; expectsAnnual: boolean; openDay: number; dueDay: number; annualDueMonth: number; annualDueDay: number;
+  seasonalShifts: { months: number[]; extra_days: number }[];
+  startsOn: string;
+}) {
+  const { perms } = await getMyPermissions();
+  if (!["E", "V"].includes(perms.portefeuille ?? "")) return { error: "Droit « Portefeuille » en édition requis." };
+  const email = input.referentEmail.trim().toLowerCase();
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return { error: "E-mail du référent invalide." };
+  if (input.chargeId && input.chargeId === input.suppleantId) return { error: "Le suppléant doit être une autre personne que le chargé de suivi." };
+  const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, Math.round(n || a)));
+  const shifts = input.seasonalShifts
+    .map((s) => ({ months: Array.from(new Set(s.months.filter((m) => m >= 1 && m <= 12))).sort((a, b) => a - b), extra_days: clamp(s.extra_days, 1, 20) }))
+    .filter((s) => s.months.length);
+  const supabase = await createClient();
+  const { error } = await supabase.from("company_reporting_setup").upsert({
+    company_id: companyId, referent_name: input.referentName.trim() || null, referent_email: email || null,
+    referent_phone: input.referentPhone.trim() || null, charge_id: input.chargeId || null, suppleant_id: input.suppleantId || null,
+    expects_monthly: input.expectsMonthly, expects_annual: input.expectsAnnual,
+    open_day: clamp(input.openDay, 1, 28), due_day: clamp(input.dueDay, 1, 28),
+    annual_due_month: clamp(input.annualDueMonth, 1, 12), annual_due_day: clamp(input.annualDueDay, 1, 31),
+    seasonal_shifts: shifts, updated_at: new Date().toISOString(),
+    starts_on: /^\d{4}-\d{2}/.test(input.startsOn) ? `${input.startsOn.slice(0, 7)}-01` : undefined,
+  }, { onConflict: "company_id" });
+  if (error) return { error: error.message };
+  revalidatePath(`/portefeuille/${companyId}`);
+  revalidatePath("/reporting");
+  return { ok: true };
+}

@@ -5,6 +5,8 @@ import { requirePerm, getMyPermissions, can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { EXTRACTION_SETS } from "@/lib/export/extraction";
 import { DATASETS } from "@/lib/export/datasets";
+import type { BoardRow } from "@/components/reporting/DepositsBoard";
+import type { SeasonalShift } from "@/lib/reporting/calendar";
 
 export default async function ReportingPage() {
   await requirePerm("reporting");
@@ -16,6 +18,22 @@ export default async function ReportingPage() {
     supabase.from("portfolio_companies").select("id, name, tracking_type, program_id").order("name"),
     getFundSettings(),
   ]);
+  const [{ data: setups }, { data: people }] = await Promise.all([
+    supabase.from("company_reporting_setup").select("*"),
+    supabase.from("profiles").select("id, full_name, email"),
+  ]);
+  const who = new Map((people ?? []).map((p) => [p.id as string, (p.full_name || p.email) as string]));
+  const coName = new Map((cos ?? []).map((c) => [c.id as string, c.name as string]));
+  const board: BoardRow[] = (setups ?? []).filter((r) => coName.has(r.company_id)).map((r) => ({
+    companyId: r.company_id, name: coName.get(r.company_id)!, referent: r.referent_name, charge: r.charge_id ? who.get(r.charge_id) ?? null : null,
+    suppleant: r.suppleant_id ? who.get(r.suppleant_id) ?? null : null,
+    setup: { companyId: r.company_id, referentName: r.referent_name, referentEmail: r.referent_email, referentPhone: r.referent_phone,
+      chargeId: r.charge_id, suppleantId: r.suppleant_id, expectsMonthly: r.expects_monthly, expectsAnnual: r.expects_annual,
+      openDay: r.open_day, dueDay: r.due_day, annualDueMonth: r.annual_due_month, annualDueDay: r.annual_due_day,
+      seasonalShifts: (r.seasonal_shifts as SeasonalShift[]) ?? [], tokenRevoked: !!r.token_revoked_at, startsOn: r.starts_on },
+  }));
+  const configured = new Set(board.map((b) => b.companyId));
+  const unconfigured = (cos ?? []).filter((c) => !configured.has(c.id as string)).map((c) => ({ id: c.id as string, name: c.name as string }));
 
   // La réinjection ne s'affiche que si l'on peut écrire quelque part.
   const visibleDatasets = DATASETS.filter((d) => can(perms, d.key === "pipeline" ? "pipeline" : "portefeuille", "L"));
@@ -30,6 +48,8 @@ export default async function ReportingPage() {
       extractionSets={EXTRACTION_SETS}
       programs={(progs ?? []).filter((p) => p.status !== "Clos").map((p) => ({ id: p.id as string, name: p.name as string }))}
       companies={(cos ?? []).map((c) => ({ id: c.id as string, name: c.name as string, tracking: (c.tracking_type as string) ?? "equity", programId: (c.program_id as string) ?? null }))}
+      depositsBoard={board}
+      depositsUnconfigured={unconfigured}
       datasets={visibleDatasets.map((d) => ({ key: d.key, label: d.label, hint: d.hint, editable: d.columns.filter((c) => c.editable).map((c) => c.header) }))}
     />
   );

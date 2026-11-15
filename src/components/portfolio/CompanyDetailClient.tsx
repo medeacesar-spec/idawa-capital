@@ -25,6 +25,7 @@ import StructurationTab from "./StructurationTab";
 import FinancialStatementsTab from "./FinancialStatementsTab";
 import ValuationTab from "./ValuationTab";
 import SupportTab from "./SupportTab";
+import ReportingSetupTab from "./ReportingSetupTab";
 import type { Cadence } from "@/lib/periods";
 import ProgramMemberships from "./ProgramMemberships";
 import FundQualification from "@/components/shared/FundQualification";
@@ -47,7 +48,7 @@ const FAMILIES: { key: string; label: string; hint: string; tabs: string[] }[] =
   { key: "perf", label: "Performance", hint: "ce que fait l'entreprise, exercice après exercice",
     tabs: ["États financiers", "KPIs", "Budget & BP"] },
   { key: "suivi", label: "Suivi & gouvernance", hint: "la vie du dossier",
-    tabs: ["Suivi", "Décisions", "ESG", "Création de valeur", "Documents", "Contacts"] },
+    tabs: ["Suivi", "Reporting entreprise", "Décisions", "ESG", "Création de valeur", "Documents", "Contacts"] },
 ];
 // La famille « Accompagnement » ne dépend PAS du type de suivi mais de ce qui s'applique :
 // dans un programme mixte, le fonds investit ET accompagne la même entreprise. On l'affiche
@@ -401,6 +402,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       {tab === "Documents" && <EntityDocuments entityType="company" entityId={company.id} entityName={company.name} docs={company.documents} />}
 
+      {tab === "Reporting entreprise" && <ReportingSetupTab companyId={company.id} setup={company.reportingSetup} users={company.users} canEdit={canEdit} />}
       {tab === "Contacts" && <EntityContacts entityType="company" entityId={company.id} contacts={company.contacts} />}
 
       {decModal.open && (

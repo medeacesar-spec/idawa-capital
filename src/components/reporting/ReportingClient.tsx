@@ -1,5 +1,7 @@
 "use client";
 
+import DepositsBoard, { type BoardRow } from "./DepositsBoard";
+
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -28,12 +30,13 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function ReportingClient({ data, cadenceSettings, canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit }: {
+export default function ReportingClient({ data, cadenceSettings, canEdit = true, extractionSets, programs, companies, datasets, excelCanEdit, depositsBoard = [], depositsUnconfigured = [] }: {
+  depositsBoard?: BoardRow[]; depositsUnconfigured?: { id: string; name: string }[];
   data: ReportingData; cadenceSettings?: CadenceSettings; canEdit?: boolean; extractionSets: ExtractionSet[];
   programs: { id: string; name: string }[]; companies: Company[]; datasets: Dataset[]; excelCanEdit: boolean;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"collecte" | "extraction" | "fiches">("collecte");
+  const [tab, setTab] = useState<"collecte" | "extraction" | "fiches" | "depots">("collecte");
   // La cadence peut différer par programme : on la résout selon le programme filtré.
   const [progFilter, setProgFilter] = useState<string>("all");
   const cadence = resolveCadence(cadenceSettings, "reporting", progFilter === "all" ? null : progFilter);
@@ -66,10 +69,13 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
           ["collecte", cadence === "mensuelle" ? "Collecte mensuelle" : "Collecte trimestrielle"],
           ["extraction", "Extraire des données"],
           ["fiches", "Rapports & fiches I&P"],
+          ["depots", "Dépôts des entreprises"],
         ] as const).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} style={{ padding: "9px 14px", border: "none", background: "none", cursor: "pointer", fontSize: 13, fontWeight: tab === k ? 600 : 500, color: tab === k ? "var(--espresso)" : "var(--text-2)", borderBottom: `2px solid ${tab === k ? "var(--espresso)" : "transparent"}`, marginBottom: -1 }}>{label}</button>
         ))}
       </div>
+
+      {tab === "depots" && <DepositsBoard rows={depositsBoard} unconfigured={depositsUnconfigured} />}
 
       {tab === "collecte" && (
         <div>
