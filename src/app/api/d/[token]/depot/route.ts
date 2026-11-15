@@ -62,6 +62,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
         if (p.year && p.year !== y) return bad(`Ce classeur est celui de l'exercice ${p.year} : pour ${MONTHS[m - 1]} ${y}, déposez le classeur ${y}.`);
         if (!monthHasData(p, m)) return bad(`Le mois de ${MONTHS[m - 1]} est vide dans la Synthèse de votre fichier : avez-vous rempli ce mois ?`);
       }
+      if (kind === "annuel" && p.model === "SYNTHESE_ERP_ANNUELLE_V2" && p.year && p.year !== Number(period)) {
+        return bad(`Ce classeur s'arrête à l'exercice ${p.year} : pour l'exercice ${period}, indiquez ${period} comme « Dernier exercice » dans son Lisez-moi.`);
+      }
     } catch (e) {
       if (e instanceof DepositError) return bad(e.message);
       throw e;
