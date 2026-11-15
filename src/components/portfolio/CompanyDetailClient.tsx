@@ -402,7 +402,7 @@ export default function CompanyDetailClient({ company, canEditComites = true, ca
 
       {tab === "Documents" && <EntityDocuments entityType="company" entityId={company.id} entityName={company.name} docs={company.documents} />}
 
-      {tab === "Reporting entreprise" && <ReportingSetupTab companyId={company.id} setup={company.reportingSetup} users={company.users} canEdit={canEdit} />}
+      {tab === "Reporting entreprise" && <ReportingSetupTab companyId={company.id} setup={company.reportingSetup} token={company.reportingToken} deposits={company.deposits} users={company.users} canEdit={canEdit} />}
       {tab === "Contacts" && <EntityContacts entityType="company" entityId={company.id} contacts={company.contacts} />}
 
       {decModal.open && (

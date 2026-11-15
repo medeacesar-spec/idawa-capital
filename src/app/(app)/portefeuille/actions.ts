@@ -148,3 +148,16 @@ export async function saveReportingSetup(companyId: string, input: {
   revalidatePath("/reporting");
   return { ok: true };
 }
+
+/** Lien personnel de dépôt : régénérer (l'ancien cesse de fonctionner) ou couper / rétablir. */
+export async function setDepositLink(companyId: string, action: "regenerer" | "couper" | "retablir") {
+  const { perms } = await getMyPermissions();
+  if (!["E", "V"].includes(perms.portefeuille ?? "")) return { error: "Droit « Portefeuille » en édition requis." };
+  const supabase = await createClient();
+  const patch = action === "regenerer" ? { token: crypto.randomUUID(), token_revoked_at: null }
+    : action === "couper" ? { token_revoked_at: new Date().toISOString() } : { token_revoked_at: null };
+  const { error } = await supabase.from("company_reporting_setup").update({ ...patch, updated_at: new Date().toISOString() }).eq("company_id", companyId);
+  if (error) return { error: error.message };
+  revalidatePath(`/portefeuille/${companyId}`);
+  return { ok: true };
+}

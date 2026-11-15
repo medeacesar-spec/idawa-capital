@@ -18,7 +18,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { SharePointError, fetchAppToken } from "./graph";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
-export const MAX_BYTES = 10 * 1024 * 1024;
+// Plafond imposé par Vercel au corps d'une requête (4,5 Mo) : un tableau de bord pèse bien moins.
+export const MAX_BYTES = 4 * 1024 * 1024;
 const SIMPLE_UPLOAD_MAX = 4 * 1024 * 1024 - 1;
 
 export function writeConfigured(): boolean {
@@ -182,4 +183,13 @@ export async function checkIntegrity(limit = 200): Promise<{ checked: number; pr
     checked++;
   }
   return { checked, problems };
+}
+
+/** Contenu d'un fichier déposé (pour « Télécharger mon dernier fichier »). */
+export async function downloadItem(itemId: string): Promise<{ bytes: Buffer; name: string }> {
+  const drive = await depotsDrive();
+  const meta = await call<{ name: string }>(`/drives/${drive}/items/${encodeURIComponent(itemId)}?$select=name`);
+  const res = await fetch(`${GRAPH}/drives/${drive}/items/${encodeURIComponent(itemId)}/content`, { headers: { Authorization: `Bearer ${await token()}` }, cache: "no-store" });
+  if (!res.ok) throw new SharePointError(`Fichier indisponible (${res.status})`, 502);
+  return { bytes: Buffer.from(await res.arrayBuffer()), name: meta.name };
 }

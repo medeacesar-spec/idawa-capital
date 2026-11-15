@@ -44,7 +44,8 @@ export async function updateSession(request: NextRequest) {
     // Tâches planifiées Vercel (rappels, récapitulatif) : appelées SANS session, protégées par
     // CRON_SECRET dans la route elle-même. Sans cette exemption, elles étaient renvoyées vers
     // /login et aucun e-mail automatique ne partait (constaté le 15/11/2026).
-    || path.startsWith("/api/cron/");
+    || path.startsWith("/api/cron/")
+    || path.startsWith("/d/") || path.startsWith("/api/d/"); // page de dépôt des entreprises (lien personnel, jeton)
 
   // Plus de 30 minutes sans activité -> session fermée ICI, avant tout affichage.
   // Le minuteur de la page ne suffit pas : un onglet oublié, un ordinateur en veille ou un

@@ -96,6 +96,9 @@ export type CompanyDetail = {
   documents: DetailDoc[];
   /** Paramétrage du suivi des dépôts (référent, chargé, échéances) ; null tant qu'il n'est pas créé. */
   reportingSetup: ReportingSetup | null;
+  /** Jeton du lien personnel de dépôt (visible de l'équipe seulement). */
+  reportingToken: string | null;
+  deposits: { id: string; kind: string; period: string; version: number; at: string; reason: string | null; changes: number; warnings: string[]; webUrl: string | null; integrity: string | null }[];
 };
 
 export async function getCompanyDetail(id: string): Promise<CompanyDetail | null> {
@@ -174,8 +177,16 @@ export async function getCompanyDetail(id: string): Promise<CompanyDetail | null
     openDay: rs.open_day, dueDay: rs.due_day, annualDueMonth: rs.annual_due_month, annualDueDay: rs.annual_due_day,
     seasonalShifts: (rs.seasonal_shifts as SeasonalShift[]) ?? [], tokenRevoked: !!rs.token_revoked_at, startsOn: rs.starts_on,
   } : null;
+  const { data: depRows } = await supabase.from("deposits")
+    .select("id, kind, period, version, created_at, reason, changes_count, warnings, sharepoint_writes(web_url, integrity)")
+    .eq("company_id", c.id).order("created_at", { ascending: false }).limit(100);
+  const deposits = (depRows ?? []).map((d) => {
+    const w = d.sharepoint_writes as unknown as { web_url: string | null; integrity: string | null } | null;
+    return { id: d.id as string, kind: d.kind as string, period: d.period as string, version: d.version as number, at: d.created_at as string,
+      reason: d.reason as string | null, changes: d.changes_count as number, warnings: (d.warnings as string[]) ?? [], webUrl: w?.web_url ?? null, integrity: w?.integrity ?? null };
+  });
   return {
-    reportingSetup,
+    reportingSetup, reportingToken: rs ? (rs.token as string) : null, deposits,
     id: c.id, name: c.name, sector: (subRes.data as { name?: string } | null)?.name ?? null,
     status: c.status, trackingType: c.tracking_type ?? "equity",
     invested: Number(c.invested_amount ?? 0), valuation: Number(c.current_valuation ?? 0),
