@@ -4,12 +4,12 @@
 // des périodes qui en découle (feuille de route, phase 2). La page de dépôt (phase 4) s'appuiera
 // sur ce paramétrage.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, Input, Select } from "@/components/ui/form";
 import type { FundUser } from "@/lib/data/users";
 import { DEFAULT_SETUP, calendarFor, formatDay, type ReportingSetup, type SeasonalShift } from "@/lib/reporting/calendar";
-import { saveReportingSetup } from "@/app/(app)/portefeuille/actions";
+import { saveReportingSetup, setDepositLink } from "@/app/(app)/portefeuille/actions";
 
 const MONTHS = ["Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."];
 const STATE_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -21,8 +21,11 @@ const card: React.CSSProperties = { padding: "16px 18px", marginBottom: 14 };
 const h3: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--ink)", margin: "0 0 4px" };
 const sub: React.CSSProperties = { fontSize: 12, color: "var(--text-3)", margin: "0 0 12px", lineHeight: 1.5 };
 
-export default function ReportingSetupTab({ companyId, setup, users, canEdit }: {
-  companyId: string; setup: ReportingSetup | null; users: FundUser[]; canEdit: boolean;
+type Dep = { id: string; kind: string; period: string; version: number; at: string; reason: string | null; changes: number; warnings: string[]; webUrl: string | null; integrity: string | null };
+const stamp = (d: string) => { const x = new Date(d); return `${x.getDate()} ${MONTHS[x.getMonth()].toLowerCase()} ${x.getFullYear()} ${String(x.getHours()).padStart(2, "0")}h${String(x.getMinutes()).padStart(2, "0")}`; };
+
+export default function ReportingSetupTab({ companyId, setup, token, deposits = [], users, canEdit }: {
+  companyId: string; setup: ReportingSetup | null; token?: string | null; deposits?: Dep[]; users: FundUser[]; canEdit: boolean;
 }) {
   const router = useRouter();
   const init = setup ?? { companyId, ...DEFAULT_SETUP };
@@ -38,6 +41,9 @@ export default function ReportingSetupTab({ companyId, setup, users, canEdit }: 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (k: keyof typeof f, v: string | number | boolean) => setF((p) => ({ ...p, [k]: v }));
   const year = new Date().getFullYear();
+  const [origin, setOrigin] = useState("");
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- adresse du site connue seulement dans le navigateur
+  useEffect(() => { setOrigin(window.location.origin); }, []);
 
   const preview = useMemo(() => calendarFor({ ...init, ...f, startsOn: `${f.startsOn}-01`, chargeId: f.chargeId || null, suppleantId: f.suppleantId || null, seasonalShifts: shifts }, year),
     [f, shifts, year]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -125,9 +131,48 @@ export default function ReportingSetupTab({ companyId, setup, users, canEdit }: 
         </div>
       )}
 
+      {setup && token && (
+        <div className="card" style={card}>
+          <h3 style={h3}>Lien personnel de dépôt</h3>
+          <p style={sub}>À transmettre au référent : il ouvre sa page de dépôt sans créer de compte. Régénérer le lien rend l&apos;ancien inutilisable.</p>
+          {setup.tokenRevoked
+            ? <div style={{ fontSize: 12.5, color: "#A6412E", marginBottom: 8 }}>Lien coupé : le référent ne peut plus déposer.</div>
+            : <div style={{ fontSize: 12.5, wordBreak: "break-all", padding: "8px 10px", background: "var(--surface-cream)", borderRadius: 8, marginBottom: 8 }}>{origin}/d/{token}</div>}
+          {canEdit && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {!setup.tokenRevoked && <button className="btn btn-ghost" onClick={() => navigator.clipboard?.writeText(`${origin}/d/${token}`).then(() => setMsg({ ok: true, text: "Lien copié." }))}>Copier le lien</button>}
+              {!setup.tokenRevoked && f.referentPhone && (
+                <a className="btn btn-ghost" target="_blank" rel="noopener noreferrer"
+                  href={`https://wa.me/${f.referentPhone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`Bonjour ${f.referentName || ""}, voici votre lien de dépôt du tableau de bord Idawa Capital : ${origin}/d/${token}`)}`}>Envoyer sur WhatsApp</a>
+              )}
+              <button className="btn btn-ghost" onClick={async () => { if (confirm("Régénérer le lien ? L'ancien ne fonctionnera plus.")) { await setDepositLink(companyId, "regenerer"); router.refresh(); } }}>Régénérer</button>
+              <button className="btn btn-ghost" onClick={async () => { await setDepositLink(companyId, setup.tokenRevoked ? "retablir" : "couper"); router.refresh(); }}>{setup.tokenRevoked ? "Rétablir le lien" : "Couper le lien"}</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {setup && (
+        <div className="card" style={card}>
+          <h3 style={h3}>Dépôts reçus</h3>
+          <p style={sub}>Chaque version est conservée (fichier dans « Idawa Depots » et chiffres lus). V0 = premier dépôt de la période.</p>
+          {deposits.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>Aucun dépôt pour l&apos;instant.</div> : deposits.map((d) => (
+            <div key={d.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--sep)", fontSize: 12.5 }}>
+              <span style={{ fontWeight: 600, minWidth: 130 }}>{d.kind === "releve" ? `Relevé ${d.period}` : d.kind === "annuel" ? `Exercice ${d.period}` : d.period} · V{d.version}</span>
+              <span style={{ color: "var(--text-3)" }}>{stamp(d.at)}</span>
+              {d.changes > 0 && <span className="badge" style={{ background: "#F6E1DC", color: "#A6412E" }}>{d.changes} chiffre{d.changes > 1 ? "s" : ""} modifié{d.changes > 1 ? "s" : ""}</span>}
+              {d.warnings.length > 0 && <span className="badge" style={{ background: "#F7ECD6", color: "#8A5A12" }} title={d.warnings.join("\n")}>{d.warnings.length} point{d.warnings.length > 1 ? "s" : ""} à vérifier</span>}
+              {d.integrity && d.integrity !== "ok" && <span className="badge" style={{ background: "#F6E1DC", color: "#A6412E" }}>Fichier {d.integrity}</span>}
+              {d.reason && <span style={{ color: "var(--text-2)" }}>Motif : {d.reason}</span>}
+              {d.webUrl && <a href={d.webUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: "auto", color: "var(--camel)" }}>Ouvrir</a>}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card" style={card}>
         <h3 style={h3}>Calendrier {year}</h3>
-        <p style={sub}>Calculé à partir du paramétrage ci-dessus. Le statut « déposé » apparaîtra avec la page de dépôt.</p>
+        <p style={sub}>Calculé à partir du paramétrage ci-dessus.</p>
         {preview.length === 0 ? <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>Aucun dépôt attendu.</div> : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead><tr style={{ textAlign: "left", color: "var(--text-2)" }}>
@@ -138,7 +183,9 @@ export default function ReportingSetupTab({ companyId, setup, users, canEdit }: 
                 <td style={{ padding: "6px 4px", fontWeight: 600 }}>{p.label}</td>
                 <td>{formatDay(p.opens)}</td>
                 <td>{formatDay(p.due)}{p.extraDays ? <span style={{ color: "var(--text-3)" }}> (+{p.extraDays} j)</span> : null}</td>
-                <td><span className="badge" style={{ background: STATE_STYLE[p.state].bg, color: STATE_STYLE[p.state].fg }}>{p.state}</span></td>
+                <td>{(() => { const d = deposits.find((x) => x.kind === p.kind && x.period === p.period);
+                  return d ? <span className="badge" style={{ background: "#E6F0DA", color: "#3B6D11" }}>déposé · V{d.version}</span>
+                    : <span className="badge" style={{ background: STATE_STYLE[p.state].bg, color: STATE_STYLE[p.state].fg }}>{p.state}</span>; })()}</td>
               </tr>
             ))}</tbody>
           </table>

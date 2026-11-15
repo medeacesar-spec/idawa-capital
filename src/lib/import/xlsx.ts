@@ -108,18 +108,27 @@ export type SheetData = { name: string; rows: string[][] };
  */
 export function readWorkbook(buf: Buffer): SheetData[] {
   const entries = unzip(buf, (n) =>
-    n === "xl/workbook.xml" || n === "xl/sharedStrings.xml" || n === "xl/styles.xml" || n.startsWith("xl/worksheets/sheet"));
+    n === "xl/workbook.xml" || n === "xl/_rels/workbook.xml.rels" || n === "xl/sharedStrings.xml" || n === "xl/styles.xml" || n.startsWith("xl/worksheets/sheet"));
   const get = (name: string) => entries.find((e) => e.name === name)?.data.toString("utf8") ?? "";
 
   const shared = readSharedStrings(get("xl/sharedStrings.xml"));
   const dateStyles = readDateStyles(get("xl/styles.xml"));
 
-  // Les noms de feuilles vivent dans workbook.xml, dans l'ordre des fichiers sheetN.xml.
-  const names = [...get("xl/workbook.xml").matchAll(/<sheet[^>]*name="([^"]*)"/g)].map((m) => decodeXml(m[1]));
+  // Les noms de feuilles vivent dans workbook.xml ; chacune renvoie (r:id) au fichier sheetN.xml
+  // qui la contient. On suit ce renvoi : après un réordonnancement des onglets dans Excel, les
+  // numéros de fichiers ne suivent plus l'ordre des onglets.
+  const rels = new Map([...get("xl/_rels/workbook.xml.rels").matchAll(/<Relationship[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g)]
+    .map((m) => [m[1], "xl/" + m[2].replace(/^\/?xl\//, "").replace(/^\.\//, "")]));
+  const declared = [...get("xl/workbook.xml").matchAll(/<sheet\b[^>]*>/g)].map((m) => ({
+    name: decodeXml(m[0].match(/name="([^"]*)"/)?.[1] ?? ""), rid: m[0].match(/r:id="([^"]+)"/)?.[1] ?? "",
+  }));
+  const byFile = declared.every((d) => rels.has(d.rid));
+  const names = declared.map((d) => d.name);
 
-  const sheetFiles = entries
-    .filter((e) => /^xl\/worksheets\/sheet\d+\.xml$/.test(e.name))
-    .sort((a, b) => Number(a.name.match(/\d+/)![0]) - Number(b.name.match(/\d+/)![0]));
+  const sheetFiles = byFile
+    ? declared.map((d) => entries.find((e) => e.name === rels.get(d.rid))).filter((e): e is ZipEntry => !!e)
+    : entries.filter((e) => /^xl\/worksheets\/sheet\d+\.xml$/.test(e.name))
+        .sort((a, b) => Number(a.name.match(/\d+/)![0]) - Number(b.name.match(/\d+/)![0]));
 
   return sheetFiles.map((file, i) => {
     const xml = file.data.toString("utf8");
