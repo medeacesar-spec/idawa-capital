@@ -40,7 +40,11 @@ export async function updateSession(request: NextRequest) {
   const isPublic = path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/mot-de-passe-oublie") || path.startsWith("/reinitialiser") || path === "/api/auth-event"
     || path.startsWith("/q/") // questionnaire d'impact rempli par l'entrepreneur (accès par jeton)
     || path.startsWith("/c/") || path.startsWith("/api/c/") // portail des membres extérieurs d'un comité (jeton)
-    || path === "/api/keepalive"; // maintien en éveil de la base (tâche quotidienne)
+    || path === "/api/keepalive" // maintien en éveil de la base (tâche quotidienne)
+    // Tâches planifiées Vercel (rappels, récapitulatif) : appelées SANS session, protégées par
+    // CRON_SECRET dans la route elle-même. Sans cette exemption, elles étaient renvoyées vers
+    // /login et aucun e-mail automatique ne partait (constaté le 15/11/2026).
+    || path.startsWith("/api/cron/");
 
   // Plus de 30 minutes sans activité -> session fermée ICI, avant tout affichage.
   // Le minuteur de la page ne suffit pas : un onglet oublié, un ordinateur en veille ou un
