@@ -75,7 +75,7 @@ export default function ReportingClient({ data, cadenceSettings, canEdit = true,
         ))}
       </div>
 
-      {tab === "depots" && <DepositsBoard rows={depositsBoard} unconfigured={depositsUnconfigured} />}
+      {tab === "depots" && <DepositsBoard rows={depositsBoard} unconfigured={depositsUnconfigured} canSend={canEdit} />}
 
       {tab === "collecte" && (
         <div>

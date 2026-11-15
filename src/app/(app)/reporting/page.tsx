@@ -18,15 +18,19 @@ export default async function ReportingPage() {
     supabase.from("portfolio_companies").select("id, name, tracking_type, program_id").order("name"),
     getFundSettings(),
   ]);
-  const [{ data: setups }, { data: people }] = await Promise.all([
+  const [{ data: setups }, { data: people }, { data: deps }, { data: msgs }] = await Promise.all([
     supabase.from("company_reporting_setup").select("*"),
     supabase.from("profiles").select("id, full_name, email"),
+    supabase.from("deposits").select("company_id, kind, period, version"),
+    supabase.from("reporting_messages").select("company_id, kind, period, sent_at").order("sent_at", { ascending: false }).limit(500),
   ]);
   const who = new Map((people ?? []).map((p) => [p.id as string, (p.full_name || p.email) as string]));
   const coName = new Map((cos ?? []).map((c) => [c.id as string, c.name as string]));
   const board: BoardRow[] = (setups ?? []).filter((r) => coName.has(r.company_id)).map((r) => ({
     companyId: r.company_id, name: coName.get(r.company_id)!, referent: r.referent_name, charge: r.charge_id ? who.get(r.charge_id) ?? null : null,
     suppleant: r.suppleant_id ? who.get(r.suppleant_id) ?? null : null,
+    deposits: (deps ?? []).filter((d) => d.company_id === r.company_id).map((d) => ({ kind: d.kind as string, period: d.period as string, version: d.version as number })),
+    lastMessage: (() => { const m = (msgs ?? []).find((x) => x.company_id === r.company_id && !String(x.kind).endsWith("_equipe")); return m ? { kind: m.kind as string, period: m.period as string, sentAt: m.sent_at as string } : null; })(),
     setup: { companyId: r.company_id, referentName: r.referent_name, referentEmail: r.referent_email, referentPhone: r.referent_phone,
       chargeId: r.charge_id, suppleantId: r.suppleant_id, expectsMonthly: r.expects_monthly, expectsAnnual: r.expects_annual,
       openDay: r.open_day, dueDay: r.due_day, annualDueMonth: r.annual_due_month, annualDueDay: r.annual_due_day,

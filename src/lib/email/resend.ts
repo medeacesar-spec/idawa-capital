@@ -3,14 +3,14 @@
 
 const FROM = "Idawa Capital <noreply@idawacapital.com>";
 
-export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+export async function sendEmail({ to, subject, html, replyTo }: { to: string; subject: string; html: string; replyTo?: string | null }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { ok: false, skipped: true };
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to, subject, html }),
+      body: JSON.stringify({ from: FROM, to, subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
     if (!res.ok) return { ok: false, error: await res.text() };
     return { ok: true };
@@ -230,4 +230,54 @@ export function committeeInviteEmail({ memberName, committeeType, title, session
     <p style="margin:20px 0 6px;font-size:12px;color:#7A6552;">Ce lien vous est personnel : merci de ne pas le transférer. Si le bouton ne fonctionne pas, copiez ce lien :</p>
     <p style="margin:0 0 6px;font-size:12px;word-break:break-all;"><a href="${link}" style="color:#A9714B;">${link}</a></p>`;
   return { subject, html: shell(esc(committeeType), inner) };
+}
+
+/**
+ * Suivi des entreprises : e-mail à l'entrepreneur (ouverture de la période, rappel, retard).
+ * Vouvoiement, une seule action (déposer), le lien personnel et la date limite en clair.
+ */
+export function depositRequestEmail({ step, referentName, companyName, periodLabel, kind, due, extraDays, link, chargeName }: {
+  step: "ouverture" | "rappel" | "retard"; referentName?: string | null; companyName: string; periodLabel: string;
+  kind: "mensuel" | "annuel"; due: string; extraDays: number; link: string; chargeName?: string | null;
+}): { subject: string; html: string } {
+  const what = kind === "mensuel" ? `le tableau de bord de ${esc(periodLabel)}` : `le classeur annuel de l'${esc(periodLabel.toLowerCase())}`;
+  const What = what.charAt(0).toUpperCase() + what.slice(1);
+  const hello = referentName ? `Bonjour ${esc(referentName)},` : "Bonjour,";
+  const lead = step === "ouverture"
+    ? `La période est ouverte : merci de déposer ${what} de <b>${esc(companyName)}</b> au plus tard le <b>${longDate(due)}</b>.`
+    : step === "rappel"
+      ? `Petit rappel : ${what} de <b>${esc(companyName)}</b> est attendu au plus tard le <b>${longDate(due)}</b>, dans deux jours.`
+      : `${What} de <b>${esc(companyName)}</b> était attendu le <b>${longDate(due)}</b> et ne nous est pas encore parvenu. Merci de le déposer dès que possible.`;
+  const extra = extraDays > 0 && step !== "retard" ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#7A6552;">Compte tenu de la saison, ${extraDays} jour${extraDays > 1 ? "s" : ""} supplémentaire${extraDays > 1 ? "s ont" : " a"} été accordé${extraDays > 1 ? "s" : ""} : la date ci-dessus en tient déjà compte.</p>` : "";
+  const tips = `<ul style="margin:18px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:#5A4636;">
+      <li>Reprenez votre dernier fichier et complétez la période, sans renommer les onglets.</li>
+      <li>Une correction d'un mois déjà déposé se fait en déposant la nouvelle version : le motif vous sera demandé.</li>
+      <li>Votre espace garde l'historique de vos dépôts ; vous pouvez y retélécharger votre dernier fichier.</li>
+    </ul>`;
+  const contact = chargeName ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#5A4636;">Une question ? Répondez simplement à cet e-mail, il parviendra à ${esc(chargeName)}.</p>` : "";
+  const inner = `<p style="margin:0 0 10px;font-size:14px;line-height:1.6;">${hello}</p>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5A4636;">${lead}</p>${extra}
+    ${ctaButton(link, kind === "mensuel" ? "Déposer mon tableau de bord" : "Déposer mon classeur annuel")}
+    ${tips}${contact}
+    <p style="margin:20px 0 6px;font-size:12px;color:#7A6552;">Ce lien vous est personnel : merci de ne pas le transférer. Si le bouton ne fonctionne pas, copiez ce lien :</p>
+    <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${link}" style="color:#A9714B;">${link}</a></p>`;
+  const noun = kind === "mensuel" ? `Tableau de bord de ${periodLabel}` : `Classeur annuel de l'${periodLabel.toLowerCase()}`;
+  const subject = step === "ouverture"
+    ? `${noun} à déposer avant le ${longDate(due)}`
+    : step === "rappel" ? `Rappel : ${noun.charAt(0).toLowerCase() + noun.slice(1)} attendu le ${longDate(due)}` : `En retard : ${noun.charAt(0).toLowerCase() + noun.slice(1)}`;
+  const title = step === "ouverture" ? "Votre reporting est attendu" : step === "rappel" ? "Rappel de reporting" : "Reporting en retard";
+  return { subject: `${subject} — ${companyName}`, html: shell(title, inner) };
+}
+
+/** Suivi des entreprises : à l'équipe, une période n'est pas arrivée à l'échéance. */
+export function depositLateTeamEmail({ fullName, companyName, periodLabel, kind, due, referentName, link }: {
+  fullName?: string | null; companyName: string; periodLabel: string; kind: "mensuel" | "annuel"; due: string; referentName?: string | null; link: string;
+}): { subject: string; html: string } {
+  const hello = fullName ? `Bonjour ${esc(fullName)},` : "Bonjour,";
+  const what = kind === "mensuel" ? `Le tableau de bord de ${esc(periodLabel)}` : `Le classeur annuel de l'${esc(periodLabel.toLowerCase())}`;
+  const inner = `<p style="margin:0 0 10px;font-size:14px;line-height:1.6;">${hello}</p>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5A4636;">${what} de <b>${esc(companyName)}</b> n'est pas arrivé à l'échéance du <b>${longDate(due)}</b>.</p>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#5A4636;">Une relance vient de partir${referentName ? ` à ${esc(referentName)}` : " au référent"}. Un appel ou un message WhatsApp depuis la fiche peut aider.</p>
+    ${ctaButton(link, "Ouvrir la fiche")}`;
+  return { subject: `Reporting en retard — ${companyName} (${periodLabel})`, html: shell("Reporting en retard", inner) };
 }
